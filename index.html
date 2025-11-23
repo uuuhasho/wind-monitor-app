@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北堤風速監測 (V39 LINE靜音版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; }
+        .btn { @apply px-4 py-3 rounded-lg font-bold shadow transition-all active:scale-95 flex items-center justify-center gap-2; }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none; 
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .log-entry { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
+
+    <!-- 頂部欄 -->
+    <header class="text-center mb-6">
+        <h1 class="text-2xl font-extrabold text-gray-800">北堤綠燈塔風速監測</h1>
+        <div class="flex items-center justify-center gap-2 mt-2">
+            <div id="loading-indicator" class="loader"></div>
+            <p class="text-xs text-gray-500" id="status-text">等待指令...</p>
+        </div>
+    </header>
+
+    <!-- 數據顯示面板 -->
+    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gray-200">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+        
+        <h3 class="text-gray-400 text-sm font-medium mb-1">當前模式</h3>
+        <div id="mode-display" class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4">停止中</div>
+
+        <div class="text-5xl font-black text-gray-800 tracking-tight mb-2 flex justify-center items-end gap-2">
+            <span id="wind-value">--</span>
+            <span class="text-lg text-gray-400 font-normal mb-2">m/s</span>
+        </div>
+        <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
+    </div>
+
+    <!-- 控制按鈕 -->
+    <div class="grid grid-cols-2 gap-3 mb-8">
+        <button id="btn-trial" class="btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1">
+            <i data-lucide="ship"></i> 18萬試航
+        </button>
+        <button id="btn-start" class="btn bg-green-600 hover:bg-green-700 text-white col-span-1">
+            <i data-lucide="play"></i> 啟動
+        </button>
+        <button id="btn-stop" class="btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2">
+            <i data-lucide="x-square" class="w-5 h-5"></i> 結束
+        </button>
+    </div>
+
+    <!-- 資料紀錄 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
+        <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2">
+                <i data-lucide="table" class="w-4 h-4"></i> 數據紀錄
+            </h3>
+            <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Firestore 自動存檔</span>
+        </div>
+        <div id="log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[200px]">
+            <div class="p-8 text-center text-gray-400 text-xs">尚無資料，請按「啟動」開始抓取。</div>
+        </div>
+    </div>
+
+    <!-- 警報視窗 -->
+    <div id="alert-modal" class="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pointer-events-none opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-lg shadow-2xl p-4 max-w-sm w-full border-l-8 transform transition-transform duration-300 -translate-y-full pointer-events-auto" id="alert-content">
+            <div class="flex items-start gap-3">
+                <div id="alert-icon"></div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-lg" id="alert-title"></h4>
+                    <p class="text-gray-800 font-medium mt-1 text-lg" id="alert-message"></p>
+                </div>
+                <button onclick="closeAlert()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, collection, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 1. 初始化與設定 ---
+        const FETCH_INTERVAL = 60000; // 1分鐘
+        // 固定 GAS API 網址，已移除設定相關邏輯
+        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        let timer = null;
+        let currentMode = null;
+        let gasApiUrl = FIXED_GAS_API_URL; 
+
+        // 警報音效 (V39: 靜音模式，移除音效)
+        const alertAudio = { play: () => {} }; 
+
+        // Firebase Init
+        if (Object.keys(firebaseConfig).length > 0) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            const initAuth = async () => {
+                if (initialToken) await signInWithCustomToken(auth, initialToken);
+                else await signInAnonymously(auth);
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    listenToLogs();
+                }
+            });
+        }
+
+        // --- 2. UI 元素 ---
+        const els = {
+            btnTrial: document.getElementById('btn-trial'),
+            btnStart: document.getElementById('btn-start'),
+            btnStop: document.getElementById('btn-stop'),
+            windValue: document.getElementById('wind-value'),
+            statusText: document.getElementById('status-text'),
+            modeDisplay: document.getElementById('mode-display'),
+            lastFetchTime: document.getElementById('last-fetch-time'),
+            loading: document.getElementById('loading-indicator'),
+            progressBar: document.getElementById('progress-bar'),
+            logContainer: document.getElementById('log-container'),
+            alertModal: document.getElementById('alert-modal'),
+            alertContent: document.getElementById('alert-content'),
+            alertTitle: document.getElementById('alert-title'),
+            alertMessage: document.getElementById('alert-message'),
+            alertIcon: document.getElementById('alert-icon')
+        };
+        
+        // --- 3. 事件綁定 ---
+        els.btnTrial.addEventListener('click', () => startApp('trial'));
+        els.btnStart.addEventListener('click', () => startApp('start'));
+        els.btnStop.addEventListener('click', stopApp);
+
+
+        // --- 4. 核心邏輯 ---
+
+        async function startApp(mode) {
+            if (timer) clearInterval(timer);
+            
+            // 請求通知權限 (即使靜音，系統通知仍需要權限)
+            if (Notification.permission !== "granted") {
+                await Notification.requestPermission();
+            }
+
+            currentMode = mode;
+            updateUIState(mode);
+            fetchData();
+            timer = setInterval(fetchData, FETCH_INTERVAL);
+        }
+
+        function stopApp() {
+            if (timer) clearInterval(timer);
+            timer = null;
+            currentMode = null;
+            updateUIState(null);
+            // 結束按鈕彈窗
+            showAlert('info', '已結束 APP 執行', '應用程式停止'); 
+        }
+
+        function updateUIState(mode) {
+            // 按鈕樣式重置
+            els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
+            els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
+            els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
+
+            els.progressBar.style.width = '0%';
+
+            if (mode === 'start') {
+                els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 ring-4 ring-green-200";
+                els.modeDisplay.textContent = "一般啟動模式";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse";
+                els.statusText.textContent = "監測中 (1分鐘更新)...";
+            } else if (mode === 'trial') {
+                els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200";
+                els.modeDisplay.textContent = "18萬試航模式";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse";
+                els.statusText.textContent = "監測中 (1分鐘更新)...";
+            } else {
+                els.btnStart.classList.remove('opacity-50');
+                els.btnTrial.classList.remove('opacity-50');
+                els.modeDisplay.textContent = "已停止";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4";
+                els.statusText.textContent = "等待指令...";
+                els.loading.style.display = 'none';
+            }
+        }
+
+        // --- 5. 資料抓取邏輯 ---
+        async function fetchData() {
+            if (!currentMode) return;
+
+            els.loading.style.display = 'inline-block';
+            els.progressBar.style.width = '20%';
+            els.statusText.textContent = "連線 GAS API (V39)...";
+            
+            const apiUrlWithMode = gasApiUrl + '?mode=' + currentMode;
+            
+            try {
+                const response = await fetch(apiUrlWithMode);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                
+                els.progressBar.style.width = '80%';
+
+                if (data.status === 'success') {
+                    handleSuccess(data.speed);
+                    // 檢查後端錯誤訊息
+                    if (data.sheetError) console.error("試算表錯誤:", data.sheetError);
+                    if (data.lineError) console.error("LINE 錯誤:", data.lineError);
+                } else {
+                    throw new Error(data.message || "API 回傳錯誤");
+                }
+
+            } catch (error) {
+                console.error("Fetch/API 錯誤:", error);
+                els.statusText.textContent = `錯誤: ${error.message}`;
+                runSimulation(true); 
+            }
+        }
+
+        function runSimulation(showAlert = false) {
+            if (showAlert) {
+                 els.statusText.textContent = "警告：API連線失敗，使用模擬數據...";
+            }
+            els.progressBar.style.width = '50%';
+            setTimeout(() => {
+                const simulatedSpeed = (Math.random() * (16 - 8) + 8).toFixed(1);
+                els.progressBar.style.width = '100%';
+                handleSuccess(simulatedSpeed);
+            }, 600);
+        }
+
+        async function handleSuccess(speed) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false, hour:'2-digit', minute:'2-digit' });
+            const dateStr = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+
+            els.windValue.textContent = speed;
+            els.lastFetchTime.textContent = `最後更新：${timeStr}`;
+            els.statusText.textContent = "更新完成 (1分鐘後下次更新)";
+            els.loading.style.display = 'none';
+            setTimeout(() => { els.progressBar.style.width = '0%'; }, 500);
+
+            saveData(dateStr, timeStr, speed);
+            checkAlert(speed, timeStr);
+        }
+
+        // --- 6. 警報邏輯 ---
+        function checkAlert(speed, time) {
+            const val = parseFloat(speed);
+            let triggered = false;
+            let msg = "";
+            let type = "";
+            let notificationTitle = "";
+
+            if (currentMode === 'start' && val <= 15.0) {
+                triggered = true;
+                type = 'green';
+                msg = `${time} LNG船可進港`; 
+                notificationTitle = "LNG 船警報";
+            } else if (currentMode === 'trial' && val <= 12.0) {
+                triggered = true;
+                type = 'yellow';
+                msg = `${time} 18萬試航可進港`; 
+                notificationTitle = "18萬試航警報";
+            }
+
+            if (triggered) {
+                // 1. 播放音效 (V39: 靜音模式)
+                // alertAudio.play(); 
+                
+                // 2. 顯示 App 內彈窗
+                showAlert(type, msg);
+                
+                // 3. 顯示系統通知 (手機/桌面通知欄)
+                if (Notification.permission === "granted") {
+                    new Notification(notificationTitle, {
+                        body: msg,
+                        silent: true, // 確保通知無聲音
+                        icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png" 
+                    });
+                }
+            }
+        }
+
+        function showAlert(type, message, title = '風速警示') {
+            els.alertModal.classList.remove('opacity-0', 'pointer-events-none');
+            els.alertContent.classList.remove('-translate-y-full');
+            els.alertContent.className = "bg-white rounded-lg shadow-2xl p-5 max-w-sm w-full border-l-8 transform transition-transform duration-300 pointer-events-auto";
+
+            let iconHtml = '';
+            let titleColor = '';
+            
+            if (type === 'green') {
+                els.alertContent.classList.add('bg-green-50', 'border-green-500');
+                titleColor = 'text-green-800';
+                iconHtml = `<i data-lucide="check-circle" class="w-8 h-8 text-green-600 mt-1"></i>`;
+            } else if (type === 'yellow') {
+                els.alertContent.classList.add('bg-yellow-50', 'border-yellow-400');
+                titleColor = 'text-yellow-800';
+                iconHtml = `<i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-600 mt-1"></i>`;
+            } else if (type === 'info') {
+                els.alertContent.classList.add('bg-blue-50', 'border-blue-500');
+                titleColor = 'text-blue-800';
+                iconHtml = `<i data-lucide="bell" class="w-8 h-8 text-blue-600 mt-1"></i>`;
+                title = '系統通知';
+            }
+
+            els.alertTitle.textContent = title;
+            els.alertTitle.className = `font-bold text-xl ${titleColor}`;
+            els.alertMessage.textContent = message;
+            els.alertMessage.className = `${titleColor} font-medium mt-2 text-lg`;
+            els.alertIcon.innerHTML = iconHtml;
+
+            lucide.createIcons();
+            
+            if (type !== 'info') {
+                setTimeout(window.closeAlert, 6000);
+            }
+        }
+
+        window.closeAlert = function() {
+            els.alertModal.classList.add('opacity-0', 'pointer-events-none');
+            els.alertContent.classList.add('-translate-y-full');
+        }
+
+        // --- Firestore 寫入與顯示 (維持原樣) ---
+        async function saveData(dateStr, timeStr, speed) {
+            if (!db || !userId) return;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'wind_data'), {
+                    sheetName: dateStr, time: timeStr, speed: Number(speed), timestamp: serverTimestamp()
+                });
+            } catch (e) { console.warn("Firestore error", e); }
+        }
+
+        function listenToLogs() {
+            const q = query(collection(db, 'artifacts', appId, 'users', userId, 'wind_data'), orderBy('timestamp', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                const logs = [];
+                snapshot.forEach(d => logs.push(d.data()));
+                if (logs.length === 0) {
+                    els.logContainer.innerHTML = `<div class="p-8 text-center text-gray-400 text-xs">尚無資料</div>`;
+                    return;
+                }
+                const grouped = logs.reduce((acc, cur) => {
+                    const key = cur.sheetName || 'Unknown';
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(cur);
+                    return acc;
+                }, {});
+                let html = '';
+                Object.keys(grouped).slice(0, 3).forEach(date => {
+                    html += `<div class="mb-2"><div class="bg-gray-200 px-4 py-1 text-xs font-bold text-gray-600 sticky top-0">📅 Sheet: ${date}</div><table class="w-full text-left text-sm"><thead class="bg-white text-gray-400 text-xs border-b"><tr><th class="px-4 py-2 font-normal">時間</th><th class="px-4 py-2 font-normal">風速</th></tr></thead><tbody class="bg-white">`;
+                    grouped[date].forEach(item => {
+                        const isHigh = item.speed > 15;
+                        html += `<tr class="border-b border-gray-50 hover:bg-gray-50 log-entry"><td class="px-4 py-2 font-mono text-gray-600">${item.time}</td><td class="px-4 py-2 font-bold ${isHigh ? 'text-red-500' : 'text-green-600'}">${item.speed} m/s</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                });
+                els.logContainer.innerHTML = html;
+            });
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>
