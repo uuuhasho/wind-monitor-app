@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V55)</title>
-    <!-- ★ 新增 App Icon 標籤 ★ -->
+    <title>台中天然氣船進港監測 (V57 自動停止)</title>
+    <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
     
@@ -38,7 +38,7 @@
         <!-- 雲端狀態指示 -->
         <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
             <i data-lucide="cloud" class="w-4 h-4"></i>
-            <span>雲端監控中 (關閉螢幕仍會執行)</span>
+            <span>雲端監控中 (需手動停止)</span>
         </div>
         
         <div class="flex items-center justify-center gap-2 mt-2">
@@ -79,7 +79,7 @@
     <!-- 底部說明 -->
     <div class="text-center text-xs text-gray-400 mt-auto">
         <p>按下按鈕後，指令將發送至雲端伺服器。</p>
-        <p>即使離開此頁面，監控仍會持續進行。</p>
+        <p>若要完全停止，請按「結束」或在離開時選擇「是」。</p>
     </div>
 
     <!-- 離開確認視窗 -->
@@ -89,18 +89,17 @@
                 <i data-lucide="log-out" class="w-6 h-6 text-red-600"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-900">是否離開 APP？</h3>
-            <p class="text-sm text-gray-500 mt-2">注意：如果目前正在監控中，離開 App <strong>不會</strong> 停止雲端監測。</p>
-            <p class="text-xs text-red-500 mt-1">請按「結束」按鈕來完全停止。</p>
+            <p class="text-sm text-gray-500 mt-2">按下「是」將會<strong>停止雲端監控</strong>並離開。</p>
             <div class="grid grid-cols-2 gap-3 mt-6">
                 <button id="btn-stay" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200">否 (繼續)</button>
-                <button id="btn-leave" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">是 (離開)</button>
+                <button id="btn-leave" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">是 (停止並離開)</button>
             </div>
         </div>
     </div>
 
     <script>
         // --- 1. 核心設定 ---
-        // ★★★ 固定 GAS API 網址 ★★★
+        // ★★★ 請確認此網址為您部署的最新 GAS 網址 ★★★
         const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
         
         let refreshTimer = null;
@@ -108,7 +107,7 @@
         // --- 2. UI 元素 ---
         const els = {
             btnTrial: document.getElementById('btn-trial'),
-            btnStart: document.getElementById('btn-start'), // 一般LNG船
+            btnStart: document.getElementById('btn-start'),
             btnStop: document.getElementById('btn-stop'),
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
@@ -123,59 +122,71 @@
         
         // --- 3. 事件綁定 ---
         
-        // 切換模式 (發送 set_mode 指令)
+        // 切換模式
         els.btnTrial.addEventListener('click', () => setCloudMode('trial'));
         els.btnStart.addEventListener('click', () => setCloudMode('start'));
         
-        // 停止 (發送 set_mode=stop 指令)
+        // 停止按鈕
         els.btnStop.addEventListener('click', () => {
             setCloudMode('stop');
             alert("雲端監測已停止");
         });
 
-        // 離開確認相關
+        // 離開確認視窗 - 留下來
         els.btnStay.addEventListener('click', () => {
             els.confirmModal.classList.add('hidden');
-            // 恢復 History 狀態，防止再次按返回就直接退出了
+            // 恢復路由狀態
             history.pushState(null, null, location.href);
         });
         
-        els.btnLeave.addEventListener('click', () => {
-            // 真正的離開
+        // ★★★ 離開確認視窗 - 離開並停止 (關鍵修正) ★★★
+        els.btnLeave.addEventListener('click', async () => {
+            // 1. 更新 UI 告知使用者
+            els.btnLeave.innerText = "停止中...";
+            els.btnLeave.disabled = true;
+            
+            // 2. 發送停止指令給 GAS (等同按下結束按鈕)
+            try {
+                const timestamp = new Date().getTime();
+                const url = `${FIXED_GAS_API_URL}?action=set_mode&mode=stop&t=${timestamp}`;
+                // 使用 await 等待請求發送完成 (GET)
+                await fetch(url, { method: 'GET' });
+            } catch (e) {
+                console.error("自動停止指令發送失敗:", e);
+                // 即使失敗也要讓使用者離開，不卡住介面
+            }
+
+            // 3. 執行瀏覽器離開動作
             window.history.back(); 
-            window.close(); // 嘗試關閉 (部分瀏覽器有效)
+            window.close(); // 嘗試關閉視窗 (部分環境支援)
         });
 
         // --- 4. 返回鍵攔截邏輯 ---
         function initBackBlocker() {
-            // 寫入一個歷史紀錄
+            // 寫入一個歷史紀錄以攔截返回
             history.pushState(null, null, location.href);
             
             window.addEventListener('popstate', function(event) {
-                // 當使用者按返回時，會觸發 popstate
-                // 顯示模態視窗
+                // 當使用者按手機返回鍵時觸發
                 els.confirmModal.classList.remove('hidden');
             });
         }
 
         // --- 5. 與 GAS 通訊邏輯 ---
 
-        // 設定雲端模式
         async function setCloudMode(mode) {
             els.loading.style.display = 'inline-block';
             els.statusText.textContent = "正在設定雲端...";
             
             try {
-                // action=set_mode
-                await fetch(`${FIXED_GAS_API_URL}?action=set_mode&mode=${mode}`, { 
-                    method: 'POST' // 使用 POST 避免快取，雖然 GAS doGet 也能處理
-                });
+                const timestamp = new Date().getTime();
+                const url = `${FIXED_GAS_API_URL}?action=set_mode&mode=${mode}&t=${timestamp}`;
                 
-                // 更新本地 UI
+                const response = await fetch(url, { method: 'GET' });
+                if (!response.ok) throw new Error("GAS 回應錯誤");
+                
                 updateUIByMode(mode);
                 els.statusText.textContent = "設定完成";
-                
-                // 立即刷新一次數據
                 fetchDisplayData();
                 
             } catch (e) {
@@ -185,34 +196,29 @@
             }
         }
 
-        // 獲取顯示用數據 (只讀取，不寫入)
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
-            
             try {
-                // action=display (預設)
                 const res = await fetch(`${FIXED_GAS_API_URL}?action=display`);
+                if (!res.ok) throw new Error("GAS 連線錯誤");
                 const data = await res.json();
                 
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
                     els.lastFetchTime.textContent = `最後更新：${data.time}`;
                 }
-                
-                // 同步雲端目前的模式 (防止不同裝置狀態不一致)
                 if (data.currentMode) {
                     updateUIByMode(data.currentMode);
                 }
-
             } catch (e) {
                 console.error("Display fetch failed", e);
+                els.statusText.textContent = "連線異常";
             } finally {
                 els.loading.style.display = 'none';
             }
         }
 
         function updateUIByMode(mode) {
-            // 重置按鈕
             els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
             els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
             els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
@@ -237,18 +243,12 @@
             }
         }
 
-        // --- 初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            initBackBlocker(); // 啟動返回攔截
-            
-            // 啟動後先抓一次狀態，確認雲端是否已經在跑
+            initBackBlocker(); 
             fetchDisplayData();
-            
-            // 每 10 秒更新一次介面數據 (純顯示，不影響雲端運作頻率)
             refreshTimer = setInterval(fetchDisplayData, 10000);
         });
-
     </script>
 </body>
 </html>
