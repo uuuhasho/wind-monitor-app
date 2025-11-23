@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北堤風速監測 (V46 恢復Firestore)</title>
+    <title>北堤風速監測 (V52 完整修正版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -20,7 +20,6 @@
             display: none; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .alert-box { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -32,7 +31,7 @@
         <h1 class="text-2xl font-extrabold text-gray-800">北堤綠燈塔風速監測</h1>
         <!-- 系統提醒 -->
         <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 mt-2 rounded-lg text-xs font-medium">
-            數據同時寫入 Google Sheets 和 Firestore 備份。
+            數據自動寫入 Google Sheets。符合條件時發送 LINE。
         </div>
         
         <div class="flex items-center justify-center gap-2 mt-2">
@@ -55,6 +54,8 @@
             <span class="text-lg text-gray-400 font-normal mb-2">m/s</span>
         </div>
         <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
+        <!-- ★ 新增：狀態回報區 ★ -->
+        <p class="text-[11px] text-blue-500 mt-1 font-mono text-center" id="backend-status"></p>
     </div>
 
     <!-- 控制按鈕 -->
@@ -70,19 +71,18 @@
         </button>
     </div>
 
-    <!-- 數據紀錄 (Firestore Log) -->
+    <!-- 數據紀錄 (Local Log) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
         <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
             <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2">
-                <i data-lucide="database" class="w-4 h-4"></i> 紀錄 (Firestore 備份)
+                <i data-lucide="list" class="w-4 h-4"></i> 本次執行紀錄
             </h3>
-            <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded">數據為公開備份</span>
+            <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">暫存於裝置</span>
         </div>
-        <div id="firestore-log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[100px]">
-            <div class="p-4 text-center text-gray-400 text-sm">正在連線 Firestore...</div>
+        <div id="session-log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[100px]">
+            <div class="p-4 text-center text-gray-400 text-sm">尚無資料</div>
         </div>
     </div>
-
 
     <!-- 警報視窗 -->
     <div id="alert-modal" class="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pointer-events-none opacity-0 transition-opacity duration-300">
@@ -98,57 +98,7 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, collection, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- 0. Firebase Setup (Generic Public Config) ---
-        // !!! 在將此程式碼部署到 GitHub Pages 之前，請將以下所有金鑰替換為您自己的 Firebase 專案設定 !!!
-        const DUMMY_FIREBASE_CONFIG = {
-            apiKey: "AIzaSy_Dummy_API_Key_For_Public_Use",
-            authDomain: "dummy-project.firebaseapp.com",
-            projectId: "dummy-project-id",
-            storageBucket: "dummy-project.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:abcdef1234567890"
-        };
-        const appId = "wind-monitor-app"; // 使用固定的 App ID
-        
-        let db, auth;
-        let useDummyConfig = false;
-
-        // 初始化 Firebase (使用 try/catch 避免在某些環境下初始化失敗)
-        try {
-            const config = DUMMY_FIREBASE_CONFIG;
-            
-            // 檢查是否為佔位符金鑰
-            if (config.apiKey === "AIzaSy_Dummy_API_Key_For_Public_Use") {
-                useDummyConfig = true;
-                console.warn("WARNING: Firestore sign-in skipped. Using dummy config.");
-            }
-
-            const app = initializeApp(config);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            
-            // 只有在偵測到真實金鑰時才嘗試匿名登入
-            if (!useDummyConfig) { 
-                signInAnonymously(auth).then(() => {
-                    console.log("Firebase Anonymously Signed In.");
-                    listenToFirestore();
-                }).catch(e => console.error("Anonymous Sign-In Failed:", e));
-            } else {
-                 // 顯示警告訊息在 UI 上
-                 const logContainer = document.getElementById('firestore-log-container');
-                 logContainer.innerHTML = `<div class="p-4 text-center text-red-500 text-xs">
-                     ⚠️ 備份已禁用。請在程式碼中填入您的 Firebase Keys。
-                 </div>`;
-            }
-        } catch (e) {
-            console.error("Firebase Initialization Failed:", e);
-        }
-
+    <script>
         // --- 1. 核心設定 ---
         const FETCH_INTERVAL = 60000; // 1分鐘
         const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
@@ -156,7 +106,7 @@
         let timer = null;
         let currentMode = null;
         let gasApiUrl = FIXED_GAS_API_URL; 
-        const alertAudio = { play: () => {} }; 
+        let sessionLogs = [];
 
         // --- 2. UI 元素 ---
         const els = {
@@ -165,11 +115,12 @@
             btnStop: document.getElementById('btn-stop'),
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
+            backendStatus: document.getElementById('backend-status'), // 新增
             modeDisplay: document.getElementById('mode-display'),
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar'),
-            firestoreLogContainer: document.getElementById('firestore-log-container'), 
+            logContainer: document.getElementById('session-log-container'), 
             alertModal: document.getElementById('alert-modal'),
             alertContent: document.getElementById('alert-content'),
             alertTitle: document.getElementById('alert-title'),
@@ -182,9 +133,7 @@
         els.btnStart.addEventListener('click', () => startApp('start'));
         els.btnStop.addEventListener('click', stopApp);
 
-
         // --- 4. 核心邏輯 ---
-
         async function startApp(mode) {
             if (timer) clearInterval(timer);
             
@@ -202,29 +151,27 @@
             if (timer) clearInterval(timer);
             timer = null;
             currentMode = null;
-            
-            updateUIState(null); 
+            updateUIState(null);
+            els.backendStatus.textContent = ""; // 清除狀態
             showAlert('info', '已結束 APP 執行', '應用程式停止'); 
         }
 
         function updateUIState(mode) {
-            // 按鈕樣式
             els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
             els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
             els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
-
             els.progressBar.style.width = '0%';
 
             if (mode === 'start') {
                 els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 ring-4 ring-green-200";
                 els.modeDisplay.textContent = "一般啟動模式";
                 els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "監測中 (1分鐘更新)...";
+                els.statusText.textContent = "監測中...";
             } else if (mode === 'trial') {
                 els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200";
                 els.modeDisplay.textContent = "18萬試航模式";
                 els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "監測中 (1分鐘更新)...";
+                els.statusText.textContent = "監測中...";
             } else {
                 els.btnStart.classList.remove('opacity-50');
                 els.btnTrial.classList.remove('opacity-50');
@@ -250,14 +197,10 @@
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const data = await response.json();
-                
                 els.progressBar.style.width = '80%';
 
                 if (data.status === 'success') {
-                    handleSuccess(data.speed);
-                    // 檢查後端錯誤訊息
-                    if (data.sheetError) console.error("試算表錯誤:", data.sheetError);
-                    if (data.lineError) console.error("LINE 錯誤:", data.lineError);
+                    handleSuccess(data);
                 } else {
                     throw new Error(data.message || "API 回傳錯誤");
                 }
@@ -270,88 +213,58 @@
         }
 
         function runSimulation(showAlert = false) {
-            if (showAlert) {
-                 els.statusText.textContent = "警告：API連線失敗，使用模擬數據...";
-            }
+            if (showAlert) els.statusText.textContent = "警告：API連線失敗，使用模擬數據...";
             els.progressBar.style.width = '50%';
             setTimeout(() => {
                 const simulatedSpeed = (Math.random() * (16 - 8) + 8).toFixed(1);
                 els.progressBar.style.width = '100%';
-                handleSuccess(simulatedSpeed);
+                handleSuccess({ speed: simulatedSpeed, message: "模擬資料" });
             }, 600);
         }
 
-        async function handleSuccess(speed) {
+        async function handleSuccess(data) {
+            const speed = data.speed;
             const now = new Date();
             const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false, hour:'2-digit', minute:'2-digit' });
-            const dateStr = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
             
             els.windValue.textContent = speed;
             els.lastFetchTime.textContent = `最後更新：${timeStr}`;
+            
+            // 顯示後端回傳的狀態訊息 (關鍵：讓用戶知道發生了什麼)
+            if (data.message) {
+                els.backendStatus.textContent = `GAS: ${data.message}`;
+            }
+            
             els.statusText.textContent = "更新完成 (1分鐘後下次更新)";
             els.loading.style.display = 'none';
             setTimeout(() => { els.progressBar.style.width = '0%'; }, 500);
 
-            // 存檔 (Firestore) - 僅在非佔位符配置下執行
-            if (!useDummyConfig) {
-                saveToFirestore(dateStr, timeStr, speed); 
-            }
+            // 更新本地紀錄
+            updateLocalLog(timeStr, speed);
 
-            // 檢查警報
+            // 檢查警報 (UI 顯示)
             checkAlert(speed, timeStr);
         }
-        
-        // --- 7. Firestore 儲存與監聽邏輯 ---
-        function saveToFirestore(dateStr, timeStr, speed) {
-            if (!db || useDummyConfig) return;
-            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'wind_records'); // 公共路徑
+
+        function updateLocalLog(timeStr, speed) {
+            sessionLogs.unshift({ time: timeStr, speed: speed });
+            if (sessionLogs.length > 10) sessionLogs.pop();
             
-            addDoc(collectionRef, {
-                sheetName: dateStr,
-                time: timeStr,
-                speed: Number(speed),
-                timestamp: serverTimestamp()
-            }).catch(e => console.error("Firestore Write Failed:", e));
-        }
-
-        function listenToFirestore() {
-            if (!db || useDummyConfig) return;
-            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'wind_records'); // 公共路徑
-            const q = query(collectionRef, orderBy('timestamp', 'desc'));
-
-            onSnapshot(q, (snapshot) => {
-                const logs = [];
-                snapshot.forEach(d => logs.push(d.data()));
-
-                const container = els.firestoreLogContainer;
-                
-                if (logs.length === 0) {
-                    container.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs">尚無備份資料</div>`;
-                    return;
-                }
-                
-                let html = `<div class="overflow-y-auto">`;
-                
-                // 只顯示最近 5 筆
-                logs.slice(0, 5).forEach((item, index) => {
-                    const speedColor = item.speed <= 15 ? 'text-green-600' : 'text-red-500';
-                    const time = item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleTimeString('zh-TW') : item.time;
-
-                    html += `
-                        <div class="flex justify-between border-b p-1 text-xs">
-                            <span class="text-gray-500">${time}</span>
-                            <span class="${speedColor} font-bold">${item.speed} m/s</span>
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-                container.innerHTML = html;
+            const container = els.logContainer;
+            let html = `<div class="overflow-y-auto">`;
+            sessionLogs.forEach((item) => {
+                const speedColor = item.speed <= 15 ? 'text-green-600' : 'text-red-500';
+                html += `
+                    <div class="flex justify-between border-b border-gray-100 p-2 text-sm hover:bg-gray-50">
+                        <span class="text-gray-500 font-mono">${item.time}</span>
+                        <span class="${speedColor} font-bold">${item.speed} m/s</span>
+                    </div>
+                `;
             });
+            html += `</div>`;
+            container.innerHTML = html;
         }
-        // ------------------------------------
 
-        // --- 8. 警報邏輯 ---
         function checkAlert(speed, time) {
             const val = parseFloat(speed);
             let triggered = false;
@@ -360,65 +273,43 @@
             let notificationTitle = "";
 
             if (currentMode === 'start' && val <= 15.0) {
-                triggered = true;
-                type = 'green';
-                msg = `${time} LNG船可進港`; 
-                notificationTitle = "LNG 船警報";
+                triggered = true; type = 'green'; msg = `${time} LNG船可進港`; notificationTitle = "LNG 船警報";
             } else if (currentMode === 'trial' && val <= 12.0) {
-                triggered = true;
-                type = 'yellow';
-                msg = `${time} 18萬試航可進港`; 
-                notificationTitle = "18萬試航警報";
+                triggered = true; type = 'yellow'; msg = `${time} 18萬試航可進港`; notificationTitle = "18萬試航警報";
             }
 
             if (triggered) {
                 showAlert(type, msg);
-                
                 if (Notification.permission === "granted") {
-                    new Notification(notificationTitle, {
-                        body: msg,
-                        silent: true, 
-                        icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png" 
-                    });
+                    new Notification(notificationTitle, { body: msg, silent: true, icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png" });
                 }
             }
         }
 
         function showAlert(type, message, title = '風速警示') {
-            // 系統警示邏輯 (保持不變)
             els.alertModal.classList.remove('opacity-0', 'pointer-events-none');
             els.alertContent.classList.remove('-translate-y-full');
             els.alertContent.className = "bg-white rounded-lg shadow-2xl p-5 max-w-sm w-full border-l-8 transform transition-transform duration-300 pointer-events-auto";
 
             let iconHtml = '';
             let titleColor = '';
-            
             if (type === 'green') {
-                els.alertContent.classList.add('bg-green-50', 'border-green-500');
-                titleColor = 'text-green-800';
+                els.alertContent.classList.add('bg-green-50', 'border-green-500'); titleColor = 'text-green-800';
                 iconHtml = `<i data-lucide="check-circle" class="w-8 h-8 text-green-600 mt-1"></i>`;
             } else if (type === 'yellow') {
-                els.alertContent.classList.add('bg-yellow-50', 'border-yellow-400');
-                titleColor = 'text-yellow-800';
+                els.alertContent.classList.add('bg-yellow-50', 'border-yellow-400'); titleColor = 'text-yellow-800';
                 iconHtml = `<i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-600 mt-1"></i>`;
             } else if (type === 'info') {
-                els.alertContent.classList.add('bg-blue-50', 'border-blue-500');
-                titleColor = 'text-blue-800';
-                iconHtml = `<i data-lucide="bell" class="w-8 h-8 text-blue-600 mt-1"></i>`;
-                title = '系統通知';
+                els.alertContent.classList.add('bg-blue-50', 'border-blue-500'); titleColor = 'text-blue-800';
+                iconHtml = `<i data-lucide="bell" class="w-8 h-8 text-blue-600 mt-1"></i>`; title = '系統通知';
             }
 
-            els.alertTitle.textContent = title;
-            els.alertTitle.className = `font-bold text-xl ${titleColor}`;
-            els.alertMessage.textContent = message;
-            els.alertMessage.className = `${titleColor} font-medium mt-2 text-lg`;
+            els.alertTitle.textContent = title; els.alertTitle.className = `font-bold text-xl ${titleColor}`;
+            els.alertMessage.textContent = message; els.alertMessage.className = `${titleColor} font-medium mt-2 text-lg`;
             els.alertIcon.innerHTML = iconHtml;
-
             lucide.createIcons();
             
-            if (type !== 'info') {
-                setTimeout(window.closeAlert, 6000);
-            }
+            if (type !== 'info') setTimeout(window.closeAlert, 6000);
         }
 
         window.closeAlert = function() {
@@ -426,10 +317,7 @@
             els.alertContent.classList.add('-translate-y-full');
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
-
+        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
     </script>
 </body>
 </html>
