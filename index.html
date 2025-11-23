@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北堤風速監測 (V39 LINE靜音版)</title>
+    <title>北堤風速監測 (V46 恢復Firestore)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -21,7 +21,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .log-entry { animation: fadeIn 0.3s ease-in; }
+        .alert-box { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -30,6 +30,11 @@
     <!-- 頂部欄 -->
     <header class="text-center mb-6">
         <h1 class="text-2xl font-extrabold text-gray-800">北堤綠燈塔風速監測</h1>
+        <!-- 系統提醒 -->
+        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 mt-2 rounded-lg text-xs font-medium">
+            數據同時寫入 Google Sheets 和 Firestore 備份。
+        </div>
+        
         <div class="flex items-center justify-center gap-2 mt-2">
             <div id="loading-indicator" class="loader"></div>
             <p class="text-xs text-gray-500" id="status-text">等待指令...</p>
@@ -65,18 +70,19 @@
         </button>
     </div>
 
-    <!-- 資料紀錄 -->
+    <!-- 數據紀錄 (Firestore Log) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
         <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
             <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2">
-                <i data-lucide="table" class="w-4 h-4"></i> 數據紀錄
+                <i data-lucide="database" class="w-4 h-4"></i> 紀錄 (Firestore 備份)
             </h3>
-            <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Firestore 自動存檔</span>
+            <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded">數據為公開備份</span>
         </div>
-        <div id="log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[200px]">
-            <div class="p-8 text-center text-gray-400 text-xs">尚無資料，請按「啟動」開始抓取。</div>
+        <div id="firestore-log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[100px]">
+            <div class="p-4 text-center text-gray-400 text-sm">正在連線 Firestore...</div>
         </div>
     </div>
+
 
     <!-- 警報視窗 -->
     <div id="alert-modal" class="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pointer-events-none opacity-0 transition-opacity duration-300">
@@ -94,45 +100,63 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, addDoc, collection, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 1. 初始化與設定 ---
-        const FETCH_INTERVAL = 60000; // 1分鐘
-        // 固定 GAS API 網址，已移除設定相關邏輯
-        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
+        // --- 0. Firebase Setup (Generic Public Config) ---
+        // !!! 在將此程式碼部署到 GitHub Pages 之前，請將以下所有金鑰替換為您自己的 Firebase 專案設定 !!!
+        const DUMMY_FIREBASE_CONFIG = {
+            apiKey: "AIzaSy_Dummy_API_Key_For_Public_Use",
+            authDomain: "dummy-project.firebaseapp.com",
+            projectId: "dummy-project-id",
+            storageBucket: "dummy-project.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+        const appId = "wind-monitor-app"; // 使用固定的 App ID
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        let db, auth;
+        let useDummyConfig = false;
 
-        let db, auth, userId;
-        let timer = null;
-        let currentMode = null;
-        let gasApiUrl = FIXED_GAS_API_URL; 
+        // 初始化 Firebase (使用 try/catch 避免在某些環境下初始化失敗)
+        try {
+            const config = DUMMY_FIREBASE_CONFIG;
+            
+            // 檢查是否為佔位符金鑰
+            if (config.apiKey === "AIzaSy_Dummy_API_Key_For_Public_Use") {
+                useDummyConfig = true;
+                console.warn("WARNING: Firestore sign-in skipped. Using dummy config.");
+            }
 
-        // 警報音效 (V39: 靜音模式，移除音效)
-        const alertAudio = { play: () => {} }; 
-
-        // Firebase Init
-        if (Object.keys(firebaseConfig).length > 0) {
-            const app = initializeApp(firebaseConfig);
+            const app = initializeApp(config);
             auth = getAuth(app);
             db = getFirestore(app);
             
-            const initAuth = async () => {
-                if (initialToken) await signInWithCustomToken(auth, initialToken);
-                else await signInAnonymously(auth);
-            };
-            initAuth();
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    userId = user.uid;
-                    listenToLogs();
-                }
-            });
+            // 只有在偵測到真實金鑰時才嘗試匿名登入
+            if (!useDummyConfig) { 
+                signInAnonymously(auth).then(() => {
+                    console.log("Firebase Anonymously Signed In.");
+                    listenToFirestore();
+                }).catch(e => console.error("Anonymous Sign-In Failed:", e));
+            } else {
+                 // 顯示警告訊息在 UI 上
+                 const logContainer = document.getElementById('firestore-log-container');
+                 logContainer.innerHTML = `<div class="p-4 text-center text-red-500 text-xs">
+                     ⚠️ 備份已禁用。請在程式碼中填入您的 Firebase Keys。
+                 </div>`;
+            }
+        } catch (e) {
+            console.error("Firebase Initialization Failed:", e);
         }
+
+        // --- 1. 核心設定 ---
+        const FETCH_INTERVAL = 60000; // 1分鐘
+        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
+        
+        let timer = null;
+        let currentMode = null;
+        let gasApiUrl = FIXED_GAS_API_URL; 
+        const alertAudio = { play: () => {} }; 
 
         // --- 2. UI 元素 ---
         const els = {
@@ -145,7 +169,7 @@
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar'),
-            logContainer: document.getElementById('log-container'),
+            firestoreLogContainer: document.getElementById('firestore-log-container'), 
             alertModal: document.getElementById('alert-modal'),
             alertContent: document.getElementById('alert-content'),
             alertTitle: document.getElementById('alert-title'),
@@ -164,7 +188,6 @@
         async function startApp(mode) {
             if (timer) clearInterval(timer);
             
-            // 請求通知權限 (即使靜音，系統通知仍需要權限)
             if (Notification.permission !== "granted") {
                 await Notification.requestPermission();
             }
@@ -179,13 +202,13 @@
             if (timer) clearInterval(timer);
             timer = null;
             currentMode = null;
-            updateUIState(null);
-            // 結束按鈕彈窗
+            
+            updateUIState(null); 
             showAlert('info', '已結束 APP 執行', '應用程式停止'); 
         }
 
         function updateUIState(mode) {
-            // 按鈕樣式重置
+            // 按鈕樣式
             els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
             els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
             els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
@@ -218,7 +241,7 @@
 
             els.loading.style.display = 'inline-block';
             els.progressBar.style.width = '20%';
-            els.statusText.textContent = "連線 GAS API (V39)...";
+            els.statusText.textContent = "連線 GAS API...";
             
             const apiUrlWithMode = gasApiUrl + '?mode=' + currentMode;
             
@@ -262,18 +285,73 @@
             const now = new Date();
             const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false, hour:'2-digit', minute:'2-digit' });
             const dateStr = now.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-
+            
             els.windValue.textContent = speed;
             els.lastFetchTime.textContent = `最後更新：${timeStr}`;
             els.statusText.textContent = "更新完成 (1分鐘後下次更新)";
             els.loading.style.display = 'none';
             setTimeout(() => { els.progressBar.style.width = '0%'; }, 500);
 
-            saveData(dateStr, timeStr, speed);
+            // 存檔 (Firestore) - 僅在非佔位符配置下執行
+            if (!useDummyConfig) {
+                saveToFirestore(dateStr, timeStr, speed); 
+            }
+
+            // 檢查警報
             checkAlert(speed, timeStr);
         }
+        
+        // --- 7. Firestore 儲存與監聽邏輯 ---
+        function saveToFirestore(dateStr, timeStr, speed) {
+            if (!db || useDummyConfig) return;
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'wind_records'); // 公共路徑
+            
+            addDoc(collectionRef, {
+                sheetName: dateStr,
+                time: timeStr,
+                speed: Number(speed),
+                timestamp: serverTimestamp()
+            }).catch(e => console.error("Firestore Write Failed:", e));
+        }
 
-        // --- 6. 警報邏輯 ---
+        function listenToFirestore() {
+            if (!db || useDummyConfig) return;
+            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'wind_records'); // 公共路徑
+            const q = query(collectionRef, orderBy('timestamp', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                const logs = [];
+                snapshot.forEach(d => logs.push(d.data()));
+
+                const container = els.firestoreLogContainer;
+                
+                if (logs.length === 0) {
+                    container.innerHTML = `<div class="p-4 text-center text-gray-400 text-xs">尚無備份資料</div>`;
+                    return;
+                }
+                
+                let html = `<div class="overflow-y-auto">`;
+                
+                // 只顯示最近 5 筆
+                logs.slice(0, 5).forEach((item, index) => {
+                    const speedColor = item.speed <= 15 ? 'text-green-600' : 'text-red-500';
+                    const time = item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleTimeString('zh-TW') : item.time;
+
+                    html += `
+                        <div class="flex justify-between border-b p-1 text-xs">
+                            <span class="text-gray-500">${time}</span>
+                            <span class="${speedColor} font-bold">${item.speed} m/s</span>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            });
+        }
+        // ------------------------------------
+
+        // --- 8. 警報邏輯 ---
         function checkAlert(speed, time) {
             const val = parseFloat(speed);
             let triggered = false;
@@ -294,17 +372,12 @@
             }
 
             if (triggered) {
-                // 1. 播放音效 (V39: 靜音模式)
-                // alertAudio.play(); 
-                
-                // 2. 顯示 App 內彈窗
                 showAlert(type, msg);
                 
-                // 3. 顯示系統通知 (手機/桌面通知欄)
                 if (Notification.permission === "granted") {
                     new Notification(notificationTitle, {
                         body: msg,
-                        silent: true, // 確保通知無聲音
+                        silent: true, 
                         icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png" 
                     });
                 }
@@ -312,6 +385,7 @@
         }
 
         function showAlert(type, message, title = '風速警示') {
+            // 系統警示邏輯 (保持不變)
             els.alertModal.classList.remove('opacity-0', 'pointer-events-none');
             els.alertContent.classList.remove('-translate-y-full');
             els.alertContent.className = "bg-white rounded-lg shadow-2xl p-5 max-w-sm w-full border-l-8 transform transition-transform duration-300 pointer-events-auto";
@@ -351,45 +425,11 @@
             els.alertModal.classList.add('opacity-0', 'pointer-events-none');
             els.alertContent.classList.add('-translate-y-full');
         }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
 
-        // --- Firestore 寫入與顯示 (維持原樣) ---
-        async function saveData(dateStr, timeStr, speed) {
-            if (!db || !userId) return;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'wind_data'), {
-                    sheetName: dateStr, time: timeStr, speed: Number(speed), timestamp: serverTimestamp()
-                });
-            } catch (e) { console.warn("Firestore error", e); }
-        }
-
-        function listenToLogs() {
-            const q = query(collection(db, 'artifacts', appId, 'users', userId, 'wind_data'), orderBy('timestamp', 'desc'));
-            onSnapshot(q, (snapshot) => {
-                const logs = [];
-                snapshot.forEach(d => logs.push(d.data()));
-                if (logs.length === 0) {
-                    els.logContainer.innerHTML = `<div class="p-8 text-center text-gray-400 text-xs">尚無資料</div>`;
-                    return;
-                }
-                const grouped = logs.reduce((acc, cur) => {
-                    const key = cur.sheetName || 'Unknown';
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(cur);
-                    return acc;
-                }, {});
-                let html = '';
-                Object.keys(grouped).slice(0, 3).forEach(date => {
-                    html += `<div class="mb-2"><div class="bg-gray-200 px-4 py-1 text-xs font-bold text-gray-600 sticky top-0">📅 Sheet: ${date}</div><table class="w-full text-left text-sm"><thead class="bg-white text-gray-400 text-xs border-b"><tr><th class="px-4 py-2 font-normal">時間</th><th class="px-4 py-2 font-normal">風速</th></tr></thead><tbody class="bg-white">`;
-                    grouped[date].forEach(item => {
-                        const isHigh = item.speed > 15;
-                        html += `<tr class="border-b border-gray-50 hover:bg-gray-50 log-entry"><td class="px-4 py-2 font-mono text-gray-600">${item.time}</td><td class="px-4 py-2 font-bold ${isHigh ? 'text-red-500' : 'text-green-600'}">${item.speed} m/s</td></tr>`;
-                    });
-                    html += `</tbody></table></div>`;
-                });
-                els.logContainer.innerHTML = html;
-            });
-        }
-        lucide.createIcons();
     </script>
 </body>
 </html>
