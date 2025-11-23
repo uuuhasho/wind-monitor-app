@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北堤風速監測 (V52 完整修正版)</title>
+    <title>台中天然氣船進港監測 (V54)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -20,23 +20,26 @@
             display: none; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .alert-box { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 遮罩層 */
+        #confirm-modal { backdrop-filter: blur(2px); }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
 
     <!-- 頂部欄 -->
     <header class="text-center mb-6">
-        <h1 class="text-2xl font-extrabold text-gray-800">北堤綠燈塔風速監測</h1>
-        <!-- 系統提醒 -->
-        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 mt-2 rounded-lg text-xs font-medium">
-            數據自動寫入 Google Sheets。符合條件時發送 LINE。
+        <h1 class="text-2xl font-extrabold text-gray-800">台中天然氣船進港監測</h1>
+        
+        <!-- 雲端狀態指示 -->
+        <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
+            <i data-lucide="cloud" class="w-4 h-4"></i>
+            <span>雲端監控中 (關閉螢幕仍會執行)</span>
         </div>
         
         <div class="flex items-center justify-center gap-2 mt-2">
             <div id="loading-indicator" class="loader"></div>
-            <p class="text-xs text-gray-500" id="status-text">等待指令...</p>
+            <p class="text-xs text-gray-500" id="status-text">準備就緒</p>
         </div>
     </header>
 
@@ -46,16 +49,14 @@
             <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
         </div>
         
-        <h3 class="text-gray-400 text-sm font-medium mb-1">當前模式</h3>
-        <div id="mode-display" class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4">停止中</div>
+        <h3 class="text-gray-400 text-sm font-medium mb-1">雲端運行模式</h3>
+        <div id="mode-display" class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4">讀取中...</div>
 
         <div class="text-5xl font-black text-gray-800 tracking-tight mb-2 flex justify-center items-end gap-2">
             <span id="wind-value">--</span>
             <span class="text-lg text-gray-400 font-normal mb-2">m/s</span>
         </div>
         <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
-        <!-- ★ 新增：狀態回報區 ★ -->
-        <p class="text-[11px] text-blue-500 mt-1 font-mono text-center" id="backend-status"></p>
     </div>
 
     <!-- 控制按鈕 -->
@@ -64,99 +65,150 @@
             <i data-lucide="ship"></i> 18萬試航
         </button>
         <button id="btn-start" class="btn bg-green-600 hover:bg-green-700 text-white col-span-1">
-            <i data-lucide="play"></i> 啟動
+            <i data-lucide="play"></i> 一般LNG船
         </button>
         <button id="btn-stop" class="btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2">
             <i data-lucide="x-square" class="w-5 h-5"></i> 結束
         </button>
     </div>
 
-    <!-- 數據紀錄 (Local Log) -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden">
-        <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2">
-                <i data-lucide="list" class="w-4 h-4"></i> 本次執行紀錄
-            </h3>
-            <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">暫存於裝置</span>
-        </div>
-        <div id="session-log-container" class="flex-1 overflow-y-auto p-0 bg-gray-50 min-h-[100px]">
-            <div class="p-4 text-center text-gray-400 text-sm">尚無資料</div>
-        </div>
+    <!-- 底部說明 -->
+    <div class="text-center text-xs text-gray-400 mt-auto">
+        <p>按下按鈕後，指令將發送至雲端伺服器。</p>
+        <p>即使離開此頁面，監控仍會持續進行。</p>
     </div>
 
-    <!-- 警報視窗 -->
-    <div id="alert-modal" class="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pointer-events-none opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-lg shadow-2xl p-4 max-w-sm w-full border-l-8 transform transition-transform duration-300 -translate-y-full pointer-events-auto" id="alert-content">
-            <div class="flex items-start gap-3">
-                <div id="alert-icon"></div>
-                <div class="flex-1">
-                    <h4 class="font-bold text-lg" id="alert-title"></h4>
-                    <p class="text-gray-800 font-medium mt-1 text-lg" id="alert-message"></p>
-                </div>
-                <button onclick="closeAlert()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x"></i></button>
+    <!-- 離開確認視窗 -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-10/12 max-w-xs text-center">
+            <div class="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="log-out" class="w-6 h-6 text-red-600"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900">是否離開 APP？</h3>
+            <p class="text-sm text-gray-500 mt-2">注意：如果目前正在監控中，離開 App <strong>不會</strong> 停止雲端監測。</p>
+            <p class="text-xs text-red-500 mt-1">請按「結束」按鈕來完全停止。</p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button id="btn-stay" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200">否 (繼續)</button>
+                <button id="btn-leave" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">是 (離開)</button>
             </div>
         </div>
     </div>
 
     <script>
         // --- 1. 核心設定 ---
-        const FETCH_INTERVAL = 60000; // 1分鐘
+        // ★★★ 固定 GAS API 網址 ★★★
         const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
         
-        let timer = null;
-        let currentMode = null;
-        let gasApiUrl = FIXED_GAS_API_URL; 
-        let sessionLogs = [];
-
+        let refreshTimer = null;
+        
         // --- 2. UI 元素 ---
         const els = {
             btnTrial: document.getElementById('btn-trial'),
-            btnStart: document.getElementById('btn-start'),
+            btnStart: document.getElementById('btn-start'), // 一般LNG船
             btnStop: document.getElementById('btn-stop'),
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
-            backendStatus: document.getElementById('backend-status'), // 新增
             modeDisplay: document.getElementById('mode-display'),
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar'),
-            logContainer: document.getElementById('session-log-container'), 
-            alertModal: document.getElementById('alert-modal'),
-            alertContent: document.getElementById('alert-content'),
-            alertTitle: document.getElementById('alert-title'),
-            alertMessage: document.getElementById('alert-message'),
-            alertIcon: document.getElementById('alert-icon')
+            confirmModal: document.getElementById('confirm-modal'),
+            btnStay: document.getElementById('btn-stay'),
+            btnLeave: document.getElementById('btn-leave')
         };
         
         // --- 3. 事件綁定 ---
-        els.btnTrial.addEventListener('click', () => startApp('trial'));
-        els.btnStart.addEventListener('click', () => startApp('start'));
-        els.btnStop.addEventListener('click', stopApp);
+        
+        // 切換模式 (發送 set_mode 指令)
+        els.btnTrial.addEventListener('click', () => setCloudMode('trial'));
+        els.btnStart.addEventListener('click', () => setCloudMode('start'));
+        
+        // 停止 (發送 set_mode=stop 指令)
+        els.btnStop.addEventListener('click', () => {
+            setCloudMode('stop');
+            alert("雲端監測已停止");
+        });
 
-        // --- 4. 核心邏輯 ---
-        async function startApp(mode) {
-            if (timer) clearInterval(timer);
+        // 離開確認相關
+        els.btnStay.addEventListener('click', () => {
+            els.confirmModal.classList.add('hidden');
+            // 恢復 History 狀態，防止再次按返回就直接退出了
+            history.pushState(null, null, location.href);
+        });
+        
+        els.btnLeave.addEventListener('click', () => {
+            // 真正的離開
+            window.history.back(); 
+            window.close(); // 嘗試關閉 (部分瀏覽器有效)
+        });
+
+        // --- 4. 返回鍵攔截邏輯 ---
+        function initBackBlocker() {
+            // 寫入一個歷史紀錄
+            history.pushState(null, null, location.href);
             
-            if (Notification.permission !== "granted") {
-                await Notification.requestPermission();
+            window.addEventListener('popstate', function(event) {
+                // 當使用者按返回時，會觸發 popstate
+                // 顯示模態視窗
+                els.confirmModal.classList.remove('hidden');
+            });
+        }
+
+        // --- 5. 與 GAS 通訊邏輯 ---
+
+        // 設定雲端模式
+        async function setCloudMode(mode) {
+            els.loading.style.display = 'inline-block';
+            els.statusText.textContent = "正在設定雲端...";
+            
+            try {
+                // action=set_mode
+                await fetch(`${FIXED_GAS_API_URL}?action=set_mode&mode=${mode}`, { 
+                    method: 'POST' // 使用 POST 避免快取，雖然 GAS doGet 也能處理
+                });
+                
+                // 更新本地 UI
+                updateUIByMode(mode);
+                els.statusText.textContent = "設定完成";
+                
+                // 立即刷新一次數據
+                fetchDisplayData();
+                
+            } catch (e) {
+                alert("連線失敗: " + e.message);
+            } finally {
+                els.loading.style.display = 'none';
             }
-
-            currentMode = mode;
-            updateUIState(mode);
-            fetchData();
-            timer = setInterval(fetchData, FETCH_INTERVAL);
         }
 
-        function stopApp() {
-            if (timer) clearInterval(timer);
-            timer = null;
-            currentMode = null;
-            updateUIState(null);
-            els.backendStatus.textContent = ""; // 清除狀態
-            showAlert('info', '已結束 APP 執行', '應用程式停止'); 
+        // 獲取顯示用數據 (只讀取，不寫入)
+        async function fetchDisplayData() {
+            els.loading.style.display = 'inline-block';
+            
+            try {
+                // action=display (預設)
+                const res = await fetch(`${FIXED_GAS_API_URL}?action=display`);
+                const data = await res.json();
+                
+                if (data.speed) {
+                    els.windValue.textContent = data.speed;
+                    els.lastFetchTime.textContent = `最後更新：${data.time}`;
+                }
+                
+                // 同步雲端目前的模式 (防止不同裝置狀態不一致)
+                if (data.currentMode) {
+                    updateUIByMode(data.currentMode);
+                }
+
+            } catch (e) {
+                console.error("Display fetch failed", e);
+            } finally {
+                els.loading.style.display = 'none';
+            }
         }
 
-        function updateUIState(mode) {
+        function updateUIByMode(mode) {
+            // 重置按鈕
             els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
             els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
             els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
@@ -164,160 +216,35 @@
 
             if (mode === 'start') {
                 els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 ring-4 ring-green-200";
-                els.modeDisplay.textContent = "一般啟動模式";
+                els.modeDisplay.textContent = "一般LNG船 (運行中)";
                 els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "監測中...";
+                els.statusText.textContent = "雲端監控中...";
             } else if (mode === 'trial') {
                 els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200";
-                els.modeDisplay.textContent = "18萬試航模式";
+                els.modeDisplay.textContent = "18萬試航 (運行中)";
                 els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "監測中...";
+                els.statusText.textContent = "雲端監控中...";
             } else {
                 els.btnStart.classList.remove('opacity-50');
                 els.btnTrial.classList.remove('opacity-50');
                 els.modeDisplay.textContent = "已停止";
                 els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4";
                 els.statusText.textContent = "等待指令...";
-                els.loading.style.display = 'none';
             }
         }
 
-        // --- 5. 資料抓取邏輯 ---
-        async function fetchData() {
-            if (!currentMode) return;
-
-            els.loading.style.display = 'inline-block';
-            els.progressBar.style.width = '20%';
-            els.statusText.textContent = "連線 GAS API...";
-            
-            const apiUrlWithMode = gasApiUrl + '?mode=' + currentMode;
-            
-            try {
-                const response = await fetch(apiUrlWithMode);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
-                const data = await response.json();
-                els.progressBar.style.width = '80%';
-
-                if (data.status === 'success') {
-                    handleSuccess(data);
-                } else {
-                    throw new Error(data.message || "API 回傳錯誤");
-                }
-
-            } catch (error) {
-                console.error("Fetch/API 錯誤:", error);
-                els.statusText.textContent = `錯誤: ${error.message}`;
-                runSimulation(true); 
-            }
-        }
-
-        function runSimulation(showAlert = false) {
-            if (showAlert) els.statusText.textContent = "警告：API連線失敗，使用模擬數據...";
-            els.progressBar.style.width = '50%';
-            setTimeout(() => {
-                const simulatedSpeed = (Math.random() * (16 - 8) + 8).toFixed(1);
-                els.progressBar.style.width = '100%';
-                handleSuccess({ speed: simulatedSpeed, message: "模擬資料" });
-            }, 600);
-        }
-
-        async function handleSuccess(data) {
-            const speed = data.speed;
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false, hour:'2-digit', minute:'2-digit' });
-            
-            els.windValue.textContent = speed;
-            els.lastFetchTime.textContent = `最後更新：${timeStr}`;
-            
-            // 顯示後端回傳的狀態訊息 (關鍵：讓用戶知道發生了什麼)
-            if (data.message) {
-                els.backendStatus.textContent = `GAS: ${data.message}`;
-            }
-            
-            els.statusText.textContent = "更新完成 (1分鐘後下次更新)";
-            els.loading.style.display = 'none';
-            setTimeout(() => { els.progressBar.style.width = '0%'; }, 500);
-
-            // 更新本地紀錄
-            updateLocalLog(timeStr, speed);
-
-            // 檢查警報 (UI 顯示)
-            checkAlert(speed, timeStr);
-        }
-
-        function updateLocalLog(timeStr, speed) {
-            sessionLogs.unshift({ time: timeStr, speed: speed });
-            if (sessionLogs.length > 10) sessionLogs.pop();
-            
-            const container = els.logContainer;
-            let html = `<div class="overflow-y-auto">`;
-            sessionLogs.forEach((item) => {
-                const speedColor = item.speed <= 15 ? 'text-green-600' : 'text-red-500';
-                html += `
-                    <div class="flex justify-between border-b border-gray-100 p-2 text-sm hover:bg-gray-50">
-                        <span class="text-gray-500 font-mono">${item.time}</span>
-                        <span class="${speedColor} font-bold">${item.speed} m/s</span>
-                    </div>
-                `;
-            });
-            html += `</div>`;
-            container.innerHTML = html;
-        }
-
-        function checkAlert(speed, time) {
-            const val = parseFloat(speed);
-            let triggered = false;
-            let msg = "";
-            let type = "";
-            let notificationTitle = "";
-
-            if (currentMode === 'start' && val <= 15.0) {
-                triggered = true; type = 'green'; msg = `${time} LNG船可進港`; notificationTitle = "LNG 船警報";
-            } else if (currentMode === 'trial' && val <= 12.0) {
-                triggered = true; type = 'yellow'; msg = `${time} 18萬試航可進港`; notificationTitle = "18萬試航警報";
-            }
-
-            if (triggered) {
-                showAlert(type, msg);
-                if (Notification.permission === "granted") {
-                    new Notification(notificationTitle, { body: msg, silent: true, icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png" });
-                }
-            }
-        }
-
-        function showAlert(type, message, title = '風速警示') {
-            els.alertModal.classList.remove('opacity-0', 'pointer-events-none');
-            els.alertContent.classList.remove('-translate-y-full');
-            els.alertContent.className = "bg-white rounded-lg shadow-2xl p-5 max-w-sm w-full border-l-8 transform transition-transform duration-300 pointer-events-auto";
-
-            let iconHtml = '';
-            let titleColor = '';
-            if (type === 'green') {
-                els.alertContent.classList.add('bg-green-50', 'border-green-500'); titleColor = 'text-green-800';
-                iconHtml = `<i data-lucide="check-circle" class="w-8 h-8 text-green-600 mt-1"></i>`;
-            } else if (type === 'yellow') {
-                els.alertContent.classList.add('bg-yellow-50', 'border-yellow-400'); titleColor = 'text-yellow-800';
-                iconHtml = `<i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-600 mt-1"></i>`;
-            } else if (type === 'info') {
-                els.alertContent.classList.add('bg-blue-50', 'border-blue-500'); titleColor = 'text-blue-800';
-                iconHtml = `<i data-lucide="bell" class="w-8 h-8 text-blue-600 mt-1"></i>`; title = '系統通知';
-            }
-
-            els.alertTitle.textContent = title; els.alertTitle.className = `font-bold text-xl ${titleColor}`;
-            els.alertMessage.textContent = message; els.alertMessage.className = `${titleColor} font-medium mt-2 text-lg`;
-            els.alertIcon.innerHTML = iconHtml;
+        // --- 初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            initBackBlocker(); // 啟動返回攔截
             
-            if (type !== 'info') setTimeout(window.closeAlert, 6000);
-        }
+            // 啟動後先抓一次狀態，確認雲端是否已經在跑
+            fetchDisplayData();
+            
+            // 每 10 秒更新一次介面數據 (純顯示，不影響雲端運作頻率)
+            refreshTimer = setInterval(fetchDisplayData, 10000);
+        });
 
-        window.closeAlert = function() {
-            els.alertModal.classList.add('opacity-0', 'pointer-events-none');
-            els.alertContent.classList.add('-translate-y-full');
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
     </script>
 </body>
 </html>
