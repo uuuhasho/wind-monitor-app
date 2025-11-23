@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V58)</title>
+    <title>台中天然氣船進港監測 (V60)</title>
     <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
@@ -25,7 +25,8 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 移除了 confirm-modal 相關 CSS */
+        /* 遮罩層 */
+        #confirm-modal { backdrop-filter: blur(2px); }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
@@ -78,10 +79,23 @@
     <!-- 底部說明 -->
     <div class="text-center text-xs text-gray-400 mt-auto">
         <p>按下按鈕後，指令將發送至雲端伺服器。</p>
-        <p>直接離開 App，監測仍會在雲端持續執行。</p>
+        <p>即使離開此頁面，監測仍會持續進行。</p>
     </div>
 
-    <!-- 移除了 confirm-modal HTML 結構 -->
+    <!-- 離開確認視窗 -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-10/12 max-w-xs text-center">
+            <div class="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="log-out" class="w-6 h-6 text-red-600"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900">是否離開 APP？</h3>
+            <p class="text-sm text-gray-500 mt-2">按下「是」將會<strong>停止雲端監控</strong>並離開。</p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button id="btn-stay" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200">否 (繼續)</button>
+                <button id="btn-leave" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700">是 (停止並離開)</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // --- 1. 核心設定 ---
@@ -100,7 +114,10 @@
             modeDisplay: document.getElementById('mode-display'),
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
-            progressBar: document.getElementById('progress-bar')
+            progressBar: document.getElementById('progress-bar'),
+            confirmModal: document.getElementById('confirm-modal'),
+            btnStay: document.getElementById('btn-stay'),
+            btnLeave: document.getElementById('btn-leave')
         };
         
         // --- 3. 事件綁定 ---
@@ -114,7 +131,36 @@
             alert("雲端監測已停止");
         });
 
-        // --- 4. 移除了返回鍵攔截邏輯 (initBackBlocker) ---
+        // 離開確認視窗 - 留下來
+        els.btnStay.addEventListener('click', () => {
+            els.confirmModal.classList.add('hidden');
+            history.pushState(null, null, location.href);
+        });
+        
+        // 離開確認視窗 - 離開並停止
+        els.btnLeave.addEventListener('click', async () => {
+            els.btnLeave.innerText = "停止中...";
+            els.btnLeave.disabled = true;
+            
+            try {
+                const timestamp = new Date().getTime();
+                const url = `${FIXED_GAS_API_URL}?action=set_mode&mode=stop&t=${timestamp}`;
+                await fetch(url, { method: 'GET' });
+            } catch (e) {
+                console.error("自動停止指令發送失敗:", e);
+            }
+
+            window.history.back(); 
+            window.close(); 
+        });
+
+        // --- 4. 返回鍵攔截邏輯 ---
+        function initBackBlocker() {
+            history.pushState(null, null, location.href);
+            window.addEventListener('popstate', function(event) {
+                els.confirmModal.classList.remove('hidden');
+            });
+        }
 
         // --- 5. 與 GAS 通訊邏輯 ---
 
@@ -149,7 +195,10 @@
                 
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
-                    els.lastFetchTime.textContent = `最後更新：${data.time}`;
+                    
+                    // 顯示 App 最後成功連線的時間
+                    var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+                    els.lastFetchTime.textContent = `最後更新：${nowStr}`;
                 }
                 if (data.currentMode) {
                     updateUIByMode(data.currentMode);
@@ -189,7 +238,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            // initBackBlocker(); // 已移除
+            initBackBlocker(); 
             fetchDisplayData();
             refreshTimer = setInterval(fetchDisplayData, 10000);
         });
