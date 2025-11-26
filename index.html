@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V62 加速版)</title>
+    <title>台中天然氣船進港監測 (V63)</title>
     <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
@@ -93,8 +93,9 @@
             </div>
         </div>
         
-        <button id="btn-download" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center justify-center gap-2">
-            <i data-lucide="file-down" class="w-4 h-4"></i> 下載風速資料
+        <button id="btn-download" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+            <i data-lucide="file-down" class="w-4 h-4"></i> 
+            <span id="btn-download-text">下載風速資料</span>
         </button>
     </div>
 
@@ -106,7 +107,6 @@
 
     <script>
         // --- 1. 核心設定 ---
-        // ★★★ 請確認此網址為您部署的最新 GAS 網址 ★★★
         const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
         
         let refreshTimer = null;
@@ -116,7 +116,8 @@
             btnTrial: document.getElementById('btn-trial'),
             btnStart: document.getElementById('btn-start'), 
             btnStop: document.getElementById('btn-stop'),
-            btnDownload: document.getElementById('btn-download'), // 下載按鈕
+            btnDownload: document.getElementById('btn-download'),
+            btnDownloadText: document.getElementById('btn-download-text'),
             startDate: document.getElementById('start-date'),
             endDate: document.getElementById('end-date'),
             windValue: document.getElementById('wind-value'),
@@ -138,8 +139,8 @@
             alert("雲端監測已停止");
         });
 
-        // 下載按鈕
-        els.btnDownload.addEventListener('click', () => {
+        // 下載按鈕 (V63 修正：處理 JSON 回傳並觸發下載)
+        els.btnDownload.addEventListener('click', async () => {
             const start = els.startDate.value;
             const end = els.endDate.value;
             
@@ -147,10 +148,37 @@
                 alert("請選擇開始與結束日期！");
                 return;
             }
+
+            // UI 狀態
+            els.btnDownload.disabled = true;
+            els.btnDownloadText.textContent = "準備資料中...";
             
-            // 開啟新視窗下載
-            const downloadUrl = `${FIXED_GAS_API_URL}?action=download_csv&startDate=${start}&endDate=${end}`;
-            window.open(downloadUrl, '_blank');
+            try {
+                const url = `${FIXED_GAS_API_URL}?action=download_csv&startDate=${start}&endDate=${end}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status === 'download_ready' && data.csvContent) {
+                    // 手動觸發下載
+                    const blob = new Blob([data.csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', data.filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert("下載失敗: " + (data.message || "未知錯誤"));
+                }
+
+            } catch (e) {
+                alert("連線錯誤: " + e.message);
+            } finally {
+                els.btnDownload.disabled = false;
+                els.btnDownloadText.textContent = "下載風速資料";
+            }
         });
 
         // --- 5. 與 GAS 通訊邏輯 ---
@@ -186,8 +214,6 @@
                 
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
-                    
-                    // 顯示 App 最後成功連線的時間
                     var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
                 }
@@ -230,7 +256,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
-            // 預設日期：今天
             const today = new Date().toISOString().split('T')[0];
             els.startDate.value = today;
             els.endDate.value = today;
