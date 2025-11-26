@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V66 下載修復)</title>
+    <title>台中天然氣船進港監測 (V67)</title>
     <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
@@ -140,7 +140,7 @@
             alert("雲端監測已停止");
         });
 
-        // 下載按鈕 (V63/V65/V66 邏輯：處理 JSON 回傳並觸發下載)
+        // 下載按鈕 (V66 修正：處理 JSON 回傳並觸發下載)
         els.btnDownload.addEventListener('click', async () => {
             const start = els.startDate.value;
             const end = els.endDate.value;
