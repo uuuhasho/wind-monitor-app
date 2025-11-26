@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V61)</title>
+    <title>台中天然氣船進港監測 (V62 加速版)</title>
     <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
@@ -24,6 +24,9 @@
             display: none; 
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 遮罩層 */
+        #confirm-modal { backdrop-filter: blur(2px); }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
@@ -61,7 +64,7 @@
     </div>
 
     <!-- 控制按鈕 -->
-    <div class="grid grid-cols-2 gap-3 mb-8">
+    <div class="grid grid-cols-2 gap-3 mb-6">
         <button id="btn-trial" class="btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1">
             <i data-lucide="ship"></i> 18萬試航
         </button>
@@ -73,10 +76,32 @@
         </button>
     </div>
 
+    <!-- 下載區塊 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mt-4">
+        <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2 mb-3 border-b pb-2">
+            <i data-lucide="download" class="w-4 h-4"></i> 歷史資料下載 (Excel/CSV)
+        </h3>
+        
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">開始日期</label>
+                <input type="date" id="start-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">結束日期</label>
+                <input type="date" id="end-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+        </div>
+        
+        <button id="btn-download" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center justify-center gap-2">
+            <i data-lucide="file-down" class="w-4 h-4"></i> 下載風速資料
+        </button>
+    </div>
+
     <!-- 底部說明 -->
-    <div class="text-center text-xs text-gray-400 mt-auto">
+    <div class="text-center text-xs text-gray-400 mt-6 mb-4">
         <p>按下按鈕後，指令將發送至雲端伺服器。</p>
-        <p>即使離開此頁面，監控仍會持續進行。</p>
+        <p>直接離開 App，監測仍會在雲端持續執行。</p>
     </div>
 
     <script>
@@ -91,6 +116,9 @@
             btnTrial: document.getElementById('btn-trial'),
             btnStart: document.getElementById('btn-start'), 
             btnStop: document.getElementById('btn-stop'),
+            btnDownload: document.getElementById('btn-download'), // 下載按鈕
+            startDate: document.getElementById('start-date'),
+            endDate: document.getElementById('end-date'),
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
             modeDisplay: document.getElementById('mode-display'),
@@ -108,6 +136,21 @@
         els.btnStop.addEventListener('click', () => {
             setCloudMode('stop');
             alert("雲端監測已停止");
+        });
+
+        // 下載按鈕
+        els.btnDownload.addEventListener('click', () => {
+            const start = els.startDate.value;
+            const end = els.endDate.value;
+            
+            if (!start || !end) {
+                alert("請選擇開始與結束日期！");
+                return;
+            }
+            
+            // 開啟新視窗下載
+            const downloadUrl = `${FIXED_GAS_API_URL}?action=download_csv&startDate=${start}&endDate=${end}`;
+            window.open(downloadUrl, '_blank');
         });
 
         // --- 5. 與 GAS 通訊邏輯 ---
@@ -186,7 +229,12 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            // initBackBlocker 及其相關代碼已完全移除
+            
+            // 預設日期：今天
+            const today = new Date().toISOString().split('T')[0];
+            els.startDate.value = today;
+            els.endDate.value = today;
+
             fetchDisplayData();
             refreshTimer = setInterval(fetchDisplayData, 10000);
         });
