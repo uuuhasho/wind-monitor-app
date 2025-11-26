@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V63)</title>
+    <title>台中天然氣船進港監測 (V66 下載修復)</title>
     <!-- App Icon -->
     <link rel="apple-touch-icon" href="app_icon.png"> 
     <link rel="icon" href="app_icon.png">
@@ -107,6 +107,7 @@
 
     <script>
         // --- 1. 核心設定 ---
+        // ★★★ 請確認此網址為您部署的最新 GAS 網址 (結尾是 /exec) ★★★
         const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
         
         let refreshTimer = null;
@@ -139,7 +140,7 @@
             alert("雲端監測已停止");
         });
 
-        // 下載按鈕 (V63 修正：處理 JSON 回傳並觸發下載)
+        // 下載按鈕 (V63/V65/V66 邏輯：處理 JSON 回傳並觸發下載)
         els.btnDownload.addEventListener('click', async () => {
             const start = els.startDate.value;
             const end = els.endDate.value;
@@ -196,7 +197,7 @@
                 
                 updateUIByMode(mode);
                 els.statusText.textContent = "設定完成";
-                fetchDisplayData();
+                fetchDisplayData(); // 立即刷新
                 
             } catch (e) {
                 alert("連線失敗: " + e.message);
