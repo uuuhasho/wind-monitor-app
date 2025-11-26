@@ -1,134 +1,206 @@
-!DOCTYPE html
-html lang=zh-TW
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0
-    title台中天然氣船進港監測 (V61)title
-    !-- App Icon --
-    link rel=apple-touch-icon href=app_icon.png 
-    link rel=icon href=app_icon.png
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台中天然氣船進港監測 (V67)</title>
+    <!-- App Icon -->
+    <link rel="apple-touch-icon" href="app_icon.png"> 
+    <link rel="icon" href="app_icon.png">
     
-    script src=httpscdn.tailwindcss.comscript
-    script src=httpsunpkg.comlucide@latestscript
-    style
-        body { font-family Microsoft JhengHei, sans-serif; background-color #f0f2f5; }
-        .btn { @apply px-4 py-3 rounded-lg font-bold shadow transition-all activescale-95 flex items-center justify-center gap-2; }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; }
+        .btn { @apply px-4 py-3 rounded-lg font-bold shadow transition-all active:scale-95 flex items-center justify-center gap-2; }
         
         .loader {
-            border 3px solid #f3f3f3;
-            border-radius 50%;
-            border-top 3px solid #3498db;
-            width 20px;
-            height 20px;
-            animation spin 1s linear infinite;
-            display none; 
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none; 
         }
-        @keyframes spin { 0% { transform rotate(0deg); } 100% { transform rotate(360deg); } }
-    style
-head
-body class=p-4 max-w-lg mx-auto min-h-screen flex flex-col
-
-    !-- 頂部欄 --
-    header class=text-center mb-6
-        h1 class=text-2xl font-extrabold text-gray-800台中天然氣船進港監測h1
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        !-- 雲端狀態指示 --
-        div class=bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2
-            i data-lucide=cloud class=w-4 h-4i
-            span雲端監控中 (按結束以停止)span
-        div
+        /* 遮罩層 */
+        #confirm-modal { backdrop-filter: blur(2px); }
+    </style>
+</head>
+<body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
+
+    <!-- 頂部欄 -->
+    <header class="text-center mb-6">
+        <h1 class="text-2xl font-extrabold text-gray-800">台中天然氣船進港監測</h1>
         
-        div class=flex items-center justify-center gap-2 mt-2
-            div id=loading-indicator class=loaderdiv
-            p class=text-xs text-gray-500 id=status-text準備就緒p
-        div
-    header
-
-    !-- 數據顯示面板 --
-    div class=bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6 text-center relative overflow-hidden
-        div class=absolute top-0 left-0 w-full h-1 bg-gray-200
-            div id=progress-bar class=h-full bg-blue-500 transition-all duration-500 style=width 0%div
-        div
+        <!-- 雲端狀態指示 -->
+        <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
+            <i data-lucide="cloud" class="w-4 h-4"></i>
+            <span>雲端監控中 (按結束以停止)</span>
+        </div>
         
-        h3 class=text-gray-400 text-sm font-medium mb-1雲端運行模式h3
-        div id=mode-display class=inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4讀取中...div
+        <div class="flex items-center justify-center gap-2 mt-2">
+            <div id="loading-indicator" class="loader"></div>
+            <p class="text-xs text-gray-500" id="status-text">準備就緒</p>
+        </div>
+    </header>
 
-        div class=text-5xl font-black text-gray-800 tracking-tight mb-2 flex justify-center items-end gap-2
-            span id=wind-value--span
-            span class=text-lg text-gray-400 font-normal mb-2msspan
-        div
-        p class=text-xs text-gray-400 id=last-fetch-time最後更新：--p
-    div
+    <!-- 數據顯示面板 -->
+    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gray-200">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+        
+        <h3 class="text-gray-400 text-sm font-medium mb-1">雲端運行模式</h3>
+        <div id="mode-display" class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4">讀取中...</div>
 
-    !-- 控制按鈕 --
-    div class=grid grid-cols-2 gap-3 mb-8
-        button id=btn-trial class=btn bg-yellow-400 hoverbg-yellow-500 text-black col-span-1
-            i data-lucide=shipi 18萬試航
-        button
-        button id=btn-start class=btn bg-green-600 hoverbg-green-700 text-white col-span-1
-            i data-lucide=playi 一般LNG船
-        button
-        button id=btn-stop class=btn bg-white border border-gray-300 hoverbg-gray-100 text-red-600 font-bold col-span-2
-            i data-lucide=x-square class=w-5 h-5i 結束
-        button
-    div
+        <div class="text-5xl font-black text-gray-800 tracking-tight mb-2 flex justify-center items-end gap-2">
+            <span id="wind-value">--</span>
+            <span class="text-lg text-gray-400 font-normal mb-2">m/s</span>
+        </div>
+        <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
+    </div>
 
-    !-- 底部說明 --
-    div class=text-center text-xs text-gray-400 mt-auto
-        p按下按鈕後，指令將發送至雲端伺服器。p
-        p即使離開此頁面，監控仍會持續進行。p
-    div
+    <!-- 控制按鈕 -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <button id="btn-trial" class="btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1">
+            <i data-lucide="ship"></i> 18萬試航
+        </button>
+        <button id="btn-start" class="btn bg-green-600 hover:bg-green-700 text-white col-span-1">
+            <i data-lucide="play"></i> 一般LNG船
+        </button>
+        <button id="btn-stop" class="btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2">
+            <i data-lucide="x-square" class="w-5 h-5"></i> 結束
+        </button>
+    </div>
 
-    script
-         --- 1. 核心設定 ---
-         ★★★ 請確認此網址為您部署的最新 GAS 網址 ★★★
-        const FIXED_GAS_API_URL = httpsscript.google.commacrossAKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brAexec;
+    <!-- 下載區塊 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mt-4">
+        <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2 mb-3 border-b pb-2">
+            <i data-lucide="download" class="w-4 h-4"></i> 歷史資料下載 (Excel/CSV)
+        </h3>
+        
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">開始日期</label>
+                <input type="date" id="start-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">結束日期</label>
+                <input type="date" id="end-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+            </div>
+        </div>
+        
+        <button id="btn-download" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+            <i data-lucide="file-down" class="w-4 h-4"></i> 
+            <span id="btn-download-text">下載風速資料</span>
+        </button>
+    </div>
+
+    <!-- 底部說明 -->
+    <div class="text-center text-xs text-gray-400 mt-6 mb-4">
+        <p>按下按鈕後，指令將發送至雲端伺服器。</p>
+        <p>直接離開 App，監測仍會在雲端持續執行。</p>
+    </div>
+
+    <script>
+        // --- 1. 核心設定 ---
+        // ★★★ 請確認此網址為您部署的最新 GAS 網址 (結尾是 /exec) ★★★
+        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
         
         let refreshTimer = null;
         
-         --- 2. UI 元素 ---
+        // --- 2. UI 元素 ---
         const els = {
-            btnTrial document.getElementById('btn-trial'),
-            btnStart document.getElementById('btn-start'), 
-            btnStop document.getElementById('btn-stop'),
-            windValue document.getElementById('wind-value'),
-            statusText document.getElementById('status-text'),
-            modeDisplay document.getElementById('mode-display'),
-            lastFetchTime document.getElementById('last-fetch-time'),
-            loading document.getElementById('loading-indicator'),
-            progressBar document.getElementById('progress-bar')
+            btnTrial: document.getElementById('btn-trial'),
+            btnStart: document.getElementById('btn-start'), 
+            btnStop: document.getElementById('btn-stop'),
+            btnDownload: document.getElementById('btn-download'),
+            btnDownloadText: document.getElementById('btn-download-text'),
+            startDate: document.getElementById('start-date'),
+            endDate: document.getElementById('end-date'),
+            windValue: document.getElementById('wind-value'),
+            statusText: document.getElementById('status-text'),
+            modeDisplay: document.getElementById('mode-display'),
+            lastFetchTime: document.getElementById('last-fetch-time'),
+            loading: document.getElementById('loading-indicator'),
+            progressBar: document.getElementById('progress-bar')
         };
         
-         --- 3. 事件綁定 ---
+        // --- 3. 事件綁定 ---
         
-        els.btnTrial.addEventListener('click', () = setCloudMode('trial'));
-        els.btnStart.addEventListener('click', () = setCloudMode('start'));
+        els.btnTrial.addEventListener('click', () => setCloudMode('trial'));
+        els.btnStart.addEventListener('click', () => setCloudMode('start'));
         
-         停止按鈕
-        els.btnStop.addEventListener('click', () = {
+        // 停止按鈕
+        els.btnStop.addEventListener('click', () => {
             setCloudMode('stop');
-            alert(雲端監測已停止);
+            alert("雲端監測已停止");
         });
 
-         --- 5. 與 GAS 通訊邏輯 ---
+        // 下載按鈕 (V66 修正：處理 JSON 回傳並觸發下載)
+        els.btnDownload.addEventListener('click', async () => {
+            const start = els.startDate.value;
+            const end = els.endDate.value;
+            
+            if (!start || !end) {
+                alert("請選擇開始與結束日期！");
+                return;
+            }
+
+            // UI 狀態
+            els.btnDownload.disabled = true;
+            els.btnDownloadText.textContent = "準備資料中...";
+            
+            try {
+                const url = `${FIXED_GAS_API_URL}?action=download_csv&startDate=${start}&endDate=${end}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status === 'download_ready' && data.csvContent) {
+                    // 手動觸發下載
+                    const blob = new Blob([data.csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', data.filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert("下載失敗: " + (data.message || "未知錯誤"));
+                }
+
+            } catch (e) {
+                alert("連線錯誤: " + e.message);
+            } finally {
+                els.btnDownload.disabled = false;
+                els.btnDownloadText.textContent = "下載風速資料";
+            }
+        });
+
+        // --- 5. 與 GAS 通訊邏輯 ---
 
         async function setCloudMode(mode) {
             els.loading.style.display = 'inline-block';
-            els.statusText.textContent = 正在設定雲端...;
+            els.statusText.textContent = "正在設定雲端...";
             
             try {
                 const timestamp = new Date().getTime();
-                const url = `${FIXED_GAS_API_URL}action=set_mode&mode=${mode}&t=${timestamp}`;
+                const url = `${FIXED_GAS_API_URL}?action=set_mode&mode=${mode}&t=${timestamp}`;
                 
-                const response = await fetch(url, { method 'GET' });
-                if (!response.ok) throw new Error(GAS 回應錯誤);
+                const response = await fetch(url, { method: 'GET' });
+                if (!response.ok) throw new Error("GAS 回應錯誤");
                 
                 updateUIByMode(mode);
-                els.statusText.textContent = 設定完成;
-                fetchDisplayData();
+                els.statusText.textContent = "設定完成";
+                fetchDisplayData(); // 立即刷新
                 
             } catch (e) {
-                alert(連線失敗  + e.message);
+                alert("連線失敗: " + e.message);
             } finally {
                 els.loading.style.display = 'none';
             }
@@ -137,59 +209,61 @@ body class=p-4 max-w-lg mx-auto min-h-screen flex flex-col
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
             try {
-                const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
-                if (!res.ok) throw new Error(GAS 連線錯誤);
+                const res = await fetch(`${FIXED_GAS_API_URL}?action=display`);
+                if (!res.ok) throw new Error("GAS 連線錯誤");
                 const data = await res.json();
                 
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
-                    
-                     顯示 App 最後成功連線的時間
-                    var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12 false });
+                    var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
                 }
                 if (data.currentMode) {
                     updateUIByMode(data.currentMode);
                 }
             } catch (e) {
-                console.error(Display fetch failed, e);
-                els.statusText.textContent = 連線異常;
+                console.error("Display fetch failed", e);
+                els.statusText.textContent = "連線異常";
             } finally {
                 els.loading.style.display = 'none';
             }
         }
 
         function updateUIByMode(mode) {
-            els.btnStart.className = btn bg-green-600 hoverbg-green-700 text-white col-span-1 opacity-50;
-            els.btnTrial.className = btn bg-yellow-400 hoverbg-yellow-500 text-black col-span-1 opacity-50;
-            els.btnStop.className = btn bg-white border border-gray-300 hoverbg-gray-100 text-red-600 font-bold col-span-2;
+            els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
+            els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
+            els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
             els.progressBar.style.width = '0%';
 
             if (mode === 'start') {
-                els.btnStart.className = btn bg-green-600 hoverbg-green-700 text-white col-span-1 ring-4 ring-green-200;
-                els.modeDisplay.textContent = 一般LNG船 (運行中);
-                els.modeDisplay.className = inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse;
-                els.statusText.textContent = 雲端監控中...;
+                els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 ring-4 ring-green-200";
+                els.modeDisplay.textContent = "一般LNG船 (運行中)";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse";
+                els.statusText.textContent = "雲端監控中...";
             } else if (mode === 'trial') {
-                els.btnTrial.className = btn bg-yellow-400 hoverbg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200;
-                els.modeDisplay.textContent = 18萬試航 (運行中);
-                els.modeDisplay.className = inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse;
-                els.statusText.textContent = 雲端監控中...;
+                els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200";
+                els.modeDisplay.textContent = "18萬試航 (運行中)";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse";
+                els.statusText.textContent = "雲端監控中...";
             } else {
                 els.btnStart.classList.remove('opacity-50');
                 els.btnTrial.classList.remove('opacity-50');
-                els.modeDisplay.textContent = 已停止;
-                els.modeDisplay.className = inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4;
-                els.statusText.textContent = 等待指令...;
+                els.modeDisplay.textContent = "已停止";
+                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4";
+                els.statusText.textContent = "等待指令...";
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () = {
+        document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-             initBackBlocker 及其相關代碼已完全移除
+            
+            const today = new Date().toISOString().split('T')[0];
+            els.startDate.value = today;
+            els.endDate.value = today;
+
             fetchDisplayData();
             refreshTimer = setInterval(fetchDisplayData, 10000);
         });
-    script
-body
-html
+    </script>
+</body>
+</html>
