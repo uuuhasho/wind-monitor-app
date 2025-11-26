@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V67)</title>
-    <!-- App Icon -->
-    <link rel="apple-touch-icon" href="app_icon.png"> 
+    <title>台中天然氣船進港監測 (V61)</title>
+    <link rel="apple-touch-icon" href="app_icon.png">
     <link rel="icon" href="app_icon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,21 +20,16 @@
             width: 20px;
             height: 20px;
             animation: spin 1s linear infinite;
-            display: none; 
+            display: none;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* 遮罩層 */
-        #confirm-modal { backdrop-filter: blur(2px); }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
 
-    <!-- 頂部欄 -->
     <header class="text-center mb-6">
         <h1 class="text-2xl font-extrabold text-gray-800">台中天然氣船進港監測</h1>
         
-        <!-- 雲端狀態指示 -->
         <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
             <i data-lucide="cloud" class="w-4 h-4"></i>
             <span>雲端監控中 (按結束以停止)</span>
@@ -47,8 +41,8 @@
         </div>
     </header>
 
-    <!-- 數據顯示面板 -->
     <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6 text-center relative overflow-hidden">
+        
         <div class="absolute top-0 left-0 w-full h-1 bg-gray-200">
             <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
         </div>
@@ -63,8 +57,7 @@
         <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
     </div>
 
-    <!-- 控制按鈕 -->
-    <div class="grid grid-cols-2 gap-3 mb-6">
+    <div class="grid grid-cols-2 gap-3 mb-8">
         <button id="btn-trial" class="btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1">
             <i data-lucide="ship"></i> 18萬試航
         </button>
@@ -76,40 +69,15 @@
         </button>
     </div>
 
-    <!-- 下載區塊 -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mt-4">
-        <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2 mb-3 border-b pb-2">
-            <i data-lucide="download" class="w-4 h-4"></i> 歷史資料下載 (Excel/CSV)
-        </h3>
-        
-        <div class="grid grid-cols-2 gap-2 mb-3">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">開始日期</label>
-                <input type="date" id="start-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">結束日期</label>
-                <input type="date" id="end-date" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
-            </div>
-        </div>
-        
-        <button id="btn-download" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50">
-            <i data-lucide="file-down" class="w-4 h-4"></i> 
-            <span id="btn-download-text">下載風速資料</span>
-        </button>
-    </div>
-
-    <!-- 底部說明 -->
-    <div class="text-center text-xs text-gray-400 mt-6 mb-4">
+    <div class="text-center text-xs text-gray-400 mt-auto">
         <p>按下按鈕後，指令將發送至雲端伺服器。</p>
-        <p>直接離開 App，監測仍會在雲端持續執行。</p>
+        <p>即使離開此頁面，監控仍會持續進行。</p>
     </div>
 
     <script>
         // --- 1. 核心設定 ---
-        // ★★★ 請確認此網址為您部署的最新 GAS 網址 (結尾是 /exec) ★★★
-        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec";
-        
+        // ★★★ 請確認此網址為您部署的最新 GAS 網址 ★★★
+        const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec?";
         let refreshTimer = null;
         
         // --- 2. UI 元素 ---
@@ -117,10 +85,6 @@
             btnTrial: document.getElementById('btn-trial'),
             btnStart: document.getElementById('btn-start'), 
             btnStop: document.getElementById('btn-stop'),
-            btnDownload: document.getElementById('btn-download'),
-            btnDownloadText: document.getElementById('btn-download-text'),
-            startDate: document.getElementById('start-date'),
-            endDate: document.getElementById('end-date'),
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
             modeDisplay: document.getElementById('mode-display'),
@@ -128,7 +92,7 @@
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar')
         };
-        
+
         // --- 3. 事件綁定 ---
         
         els.btnTrial.addEventListener('click', () => setCloudMode('trial'));
@@ -137,70 +101,28 @@
         // 停止按鈕
         els.btnStop.addEventListener('click', () => {
             setCloudMode('stop');
-            alert("雲端監測已停止");
-        });
-
-        // 下載按鈕 (V66 修正：處理 JSON 回傳並觸發下載)
-        els.btnDownload.addEventListener('click', async () => {
-            const start = els.startDate.value;
-            const end = els.endDate.value;
-            
-            if (!start || !end) {
-                alert("請選擇開始與結束日期！");
-                return;
-            }
-
-            // UI 狀態
-            els.btnDownload.disabled = true;
-            els.btnDownloadText.textContent = "準備資料中...";
-            
-            try {
-                const url = `${FIXED_GAS_API_URL}?action=download_csv&startDate=${start}&endDate=${end}`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                if (data.status === 'download_ready' && data.csvContent) {
-                    // 手動觸發下載
-                    const blob = new Blob([data.csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement('a');
-                    const url = URL.createObjectURL(blob);
-                    link.setAttribute('href', url);
-                    link.setAttribute('download', data.filename);
-                    link.style.visibility = 'hidden';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } else {
-                    alert("下載失敗: " + (data.message || "未知錯誤"));
-                }
-
-            } catch (e) {
-                alert("連線錯誤: " + e.message);
-            } finally {
-                els.btnDownload.disabled = false;
-                els.btnDownloadText.textContent = "下載風速資料";
-            }
+            alert('雲端監測已停止');
         });
 
         // --- 5. 與 GAS 通訊邏輯 ---
 
         async function setCloudMode(mode) {
             els.loading.style.display = 'inline-block';
-            els.statusText.textContent = "正在設定雲端...";
+            els.statusText.textContent = '正在設定雲端...';
             
             try {
                 const timestamp = new Date().getTime();
-                const url = `${FIXED_GAS_API_URL}?action=set_mode&mode=${mode}&t=${timestamp}`;
+                const url = `${FIXED_GAS_API_URL}action=set_mode&mode=${mode}&t=${timestamp}`;
                 
                 const response = await fetch(url, { method: 'GET' });
-                if (!response.ok) throw new Error("GAS 回應錯誤");
+                if (!response.ok) throw new Error('GAS 回應錯誤');
                 
                 updateUIByMode(mode);
-                els.statusText.textContent = "設定完成";
-                fetchDisplayData(); // 立即刷新
+                els.statusText.textContent = '設定完成';
+                fetchDisplayData();
                 
             } catch (e) {
-                alert("連線失敗: " + e.message);
+                alert('連線失敗: ' + e.message);
             } finally {
                 els.loading.style.display = 'none';
             }
@@ -209,12 +131,13 @@
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
             try {
-                const res = await fetch(`${FIXED_GAS_API_URL}?action=display`);
-                if (!res.ok) throw new Error("GAS 連線錯誤");
+                const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
+                if (!res.ok) throw new Error('GAS 連線錯誤');
                 const data = await res.json();
                 
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
+                    // 顯示 App 最後成功連線的時間
                     var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
                 }
@@ -222,8 +145,8 @@
                     updateUIByMode(data.currentMode);
                 }
             } catch (e) {
-                console.error("Display fetch failed", e);
-                els.statusText.textContent = "連線異常";
+                console.error('Display fetch failed', e);
+                els.statusText.textContent = '連線異常';
             } finally {
                 els.loading.style.display = 'none';
             }
@@ -256,13 +179,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            
-            const today = new Date().toISOString().split('T')[0];
-            els.startDate.value = today;
-            els.endDate.value = today;
-
             fetchDisplayData();
-            refreshTimer = setInterval(fetchDisplayData, 10000);
+            // 已幫你修正更新時間為 30 秒，減輕 GAS 負擔
+            refreshTimer = setInterval(fetchDisplayData, 30000);
         });
     </script>
 </body>
