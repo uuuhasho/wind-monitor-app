@@ -23,6 +23,9 @@
             display: none;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 新增：舊資料的過渡效果 */
+        .stale-data { opacity: 0.5; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
@@ -119,6 +122,10 @@
                 
                 updateUIByMode(mode);
                 els.statusText.textContent = '設定完成';
+                
+                // 模式切換後，立刻存入本地快取，以免重新整理後跳回舊狀態
+                localStorage.setItem('local_mode', mode);
+
                 fetchDisplayData();
                 
             } catch (e) {
@@ -130,19 +137,46 @@
 
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
+            
+            // ★★★ 步驟一：先讀取本地快取 (這就是秒開的秘密) ★★★
+            const cachedSpeed = localStorage.getItem('local_speed');
+            const cachedTime = localStorage.getItem('local_time');
+            const cachedMode = localStorage.getItem('local_mode');
+
+            if (cachedSpeed) {
+                // 如果手機裡有存舊資料，馬上顯示出來
+                els.windValue.textContent = cachedSpeed;
+                // 讓舊數字變半透明 (opacity 0.5)，暗示使用者這還不是最新的
+                els.windValue.classList.add('stale-data');
+                els.lastFetchTime.textContent = `上次紀錄：${cachedTime} (更新中...)`;
+            }
+            if (cachedMode) {
+                updateUIByMode(cachedMode);
+            }
+            // ★★★ 快取讀取結束 ★★★
+
             try {
+                // 步驟二：去跟 Google 要最新資料
                 const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
                 if (!res.ok) throw new Error('GAS 連線錯誤');
                 const data = await res.json();
                 
+                // 步驟三：拿到新資料了，更新畫面並存檔
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
-                    // 顯示 App 最後成功連線的時間
+                    // 變回不透明，代表是最新資料
+                    els.windValue.classList.remove('stale-data'); 
+
                     var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
+
+                    // ★★★ 把新資料存入手機，下次就能秒開 ★★★
+                    localStorage.setItem('local_speed', data.speed);
+                    localStorage.setItem('local_time', nowStr);
                 }
                 if (data.currentMode) {
                     updateUIByMode(data.currentMode);
+                    localStorage.setItem('local_mode', data.currentMode);
                 }
             } catch (e) {
                 console.error('Display fetch failed', e);
@@ -180,7 +214,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             fetchDisplayData();
-            // 已幫你修正更新時間為 30 秒，減輕 GAS 負擔
             refreshTimer = setInterval(fetchDisplayData, 30000);
         });
     </script>
