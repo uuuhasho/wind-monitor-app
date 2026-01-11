@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (V61)</title>
+    <title>台中天然氣船進港監測 (NV1)</title>
     <link rel="apple-touch-icon" href="app_icon.png">
     <link rel="icon" href="app_icon.png">
     
@@ -24,8 +24,16 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 新增：舊資料的過渡效果 */
+        /* 舊資料過渡效果 */
         .stale-data { opacity: 0.5; transition: opacity 0.5s; }
+
+        /* 輸入框鎖定樣式 */
+        input:disabled {
+            background-color: #e5e7eb; /* gray-200 */
+            color: #6b7280; /* gray-500 */
+            cursor: not-allowed;
+            border-color: #d1d5db;
+        }
     </style>
 </head>
 <body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col">
@@ -35,9 +43,9 @@
         
         <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
             <i data-lucide="cloud" class="w-4 h-4"></i>
-            <span>雲端監控中 (按結束以停止)</span>
+            <span>雲端監控中 (NV1版)</span>
         </div>
-        
+    
         <div class="flex items-center justify-center gap-2 mt-2">
             <div id="loading-indicator" class="loader"></div>
             <p class="text-xs text-gray-500" id="status-text">準備就緒</p>
@@ -50,31 +58,41 @@
             <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
         </div>
         
-        <h3 class="text-gray-400 text-sm font-medium mb-1">雲端運行模式</h3>
-        <div id="mode-display" class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4">讀取中...</div>
-
+        <h3 class="text-gray-400 text-sm font-medium mb-1">即時風速</h3>
         <div class="text-5xl font-black text-gray-800 tracking-tight mb-2 flex justify-center items-end gap-2">
             <span id="wind-value">--</span>
             <span class="text-lg text-gray-400 font-normal mb-2">m/s</span>
         </div>
-        <p class="text-xs text-gray-400" id="last-fetch-time">最後更新：--</p>
+        <p class="text-xs text-gray-400 mb-4" id="last-fetch-time">最後更新：--</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-2 text-left bg-gray-50 p-3 rounded-xl border border-gray-200">
+            <div class="col-span-1">
+                <label class="block text-xs font-bold text-gray-500 mb-1">船名</label>
+                <input type="text" id="input-ship-name" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="輸入船名...">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-xs font-bold text-gray-500 mb-1">限制風速 (m/s)</label>
+                <input type="number" id="input-limit-speed" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="例如 12.0">
+            </div>
+        </div>
+        <div id="mode-display" class="hidden inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold animate-pulse">
+            監控運行中
+        </div>
+
     </div>
 
     <div class="grid grid-cols-2 gap-3 mb-8">
-        <button id="btn-trial" class="btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1">
-            <i data-lucide="ship"></i> 18萬試航
-        </button>
         <button id="btn-start" class="btn bg-green-600 hover:bg-green-700 text-white col-span-1">
-            <i data-lucide="play"></i> 一般LNG船
+            <i data-lucide="play" class="fill-current"></i> 開始
         </button>
-        <button id="btn-stop" class="btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2">
+        <button id="btn-stop" class="btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-1">
             <i data-lucide="x-square" class="w-5 h-5"></i> 結束
         </button>
     </div>
 
     <div class="text-center text-xs text-gray-400 mt-auto">
-        <p>按下按鈕後，指令將發送至雲端伺服器。</p>
-        <p>即使離開此頁面，監控仍會持續進行。</p>
+        <p>按下「開始」後，船名與限速將鎖定。</p>
+        <p>如需更改設定，請先按下「結束」。</p>
     </div>
 
     <script>
@@ -85,7 +103,6 @@
         
         // --- 2. UI 元素 ---
         const els = {
-            btnTrial: document.getElementById('btn-trial'),
             btnStart: document.getElementById('btn-start'), 
             btnStop: document.getElementById('btn-stop'),
             windValue: document.getElementById('wind-value'),
@@ -93,40 +110,65 @@
             modeDisplay: document.getElementById('mode-display'),
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
-            progressBar: document.getElementById('progress-bar')
+            progressBar: document.getElementById('progress-bar'),
+            // NV1 新增
+            inputShip: document.getElementById('input-ship-name'),
+            inputLimit: document.getElementById('input-limit-speed')
         };
 
         // --- 3. 事件綁定 ---
         
-        els.btnTrial.addEventListener('click', () => setCloudMode('trial'));
-        els.btnStart.addEventListener('click', () => setCloudMode('start'));
+        els.btnStart.addEventListener('click', () => {
+            // 防呆檢查
+            const name = els.inputShip.value.trim();
+            const limit = els.inputLimit.value.trim();
+
+            if (!name) { alert('請輸入船名'); return; }
+            if (!limit || isNaN(limit)) { alert('請輸入有效的限制風速數字'); return; }
+
+            setCloudMode('start', name, limit);
+        });
         
-        // 停止按鈕
         els.btnStop.addEventListener('click', () => {
-            setCloudMode('stop');
-            alert('雲端監測已停止');
+            if(confirm('確定要停止監控嗎？這將會清除目前的船名設定。')) {
+                setCloudMode('stop');
+            }
         });
 
-        // --- 5. 與 GAS 通訊邏輯 ---
+        // --- 4. 與 GAS 通訊邏輯 ---
 
-        async function setCloudMode(mode) {
+        async function setCloudMode(mode, shipName = '', limitSpeed = '') {
             els.loading.style.display = 'inline-block';
-            els.statusText.textContent = '正在設定雲端...';
+            els.statusText.textContent = '傳送指令中...';
             
             try {
                 const timestamp = new Date().getTime();
-                const url = `${FIXED_GAS_API_URL}action=set_mode&mode=${mode}&t=${timestamp}`;
+                // 組合 URL，如果有船名和限速要編碼
+                let url = `${FIXED_GAS_API_URL}action=set_mode&mode=${mode}&t=${timestamp}`;
+                if (mode === 'start') {
+                    url += `&ship_name=${encodeURIComponent(shipName)}&limit_speed=${encodeURIComponent(limitSpeed)}`;
+                }
                 
                 const response = await fetch(url, { method: 'GET' });
                 if (!response.ok) throw new Error('GAS 回應錯誤');
                 
-                updateUIByMode(mode);
-                els.statusText.textContent = '設定完成';
+                // 設定成功後，立即更新 UI
+                if (mode === 'start') {
+                    updateUIState('start', shipName, limitSpeed);
+                    // 存入本地快取
+                    localStorage.setItem('local_mode', 'start');
+                    localStorage.setItem('local_ship', shipName);
+                    localStorage.setItem('local_limit', limitSpeed);
+                } else {
+                    updateUIState('stop');
+                    // 清除本地快取狀態
+                    localStorage.setItem('local_mode', 'stop');
+                    localStorage.removeItem('local_ship');
+                    localStorage.removeItem('local_limit');
+                }
                 
-                // 模式切換後，立刻存入本地快取，以免重新整理後跳回舊狀態
-                localStorage.setItem('local_mode', mode);
-
-                fetchDisplayData();
+                els.statusText.textContent = '設定完成';
+                fetchDisplayData(); // 立即更新一次數據
                 
             } catch (e) {
                 alert('連線失敗: ' + e.message);
@@ -138,83 +180,114 @@
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
             
-            // ★★★ 步驟一：先讀取本地快取 (這就是秒開的秘密) ★★★
+            // --- 步驟一：讀取本地快取 (秒開體驗) ---
             const cachedSpeed = localStorage.getItem('local_speed');
             const cachedTime = localStorage.getItem('local_time');
             const cachedMode = localStorage.getItem('local_mode');
+            const cachedShip = localStorage.getItem('local_ship');
+            const cachedLimit = localStorage.getItem('local_limit');
 
             if (cachedSpeed) {
-                // 如果手機裡有存舊資料，馬上顯示出來
                 els.windValue.textContent = cachedSpeed;
-                // 讓舊數字變半透明 (opacity 0.5)，暗示使用者這還不是最新的
                 els.windValue.classList.add('stale-data');
                 els.lastFetchTime.textContent = `上次紀錄：${cachedTime} (更新中...)`;
             }
-            if (cachedMode) {
-                updateUIByMode(cachedMode);
+            
+            // 恢復介面狀態
+            if (cachedMode === 'start') {
+                updateUIState('start', cachedShip, cachedLimit);
+            } else {
+                updateUIState('stop');
             }
-            // ★★★ 快取讀取結束 ★★★
-
+            
             try {
-                // 步驟二：去跟 Google 要最新資料
+                // --- 步驟二：與 GAS 同步 ---
                 const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
                 if (!res.ok) throw new Error('GAS 連線錯誤');
                 const data = await res.json();
-                
-                // 步驟三：拿到新資料了，更新畫面並存檔
+
+                // 更新風速
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
-                    // 變回不透明，代表是最新資料
-                    els.windValue.classList.remove('stale-data'); 
-
+                    els.windValue.classList.remove('stale-data');
+                    
                     var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
-
-                    // ★★★ 把新資料存入手機，下次就能秒開 ★★★
+                    
                     localStorage.setItem('local_speed', data.speed);
                     localStorage.setItem('local_time', nowStr);
                 }
-                if (data.currentMode) {
-                    updateUIByMode(data.currentMode);
-                    localStorage.setItem('local_mode', data.currentMode);
+
+                // 更新模式與參數 (這是重點：如果其他人在別台手機按了開始，這裡要同步變更)
+                if (data.currentMode === 'start') {
+                    updateUIState('start', data.shipName, data.limitSpeed);
+                    // 同步存入本地
+                    localStorage.setItem('local_mode', 'start');
+                    localStorage.setItem('local_ship', data.shipName);
+                    localStorage.setItem('local_limit', data.limitSpeed);
+                } else {
+                    // 如果後端是 stop，但前端目前顯示 start，代表被別人停掉了
+                    if (cachedMode === 'start') {
+                         alert('監控已由其他裝置停止');
+                    }
+                    updateUIState('stop');
+                    localStorage.setItem('local_mode', 'stop');
                 }
+                
+                els.statusText.textContent = "資料同步完成";
+
             } catch (e) {
-                console.error('Display fetch failed', e);
+                console.error('Fetch failed', e);
                 els.statusText.textContent = '連線異常';
             } finally {
                 els.loading.style.display = 'none';
             }
         }
 
-        function updateUIByMode(mode) {
-            els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 opacity-50";
-            els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 opacity-50";
-            els.btnStop.className = "btn bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold col-span-2";
+        function updateUIState(mode, shipName, limitSpeed) {
             els.progressBar.style.width = '0%';
-
+            
             if (mode === 'start') {
-                els.btnStart.className = "btn bg-green-600 hover:bg-green-700 text-white col-span-1 ring-4 ring-green-200";
-                els.modeDisplay.textContent = "一般LNG船 (運行中)";
-                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "雲端監控中...";
-            } else if (mode === 'trial') {
-                els.btnTrial.className = "btn bg-yellow-400 hover:bg-yellow-500 text-black col-span-1 ring-4 ring-yellow-200";
-                els.modeDisplay.textContent = "18萬試航 (運行中)";
-                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold mb-4 animate-pulse";
-                els.statusText.textContent = "雲端監控中...";
+                // 鎖定狀態
+                els.btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+                els.btnStart.disabled = true; // 禁用開始按鈕
+                
+                // 輸入框填值並鎖定
+                if(shipName) els.inputShip.value = shipName;
+                if(limitSpeed) els.inputLimit.value = limitSpeed;
+                
+                els.inputShip.disabled = true;
+                els.inputLimit.disabled = true;
+
+                // 顯示運行標籤
+                els.modeDisplay.classList.remove('hidden');
+                els.modeDisplay.textContent = `監控中: ${shipName} (限速${limitSpeed})`;
+                
             } else {
-                els.btnStart.classList.remove('opacity-50');
-                els.btnTrial.classList.remove('opacity-50');
-                els.modeDisplay.textContent = "已停止";
-                els.modeDisplay.className = "inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold mb-4";
-                els.statusText.textContent = "等待指令...";
+                // 停止狀態 -> 開放狀態
+                els.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+                els.btnStart.disabled = false;
+                
+                // 解鎖輸入框
+                els.inputShip.disabled = false;
+                els.inputLimit.disabled = false;
+                
+                // 清空資料 (符合需求：結束後清空再開放)
+                // 這裡判斷一下，如果是剛從 start 轉變過來才清空，避免使用者剛打字就被清掉
+                // 但為了確保符合「清空再開放」的邏輯，直接清空最保險
+                if (els.inputShip.disabled === true) { // 之前是鎖定的，現在解鎖 -> 清空
+                     els.inputShip.value = '';
+                     els.inputLimit.value = '';
+                }
+
+                els.modeDisplay.classList.add('hidden');
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             fetchDisplayData();
-            refreshTimer = setInterval(fetchDisplayData, 30000);
+            refreshTimer = setInterval(fetchDisplayData, 30000); // 30秒更新一次
         });
     </script>
 </body>
