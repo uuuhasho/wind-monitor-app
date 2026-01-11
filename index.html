@@ -111,7 +111,6 @@
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar'),
-            // NV1 新增
             inputShip: document.getElementById('input-ship-name'),
             inputLimit: document.getElementById('input-limit-speed')
         };
@@ -119,7 +118,6 @@
         // --- 3. 事件綁定 ---
         
         els.btnStart.addEventListener('click', () => {
-            // 防呆檢查
             const name = els.inputShip.value.trim();
             const limit = els.inputLimit.value.trim();
 
@@ -138,40 +136,48 @@
         // --- 4. 與 GAS 通訊邏輯 ---
 
         async function setCloudMode(mode, shipName = '', limitSpeed = '') {
+            
+            // ★★★ 關鍵修改：樂觀 UI 更新 (如果是 Stop，先更新畫面，不等伺服器) ★★★
+            if (mode === 'stop') {
+                updateUIState('stop'); // 立即解鎖並清空
+                
+                // 立即清除本地快取
+                localStorage.setItem('local_mode', 'stop');
+                localStorage.removeItem('local_ship');
+                localStorage.removeItem('local_limit');
+            }
+
             els.loading.style.display = 'inline-block';
             els.statusText.textContent = '傳送指令中...';
             
             try {
                 const timestamp = new Date().getTime();
-                // 組合 URL，如果有船名和限速要編碼
                 let url = `${FIXED_GAS_API_URL}action=set_mode&mode=${mode}&t=${timestamp}`;
                 if (mode === 'start') {
                     url += `&ship_name=${encodeURIComponent(shipName)}&limit_speed=${encodeURIComponent(limitSpeed)}`;
                 }
                 
+                // 背景發送請求
                 const response = await fetch(url, { method: 'GET' });
                 if (!response.ok) throw new Error('GAS 回應錯誤');
                 
-                // 設定成功後，立即更新 UI
+                // 如果是 Start，成功後才更新 UI (避免資料沒送出就鎖定)
                 if (mode === 'start') {
                     updateUIState('start', shipName, limitSpeed);
-                    // 存入本地快取
+                    
                     localStorage.setItem('local_mode', 'start');
                     localStorage.setItem('local_ship', shipName);
                     localStorage.setItem('local_limit', limitSpeed);
-                } else {
-                    updateUIState('stop');
-                    // 清除本地快取狀態
-                    localStorage.setItem('local_mode', 'stop');
-                    localStorage.removeItem('local_ship');
-                    localStorage.removeItem('local_limit');
                 }
                 
+                // 如果是 Stop，UI 已經在最上面更新過了，這裡不需要再做一次
+
                 els.statusText.textContent = '設定完成';
-                fetchDisplayData(); // 立即更新一次數據
+                fetchDisplayData(); 
                 
             } catch (e) {
-                alert('連線失敗: ' + e.message);
+                alert('連線失敗，請檢查網路: ' + e.message);
+                // 如果 Stop 失敗，理論上應該要把 UI 鎖回去，但為了體驗，通常保持解鎖即可
             } finally {
                 els.loading.style.display = 'none';
             }
@@ -180,7 +186,7 @@
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
             
-            // --- 步驟一：讀取本地快取 (秒開體驗) ---
+            // --- 讀取本地快取 ---
             const cachedSpeed = localStorage.getItem('local_speed');
             const cachedTime = localStorage.getItem('local_time');
             const cachedMode = localStorage.getItem('local_mode');
@@ -193,7 +199,6 @@
                 els.lastFetchTime.textContent = `上次紀錄：${cachedTime} (更新中...)`;
             }
             
-            // 恢復介面狀態
             if (cachedMode === 'start') {
                 updateUIState('start', cachedShip, cachedLimit);
             } else {
@@ -201,16 +206,14 @@
             }
             
             try {
-                // --- 步驟二：與 GAS 同步 ---
+                // --- 與 GAS 同步 ---
                 const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
                 if (!res.ok) throw new Error('GAS 連線錯誤');
                 const data = await res.json();
 
-                // 更新風速
                 if (data.speed) {
                     els.windValue.textContent = data.speed;
                     els.windValue.classList.remove('stale-data');
-                    
                     var nowStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
                     els.lastFetchTime.textContent = `最後更新：${nowStr}`;
                     
@@ -218,15 +221,14 @@
                     localStorage.setItem('local_time', nowStr);
                 }
 
-                // 更新模式與參數 (這是重點：如果其他人在別台手機按了開始，這裡要同步變更)
                 if (data.currentMode === 'start') {
                     updateUIState('start', data.shipName, data.limitSpeed);
-                    // 同步存入本地
                     localStorage.setItem('local_mode', 'start');
                     localStorage.setItem('local_ship', data.shipName);
                     localStorage.setItem('local_limit', data.limitSpeed);
                 } else {
-                    // 如果後端是 stop，但前端目前顯示 start，代表被別人停掉了
+                    // 如果後端是 stop
+                    // 這裡加一個判斷：如果前端原本是 start，才跳通知，避免不斷跳出
                     if (cachedMode === 'start') {
                          alert('監控已由其他裝置停止');
                     }
@@ -250,16 +252,14 @@
             if (mode === 'start') {
                 // 鎖定狀態
                 els.btnStart.classList.add('opacity-50', 'cursor-not-allowed');
-                els.btnStart.disabled = true; // 禁用開始按鈕
+                els.btnStart.disabled = true;
                 
-                // 輸入框填值並鎖定
                 if(shipName) els.inputShip.value = shipName;
                 if(limitSpeed) els.inputLimit.value = limitSpeed;
                 
                 els.inputShip.disabled = true;
                 els.inputLimit.disabled = true;
 
-                // 顯示運行標籤
                 els.modeDisplay.classList.remove('hidden');
                 els.modeDisplay.textContent = `監控中: ${shipName} (限速${limitSpeed})`;
                 
@@ -272,13 +272,9 @@
                 els.inputShip.disabled = false;
                 els.inputLimit.disabled = false;
                 
-                // 清空資料 (符合需求：結束後清空再開放)
-                // 這裡判斷一下，如果是剛從 start 轉變過來才清空，避免使用者剛打字就被清掉
-                // 但為了確保符合「清空再開放」的邏輯，直接清空最保險
-                if (els.inputShip.disabled === true) { // 之前是鎖定的，現在解鎖 -> 清空
-                     els.inputShip.value = '';
-                     els.inputLimit.value = '';
-                }
+                // ★★★ 強制清空 (不管之前是不是鎖定的，只要變回 Stop 就清空) ★★★
+                els.inputShip.value = '';
+                els.inputLimit.value = '';
 
                 els.modeDisplay.classList.add('hidden');
             }
@@ -287,7 +283,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             fetchDisplayData();
-            refreshTimer = setInterval(fetchDisplayData, 30000); // 30秒更新一次
+            refreshTimer = setInterval(fetchDisplayData, 30000); 
         });
     </script>
 </body>
