@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中天然氣船進港監測 (NV1)</title>
+    <title>台中天然氣船進港監測 (NV2)</title>
     <link rel="apple-touch-icon" href="app_icon.png">
     <link rel="icon" href="app_icon.png">
     
@@ -29,8 +29,8 @@
 
         /* 輸入框鎖定樣式 */
         input:disabled {
-            background-color: #e5e7eb; /* gray-200 */
-            color: #6b7280; /* gray-500 */
+            background-color: #e5e7eb;
+            color: #6b7280;
             cursor: not-allowed;
             border-color: #d1d5db;
         }
@@ -43,7 +43,7 @@
         
         <div class="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 mt-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2">
             <i data-lucide="cloud" class="w-4 h-4"></i>
-            <span>雲端監控中 (NV1版)</span>
+            <span>雲端監控中 (NV2 智慧排程版)</span>
         </div>
     
         <div class="flex items-center justify-center gap-2 mt-2">
@@ -75,8 +75,10 @@
                 <input type="number" id="input-limit-speed" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="例如 12.0">
             </div>
         </div>
-        <div id="mode-display" class="hidden inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold animate-pulse">
-            監控運行中
+        
+        <div id="mode-display" class="hidden flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold animate-pulse">
+            <span id="mode-icon">🟢</span>
+            <span id="mode-text">監控運行中</span>
         </div>
 
     </div>
@@ -91,8 +93,8 @@
     </div>
 
     <div class="text-center text-xs text-gray-400 mt-auto">
-        <p>按下「開始」後，船名與限速將鎖定。</p>
-        <p>如需更改設定，請先按下「結束」。</p>
+        <p>系統支援每日自動排程 (04:30-17:30)。</p>
+        <p>您亦可隨時手動開始或結束。</p>
     </div>
 
     <script>
@@ -108,6 +110,7 @@
             windValue: document.getElementById('wind-value'),
             statusText: document.getElementById('status-text'),
             modeDisplay: document.getElementById('mode-display'),
+            modeText: document.getElementById('mode-text'),
             lastFetchTime: document.getElementById('last-fetch-time'),
             loading: document.getElementById('loading-indicator'),
             progressBar: document.getElementById('progress-bar'),
@@ -128,7 +131,7 @@
         });
         
         els.btnStop.addEventListener('click', () => {
-            if(confirm('確定要停止監控嗎？這將會清除目前的船名設定。')) {
+            if(confirm('確定要停止監控嗎？這將會清除目前的設定。')) {
                 setCloudMode('stop');
             }
         });
@@ -137,14 +140,13 @@
 
         async function setCloudMode(mode, shipName = '', limitSpeed = '') {
             
-            // ★★★ 關鍵修改：樂觀 UI 更新 (如果是 Stop，先更新畫面，不等伺服器) ★★★
+            // 樂觀 UI：停止時立即清空
             if (mode === 'stop') {
-                updateUIState('stop'); // 立即解鎖並清空
-                
-                // 立即清除本地快取
+                updateUIState('stop'); 
                 localStorage.setItem('local_mode', 'stop');
                 localStorage.removeItem('local_ship');
                 localStorage.removeItem('local_limit');
+                localStorage.removeItem('local_is_auto');
             }
 
             els.loading.style.display = 'inline-block';
@@ -157,27 +159,23 @@
                     url += `&ship_name=${encodeURIComponent(shipName)}&limit_speed=${encodeURIComponent(limitSpeed)}`;
                 }
                 
-                // 背景發送請求
                 const response = await fetch(url, { method: 'GET' });
                 if (!response.ok) throw new Error('GAS 回應錯誤');
                 
-                // 如果是 Start，成功後才更新 UI (避免資料沒送出就鎖定)
                 if (mode === 'start') {
-                    updateUIState('start', shipName, limitSpeed);
-                    
+                    // 手動開始，isAuto 為 false
+                    updateUIState('start', shipName, limitSpeed, false);
                     localStorage.setItem('local_mode', 'start');
                     localStorage.setItem('local_ship', shipName);
                     localStorage.setItem('local_limit', limitSpeed);
+                    localStorage.setItem('local_is_auto', 'false');
                 }
                 
-                // 如果是 Stop，UI 已經在最上面更新過了，這裡不需要再做一次
-
                 els.statusText.textContent = '設定完成';
                 fetchDisplayData(); 
                 
             } catch (e) {
-                alert('連線失敗，請檢查網路: ' + e.message);
-                // 如果 Stop 失敗，理論上應該要把 UI 鎖回去，但為了體驗，通常保持解鎖即可
+                alert('連線失敗: ' + e.message);
             } finally {
                 els.loading.style.display = 'none';
             }
@@ -186,12 +184,13 @@
         async function fetchDisplayData() {
             els.loading.style.display = 'inline-block';
             
-            // --- 讀取本地快取 ---
+            // 讀取本地快取
             const cachedSpeed = localStorage.getItem('local_speed');
             const cachedTime = localStorage.getItem('local_time');
             const cachedMode = localStorage.getItem('local_mode');
             const cachedShip = localStorage.getItem('local_ship');
             const cachedLimit = localStorage.getItem('local_limit');
+            const cachedIsAuto = localStorage.getItem('local_is_auto') === 'true';
 
             if (cachedSpeed) {
                 els.windValue.textContent = cachedSpeed;
@@ -200,13 +199,12 @@
             }
             
             if (cachedMode === 'start') {
-                updateUIState('start', cachedShip, cachedLimit);
+                updateUIState('start', cachedShip, cachedLimit, cachedIsAuto);
             } else {
                 updateUIState('stop');
             }
             
             try {
-                // --- 與 GAS 同步 ---
                 const res = await fetch(`${FIXED_GAS_API_URL}action=display`);
                 if (!res.ok) throw new Error('GAS 連線錯誤');
                 const data = await res.json();
@@ -222,15 +220,15 @@
                 }
 
                 if (data.currentMode === 'start') {
-                    updateUIState('start', data.shipName, data.limitSpeed);
+                    // 這裡的 isAuto 來自後端屬性
+                    updateUIState('start', data.shipName, data.limitSpeed, data.isAuto);
                     localStorage.setItem('local_mode', 'start');
                     localStorage.setItem('local_ship', data.shipName);
                     localStorage.setItem('local_limit', data.limitSpeed);
+                    localStorage.setItem('local_is_auto', data.isAuto);
                 } else {
-                    // 如果後端是 stop
-                    // 這裡加一個判斷：如果前端原本是 start，才跳通知，避免不斷跳出
                     if (cachedMode === 'start') {
-                         alert('監控已由其他裝置停止');
+                         // alert('監控已停止'); // 可依需求開啟提醒
                     }
                     updateUIState('stop');
                     localStorage.setItem('local_mode', 'stop');
@@ -246,11 +244,10 @@
             }
         }
 
-        function updateUIState(mode, shipName, limitSpeed) {
+        function updateUIState(mode, shipName, limitSpeed, isAuto) {
             els.progressBar.style.width = '0%';
             
             if (mode === 'start') {
-                // 鎖定狀態
                 els.btnStart.classList.add('opacity-50', 'cursor-not-allowed');
                 els.btnStart.disabled = true;
                 
@@ -261,18 +258,23 @@
                 els.inputLimit.disabled = true;
 
                 els.modeDisplay.classList.remove('hidden');
-                els.modeDisplay.textContent = `監控中: ${shipName} (限速${limitSpeed})`;
+                
+                // 區分 自動排程 vs 手動監控 的顯示文字
+                if (isAuto) {
+                    els.modeText.textContent = `自動排程中: ${shipName} (限速${limitSpeed})`;
+                    els.modeDisplay.className = "flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold animate-pulse";
+                } else {
+                    els.modeText.textContent = `手動監控中: ${shipName} (限速${limitSpeed})`;
+                    els.modeDisplay.className = "flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold animate-pulse";
+                }
                 
             } else {
-                // 停止狀態 -> 開放狀態
                 els.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
                 els.btnStart.disabled = false;
                 
-                // 解鎖輸入框
                 els.inputShip.disabled = false;
                 els.inputLimit.disabled = false;
                 
-                // ★★★ 強制清空 (不管之前是不是鎖定的，只要變回 Stop 就清空) ★★★
                 els.inputShip.value = '';
                 els.inputLimit.value = '';
 
