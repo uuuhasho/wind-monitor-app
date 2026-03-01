@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中港LNG船監控(NV3.2)</title>
+    <title>台中港LNG船監控(NV3.4)</title>
     <style>
         :root {
             --bg-color: #f4f7f6;
@@ -13,7 +13,6 @@
             --safe-color: #28a745;
             --warning-color: #dc3545;
             --waiting-color: #6c757d;
-            --pob-color: #6f42c1;
             --reset-color: #e83e8c; 
         }
 
@@ -37,9 +36,11 @@
             text-align: center;
         }
 
-        h2 { margin-top: 0; color: var(--primary-color); font-size: 1.4em; }
+        /* ★ 修改：標題改為純黑色 */
+        h2 { margin-top: 0; color: #000000; font-size: 1.4em; }
         
-        .wind-display { font-size: 3.5em; font-weight: bold; margin: 10px 0; color: var(--primary-color); }
+        /* ★ 修改：風力值改為純黑色 */
+        .wind-display { font-size: 3.5em; font-weight: bold; margin: 10px 0; color: #000000; }
         .time-display { font-size: 0.9em; color: #888; margin-bottom: 20px; }
 
         .dynamic-box {
@@ -47,7 +48,13 @@
             transition: all 0.3s ease; display: none;
         }
 
-        .status-pob { background-color: #f3e8ff; color: var(--pob-color); border: 2px solid var(--pob-color); }
+        /* ★ 修改：POB 顯示為淡綠底、黑字、綠色粗框 (4px) */
+        .status-pob { 
+            background-color: #d4edda; 
+            color: #000000; 
+            border: 4px solid var(--safe-color); 
+        }
+        
         .status-waiting { background-color: #e9ecef; color: var(--waiting-color); border: 2px solid var(--waiting-color); }
         .status-warning { background-color: #ffeeba; color: var(--warning-color); border: 2px solid var(--warning-color); }
         
@@ -81,7 +88,7 @@
 <body>
 
 <div class="container">
-    <h2>台中港LNG船監控(NV3.2)</h2>
+    <h2>台中港LNG船監控(NV3.4)</h2>
     
     <div class="wind-display" id="windSpeed">--</div>
     <div class="time-display" id="dataTime">讀取中...</div>
@@ -97,8 +104,8 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
     </div>
 
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 (清除舊記錄)</button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控並清空</button>
+    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
 
     <div id="loading"></div>
 </div>
@@ -110,7 +117,7 @@
     const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec?";
 
     let refreshInterval;
-    let isFirstLoad = true; // 防呆：確保不打擾使用者打字
+    let isFirstLoad = true;
 
     function getCurrentTimeHHMM() {
         const now = new Date();
@@ -131,8 +138,9 @@
         box.className = "dynamic-box"; 
 
         if (data.pobMessage) {
+            // POB 狀態：淡綠底、黑字、綠粗框，僅顯示原始文字
             box.classList.add('status-pob');
-            box.innerHTML = `<strong>${shipName} 已於今日 POB進港</strong><br><span style="font-size:0.8em; margin-top:5px; display:inline-block;">(LINE回報: ${data.pobMessage})</span>`;
+            box.innerHTML = `<strong style="font-size:1.2em;">${data.pobMessage}</strong>`;
         } else if (currentTime < seasonTime) {
             box.classList.add('status-waiting');
             box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
@@ -153,7 +161,6 @@
                 document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
                 document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
                 
-                // ★ 僅在「初次載入」或「監控中」時，才同步後端的船名到輸入框，避免打擾現場人員輸入下一艘船
                 if (data.currentMode === 'start' || isFirstLoad) {
                     if (document.activeElement !== document.getElementById('shipName')) {
                         document.getElementById('shipName').value = data.shipName;
@@ -176,7 +183,6 @@
                     document.getElementById('shipName').disabled = false;
                     document.getElementById('limitSpeed').disabled = false;
                     
-                    // 18:01 或 手動清空後，pobMessage 會是 null，動態框自動隱藏
                     if (data.pobMessage) {
                         updateDynamicBox(data);
                     } else {
@@ -204,7 +210,6 @@
             }
             url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
         } else if (mode === 'reset') {
-            // ★ 前端同步瞬間清空，不留痕跡
             document.getElementById('shipName').value = "";
             document.getElementById('limitSpeed').value = "";
         }
