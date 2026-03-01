@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台中港LNG船監控(NV3.4)</title>
+    <title>臺中港LNG船風力監控 (NV3.4)</title>
+    
+    <link rel="icon" href="app_icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="app_icon.png">
+
     <style>
         :root {
             --bg-color: #f4f7f6;
@@ -36,11 +40,20 @@
             text-align: center;
         }
 
-        /* ★ 修改：標題改為純黑色 */
+        /* 標題設定 */
         h2 { margin-top: 0; color: #000000; font-size: 1.4em; }
         
-        /* ★ 修改：風力值改為純黑色 */
-        .wind-display { font-size: 3.5em; font-weight: bold; margin: 10px 0; color: #000000; }
+        /* ★ 修改1：風力值與單位排版 */
+        .wind-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline; /* 讓數字與單位底部對齊 */
+            margin: 10px 0;
+            color: #000000;
+        }
+        .wind-speed-num { font-size: 3.5em; font-weight: bold; }
+        .wind-speed-unit { font-size: 1.2em; font-weight: normal; margin-left: 8px; color: #555555; }
+        
         .time-display { font-size: 0.9em; color: #888; margin-bottom: 20px; }
 
         .dynamic-box {
@@ -48,7 +61,7 @@
             transition: all 0.3s ease; display: none;
         }
 
-        /* ★ 修改：POB 顯示為淡綠底、黑字、綠色粗框 (4px) */
+        /* POB 顯示為淡綠底、黑字、綠色粗框 (4px) */
         .status-pob { 
             background-color: #d4edda; 
             color: #000000; 
@@ -88,9 +101,13 @@
 <body>
 
 <div class="container">
-    <h2>台中港LNG船監控(NV3.4)</h2>
+    <h2>臺中港LNG船風力監控 (NV3.4)</h2>
     
-    <div class="wind-display" id="windSpeed">--</div>
+    <div class="wind-container">
+        <div class="wind-speed-num" id="windSpeed">--</div>
+        <div class="wind-speed-unit">m/s</div>
+    </div>
+    
     <div class="time-display" id="dataTime">讀取中...</div>
 
     <div id="dynamicBox" class="dynamic-box"></div>
@@ -104,8 +121,8 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
     </div>
 
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
+    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控</button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控</button>
 
     <div id="loading"></div>
 </div>
@@ -158,6 +175,7 @@
         fetch(FIXED_GAS_API_URL + "action=display")
             .then(response => response.json())
             .then(data => {
+                // 更新風速數字 (不影響右側單位)
                 document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
                 document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
                 
