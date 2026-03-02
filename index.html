@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中港LNG船風力監控 (NV3.4)</title>
-    
+    <title>臺中港LNG船風力監控 (NV3.6)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -40,14 +39,12 @@
             text-align: center;
         }
 
-        /* 標題設定 */
         h2 { margin-top: 0; color: #000000; font-size: 1.4em; }
         
-        /* ★ 修改1：風力值與單位排版 */
         .wind-container {
             display: flex;
             justify-content: center;
-            align-items: baseline; /* 讓數字與單位底部對齊 */
+            align-items: baseline; 
             margin: 10px 0;
             color: #000000;
         }
@@ -61,7 +58,6 @@
             transition: all 0.3s ease; display: none;
         }
 
-        /* POB 顯示為淡綠底、黑字、綠色粗框 (4px) */
         .status-pob { 
             background-color: #d4edda; 
             color: #000000; 
@@ -84,7 +80,18 @@
 
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; font-size: 0.9em; margin-bottom: 5px; font-weight: bold; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1em; }
+        
+        .input-group input { 
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; 
+            box-sizing: border-box; font-size: 1em; transition: 0.3s;
+        }
+        
+        .input-group input:disabled {
+            background-color: #e9ecef;
+            color: #888888;
+            border-color: #ddd;
+            cursor: not-allowed;
+        }
         
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 1.1em; font-weight: bold;
@@ -101,7 +108,7 @@
 <body>
 
 <div class="container">
-    <h2>臺中港LNG船風力監控 (NV3.4)</h2>
+    <h2>臺中港LNG船風力監控 (NV3.6)</h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
@@ -122,7 +129,7 @@
     </div>
 
     <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控</button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控</button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束</button>
 
     <div id="loading"></div>
 </div>
@@ -148,6 +155,7 @@
         const shipName = data.shipName || "未知船隻";
         const limitSpeed = parseFloat(data.limitSpeed) || 0;
         const currentSpeed = parseFloat(data.speed) || 0;
+        const displaySpeed = data.speed ? data.speed : "--"; // 用於顯示字串
         const seasonTime = data.seasonTime || "06:00";
         const currentTime = getCurrentTimeHHMM();
         
@@ -155,9 +163,26 @@
         box.className = "dynamic-box"; 
 
         if (data.pobMessage) {
-            // POB 狀態：淡綠底、黑字、綠粗框，僅顯示原始文字
+            // ★ NV3.6：擷取時間與標準化訊息格式
+            let pobTime = "未知時間";
+            // 嘗試尋找 hh:mm 或 hh：mm 格式
+            let timeMatch = data.pobMessage.match(/([0-2]?\d)[:：]([0-5]\d)/);
+            if (timeMatch) {
+                pobTime = timeMatch[1].padStart(2, '0') + ":" + timeMatch[2];
+            } else {
+                // 備用方案：尋找連續四個數字後面接 POB (例: 0602 POB)
+                let backupMatch = data.pobMessage.match(/([0-2]\d)([0-5]\d)\s*POB/i);
+                if (backupMatch) {
+                    pobTime = backupMatch[1] + ":" + backupMatch[2];
+                }
+            }
+
+            // 組裝標準化訊息
+            let formattedMsg = `${shipName}今日${pobTime}已POB進港，風速${displaySpeed}m/s。`;
+
             box.classList.add('status-pob');
-            box.innerHTML = `<strong style="font-size:1.2em;">${data.pobMessage}</strong>`;
+            box.innerHTML = `<strong style="font-size:1.2em;">${formattedMsg}</strong>`;
+            
         } else if (currentTime < seasonTime) {
             box.classList.add('status-waiting');
             box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
@@ -175,7 +200,6 @@
         fetch(FIXED_GAS_API_URL + "action=display")
             .then(response => response.json())
             .then(data => {
-                // 更新風速數字 (不影響右側單位)
                 document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
                 document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
                 
@@ -215,6 +239,11 @@
     }
 
     function setMode(mode) {
+        if (mode === 'reset') {
+            const isConfirmed = confirm("確定要結束當前監控並清空所有紀錄嗎？");
+            if (!isConfirmed) return; 
+        }
+
         document.getElementById('loading').innerText = "設定中...";
         let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode;
         
