@@ -92,17 +92,17 @@
         
         #loading { color: #888; font-size: 0.9em; margin-top: 15px; margin-bottom: 15px; }
 
-        /* ★ NV3.7 新增：今日 POB 紀錄區 (電子看板) */
+        /* ★ NV3.7 新增：今日 POB 雙行紀錄區 (電子看板) */
         .pob-records {
-            margin-top: 10px;
+            margin-top: 15px;
             padding: 15px;
             background-color: #d4edda; 
-            border: 3px solid var(--safe-color); 
+            border: 4px solid var(--safe-color); 
             border-radius: 8px;
             text-align: left;
-            font-size: 1em; /* 字體大小與輸入框相同 */
+            font-size: 1em; 
             font-weight: bold;
-            color: #000000; /* 黑字 */
+            color: #000000; 
             line-height: 1.6;
             display: none;
         }
@@ -131,8 +131,8 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
     </div>
 
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
+    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 (清除舊記錄)</button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控並清空</button>
 
     <div id="loading"></div>
 
@@ -146,7 +146,6 @@
     const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec?";
 
     let refreshInterval;
-    let isFirstLoad = true;
 
     function getCurrentTimeHHMM() {
         const now = new Date();
@@ -186,35 +185,34 @@
                 document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
                 document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
                 
-                // 狀態同步與輸入框管理
-                if (data.currentMode === 'start' || isFirstLoad) {
-                    if (document.activeElement !== document.getElementById('shipName')) {
-                        document.getElementById('shipName').value = data.shipName;
-                    }
-                    if (document.activeElement !== document.getElementById('limitSpeed')) {
-                        document.getElementById('limitSpeed').value = data.limitSpeed;
-                    }
-                    isFirstLoad = false;
-                }
-
+                const shipInput = document.getElementById('shipName');
+                const speedInput = document.getElementById('limitSpeed');
+                
+                // ★ 幽靈資料殺手：強硬管控輸入框狀態
                 if (data.currentMode === 'start') {
+                    // 監控中：強制填入後端字串並上鎖
                     document.getElementById('startBtn').style.display = 'none';
                     document.getElementById('resetBtn').style.display = 'block';
-                    document.getElementById('shipName').disabled = true;
-                    document.getElementById('limitSpeed').disabled = true;
+                    shipInput.disabled = true;
+                    speedInput.disabled = true;
+                    
+                    if (document.activeElement !== shipInput && document.activeElement !== speedInput) {
+                        shipInput.value = data.shipName;
+                        speedInput.value = data.limitSpeed;
+                    }
                     updateDynamicBox(data);
                 } else {
+                    // 停止中：強制解鎖，並強制保持空白
                     document.getElementById('startBtn').style.display = 'block';
                     document.getElementById('resetBtn').style.display = 'none';
-                    document.getElementById('shipName').disabled = false;
-                    document.getElementById('limitSpeed').disabled = false;
-                    document.getElementById('dynamicBox').style.display = 'none';
+                    shipInput.disabled = false;
+                    speedInput.disabled = false;
                     
-                    // 當處於停止狀態 (包含 POB 發生瞬間)，確保輸入框被清空
-                    if (data.shipName === "") {
-                        document.getElementById('shipName').value = "";
-                        document.getElementById('limitSpeed').value = "";
+                    if (document.activeElement !== shipInput && document.activeElement !== speedInput) {
+                        shipInput.value = "";
+                        speedInput.value = "";
                     }
+                    document.getElementById('dynamicBox').style.display = 'none';
                 }
 
                 // ★ NV3.7：處理底部的 POB 電子看板 (支援兩行)
@@ -277,4 +275,3 @@
 
 </body>
 </html>
-
