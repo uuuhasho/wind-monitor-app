@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中港LNG船風力監控 (NV3.6)</title>
+    <title>臺中港LNG船風力監控 (NV3.7)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -57,16 +57,9 @@
             margin: 20px 0; padding: 15px; border-radius: 8px; font-size: 1.1em;
             transition: all 0.3s ease; display: none;
         }
-
-        .status-pob { 
-            background-color: #d4edda; 
-            color: #000000; 
-            border: 4px solid var(--safe-color); 
-        }
         
         .status-waiting { background-color: #e9ecef; color: var(--waiting-color); border: 2px solid var(--waiting-color); }
         .status-warning { background-color: #ffeeba; color: var(--warning-color); border: 2px solid var(--warning-color); }
-        
         .status-safe {
             background-color: #d4edda; color: var(--safe-color); border: 2px solid var(--safe-color);
             animation: breathing 2s infinite ease-in-out;
@@ -80,17 +73,12 @@
 
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; font-size: 0.9em; margin-bottom: 5px; font-weight: bold; }
-        
         .input-group input { 
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; 
             box-sizing: border-box; font-size: 1em; transition: 0.3s;
         }
-        
         .input-group input:disabled {
-            background-color: #e9ecef;
-            color: #888888;
-            border-color: #ddd;
-            cursor: not-allowed;
+            background-color: #e9ecef; color: #888888; border-color: #ddd; cursor: not-allowed;
         }
         
         .btn {
@@ -102,13 +90,28 @@
         .btn-reset { background-color: var(--reset-color); } 
         .btn-reset:hover { background-color: #d81b60; }
         
-        #loading { color: #888; font-size: 0.9em; margin-top: 15px; }
+        #loading { color: #888; font-size: 0.9em; margin-top: 15px; margin-bottom: 15px; }
+
+        /* ★ NV3.7 新增：今日 POB 紀錄區 (電子看板) */
+        .pob-records {
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #d4edda; 
+            border: 3px solid var(--safe-color); 
+            border-radius: 8px;
+            text-align: left;
+            font-size: 1em; /* 字體大小與輸入框相同 */
+            font-weight: bold;
+            color: #000000; /* 黑字 */
+            line-height: 1.6;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>臺中港LNG船風力監控 (NV3.6)</h2>
+    <h2>臺中港LNG船風力監控 (NV3.7)</h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
@@ -128,17 +131,19 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
     </div>
 
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控</button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束</button>
+    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
 
     <div id="loading"></div>
+
+    <div id="pobList" class="pob-records"></div>
 </div>
 
 <script>
     // ==========================================
     // ⚠️ 部署必改：換成您最新發布的 GAS Web App URL
     // ==========================================
-    const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec?";
+    const FIXED_GAS_API_URL = "https://script.google.com/macros/s/填寫您的GAS_ID/exec?";
 
     let refreshInterval;
     let isFirstLoad = true;
@@ -155,35 +160,13 @@
         const shipName = data.shipName || "未知船隻";
         const limitSpeed = parseFloat(data.limitSpeed) || 0;
         const currentSpeed = parseFloat(data.speed) || 0;
-        const displaySpeed = data.speed ? data.speed : "--"; // 用於顯示字串
         const seasonTime = data.seasonTime || "06:00";
         const currentTime = getCurrentTimeHHMM();
         
-        box.style.display = "block";
         box.className = "dynamic-box"; 
+        box.style.display = "block";
 
-        if (data.pobMessage) {
-            // ★ NV3.6：擷取時間與標準化訊息格式
-            let pobTime = "未知時間";
-            // 嘗試尋找 hh:mm 或 hh：mm 格式
-            let timeMatch = data.pobMessage.match(/([0-2]?\d)[:：]([0-5]\d)/);
-            if (timeMatch) {
-                pobTime = timeMatch[1].padStart(2, '0') + ":" + timeMatch[2];
-            } else {
-                // 備用方案：尋找連續四個數字後面接 POB (例: 0602 POB)
-                let backupMatch = data.pobMessage.match(/([0-2]\d)([0-5]\d)\s*POB/i);
-                if (backupMatch) {
-                    pobTime = backupMatch[1] + ":" + backupMatch[2];
-                }
-            }
-
-            // 組裝標準化訊息
-            let formattedMsg = `${shipName}今日${pobTime}已POB進港，風速${displaySpeed}m/s。`;
-
-            box.classList.add('status-pob');
-            box.innerHTML = `<strong style="font-size:1.2em;">${formattedMsg}</strong>`;
-            
-        } else if (currentTime < seasonTime) {
+        if (currentTime < seasonTime) {
             box.classList.add('status-waiting');
             box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
         } else if (currentSpeed > limitSpeed) {
@@ -203,6 +186,7 @@
                 document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
                 document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
                 
+                // 狀態同步與輸入框管理
                 if (data.currentMode === 'start' || isFirstLoad) {
                     if (document.activeElement !== document.getElementById('shipName')) {
                         document.getElementById('shipName').value = data.shipName;
@@ -224,13 +208,27 @@
                     document.getElementById('resetBtn').style.display = 'none';
                     document.getElementById('shipName').disabled = false;
                     document.getElementById('limitSpeed').disabled = false;
+                    document.getElementById('dynamicBox').style.display = 'none';
                     
-                    if (data.pobMessage) {
-                        updateDynamicBox(data);
-                    } else {
-                        document.getElementById('dynamicBox').style.display = 'none';
+                    // 當處於停止狀態 (包含 POB 發生瞬間)，確保輸入框被清空
+                    if (data.shipName === "") {
+                        document.getElementById('shipName').value = "";
+                        document.getElementById('limitSpeed').value = "";
                     }
                 }
+
+                // ★ NV3.7：處理底部的 POB 電子看板 (支援兩行)
+                const pobList = document.getElementById('pobList');
+                if (data.pob1 || data.pob2) {
+                    let html = "";
+                    if (data.pob1) html += `<div style="margin-bottom: ${data.pob2 ? '8px' : '0'};">• ${data.pob1}</div>`;
+                    if (data.pob2) html += `<div>• ${data.pob2}</div>`;
+                    pobList.innerHTML = html;
+                    pobList.style.display = "block";
+                } else {
+                    pobList.style.display = "none";
+                }
+
                 document.getElementById('loading').innerText = "";
             })
             .catch(error => {
