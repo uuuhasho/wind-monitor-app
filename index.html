@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中港LNG船風力監控 (NV3.7)</title>
+    <title>臺中港LNG船風力監控 (NV4.0)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
@@ -90,9 +93,8 @@
         .btn-reset { background-color: var(--reset-color); } 
         .btn-reset:hover { background-color: #d81b60; }
         
-        #loading { color: #888; font-size: 0.9em; margin-top: 15px; margin-bottom: 15px; }
+        #loading { color: #888; font-size: 0.9em; margin-top: 15px; margin-bottom: 15px; height: 20px; }
 
-        /* ★ NV3.7 新增：今日 POB 雙行紀錄區 (電子看板) */
         .pob-records {
             margin-top: 15px;
             padding: 15px;
@@ -111,14 +113,14 @@
 <body>
 
 <div class="container">
-    <h2>臺中港LNG船風力監控 (NV3.7)</h2>
+    <h2>臺中港LNG船風力監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.0 雲端版)</span></h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
         <div class="wind-speed-unit">m/s</div>
     </div>
     
-    <div class="time-display" id="dataTime">讀取中...</div>
+    <div class="time-display" id="dataTime">系統連線中...</div>
 
     <div id="dynamicBox" class="dynamic-box"></div>
 
@@ -131,21 +133,36 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
     </div>
 
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 (清除舊記錄)</button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控並清空</button>
+    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束 </button>
 
     <div id="loading"></div>
-
     <div id="pobList" class="pob-records"></div>
 </div>
 
 <script>
     // ==========================================
-    // ⚠️ 部署必改：換成您最新發布的 GAS Web App URL
+    // ⚠️ 必填區：請更換為您的專屬網址
     // ==========================================
     const FIXED_GAS_API_URL = "https://script.google.com/macros/s/AKfycbwSs0kDZbl6Whua7UKmUMk1rlCuFgJHFhSIUA0nVTVmLujhrlbVXdiem4rN5WJIEg9brA/exec?";
+    const FIREBASE_DB_URL = "https://milkshake-monitor-default-rtdb.asia-southeast1.firebasedatabase.app/"; 
+    // ==========================================
 
-    let refreshInterval;
+    // 初始化 Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp({ databaseURL: FIREBASE_DB_URL });
+    }
+    const db = firebase.database();
+
+    let localSeasonTime = "06:00"; // 預設，會被 GAS 覆蓋
+
+    function getCurrentDateStr() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
     function getCurrentTimeHHMM() {
         const now = new Date();
@@ -154,12 +171,18 @@
         return `${hh}:${mm}`;
     }
 
+    // 當 Firebase 資料變更時，更新動態判定框
     function updateDynamicBox(data) {
         const box = document.getElementById('dynamicBox');
-        const shipName = data.shipName || "未知船隻";
-        const limitSpeed = parseFloat(data.limitSpeed) || 0;
-        const currentSpeed = parseFloat(data.speed) || 0;
-        const seasonTime = data.seasonTime || "06:00";
+        if (!data || data.app_mode !== 'start') {
+            box.style.display = 'none';
+            return;
+        }
+
+        const shipName = data.ship_name || "未知船隻";
+        const limitSpeed = parseFloat(data.limit_speed) || 0;
+        const currentSpeed = parseFloat(data.current_wind) || 0;
+        const seasonTime = localSeasonTime;
         const currentTime = getCurrentTimeHHMM();
         
         box.className = "dynamic-box"; 
@@ -177,70 +200,89 @@
         }
     }
 
-    function fetchData() {
-        document.getElementById('loading').innerText = "更新資料中...";
+    // 啟動 Firebase 即時監聽
+    function startFirebaseListeners() {
+        const dateStr = getCurrentDateStr();
+
+        // 1. 監聽【系統狀態與即時風速】(毫秒級更新)
+        db.ref('active_status').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            
+            // 更新風速與時間
+            document.getElementById('windSpeed').innerText = data.current_wind !== undefined ? data.current_wind : "--";
+            document.getElementById('dataTime').innerText = "最後更新: " + (data.last_update ? data.last_update : "無資料");
+            
+            const shipInput = document.getElementById('shipName');
+            const speedInput = document.getElementById('limitSpeed');
+
+            // 更新 UI 狀態 (避免幽靈資料)
+            if (data.app_mode === 'start') {
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('resetBtn').style.display = 'block';
+                shipInput.disabled = true;
+                speedInput.disabled = true;
+                
+                if (document.activeElement !== shipInput) shipInput.value = data.ship_name || "";
+                if (document.activeElement !== speedInput) speedInput.value = data.limit_speed || "";
+            } else {
+                document.getElementById('startBtn').style.display = 'block';
+                document.getElementById('resetBtn').style.display = 'none';
+                shipInput.disabled = false;
+                speedInput.disabled = false;
+                
+                if (document.activeElement !== shipInput) shipInput.value = "";
+                if (document.activeElement !== speedInput) speedInput.value = "";
+            }
+
+            // 更新呼吸燈
+            updateDynamicBox(data);
+        });
+
+        // 2. 監聽【當日 POB 紀錄板】(多船自動分行)
+        db.ref('daily_records/' + dateStr).on('value', (snapshot) => {
+            const records = snapshot.val();
+            const pobList = document.getElementById('pobList');
+            let html = "";
+
+            if (records) {
+                // 遍歷當日所有卡片，取出 pob_info
+                Object.values(records).forEach(card => {
+                    if (card.pob_info && card.pob_info.formatted_msg) {
+                        html += `<div style="margin-bottom: 8px;">• ${card.pob_info.formatted_msg}</div>`;
+                    }
+                });
+            }
+
+            if (html !== "") {
+                pobList.innerHTML = html;
+                pobList.style.display = "block";
+            } else {
+                pobList.style.display = "none";
+            }
+        });
+    }
+
+    // 系統初始化：先去 GAS 拿基本設定(如季節時間)，然後啟動 Firebase
+    function initSystem() {
+        document.getElementById('loading').innerText = "連線初始化中...";
         fetch(FIXED_GAS_API_URL + "action=display")
             .then(response => response.json())
             .then(data => {
-                document.getElementById('windSpeed').innerText = data.speed ? data.speed : "--";
-                document.getElementById('dataTime').innerText = "最後更新: " + (data.time ? data.time : "無資料");
-                
-                const shipInput = document.getElementById('shipName');
-                const speedInput = document.getElementById('limitSpeed');
-                
-                // ★ 幽靈資料殺手：強硬管控輸入框狀態
-                if (data.currentMode === 'start') {
-                    // 監控中：強制填入後端字串並上鎖
-                    document.getElementById('startBtn').style.display = 'none';
-                    document.getElementById('resetBtn').style.display = 'block';
-                    shipInput.disabled = true;
-                    speedInput.disabled = true;
-                    
-                    if (document.activeElement !== shipInput && document.activeElement !== speedInput) {
-                        shipInput.value = data.shipName;
-                        speedInput.value = data.limitSpeed;
-                    }
-                    updateDynamicBox(data);
-                } else {
-                    // 停止中：強制解鎖，並強制保持空白
-                    document.getElementById('startBtn').style.display = 'block';
-                    document.getElementById('resetBtn').style.display = 'none';
-                    shipInput.disabled = false;
-                    speedInput.disabled = false;
-                    
-                    if (document.activeElement !== shipInput && document.activeElement !== speedInput) {
-                        shipInput.value = "";
-                        speedInput.value = "";
-                    }
-                    document.getElementById('dynamicBox').style.display = 'none';
-                }
-
-                // ★ NV3.7：處理底部的 POB 電子看板 (支援兩行)
-                const pobList = document.getElementById('pobList');
-                if (data.pob1 || data.pob2) {
-                    let html = "";
-                    if (data.pob1) html += `<div style="margin-bottom: ${data.pob2 ? '8px' : '0'};">• ${data.pob1}</div>`;
-                    if (data.pob2) html += `<div>• ${data.pob2}</div>`;
-                    pobList.innerHTML = html;
-                    pobList.style.display = "block";
-                } else {
-                    pobList.style.display = "none";
-                }
-
+                if (data.seasonTime) localSeasonTime = data.seasonTime;
                 document.getElementById('loading').innerText = "";
+                startFirebaseListeners(); // 啟動雲端監聽
             })
             .catch(error => {
-                document.getElementById('loading').innerText = "連線失敗，請稍後再試";
+                document.getElementById('loading').innerText = "GAS 連線異常，嘗試啟動監聽...";
+                startFirebaseListeners(); // 就算 GAS 慢，也先啟動 Firebase
             });
     }
 
+    // 按鈕控制 (透過 GAS 寫入 Firebase)
     function setMode(mode) {
-        if (mode === 'reset') {
-            const isConfirmed = confirm("確定要結束當前監控並清空所有紀錄嗎？");
-            if (!isConfirmed) return; 
-        }
+        if (mode === 'reset' && !confirm("確定要結束當前監控嗎？")) return; 
 
-        document.getElementById('loading').innerText = "設定中...";
+        document.getElementById('loading').innerText = "指令傳送中...";
         let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode;
         
         if (mode === 'start') {
@@ -252,24 +294,21 @@
                 return;
             }
             url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
-        } else if (mode === 'reset') {
-            document.getElementById('shipName').value = "";
-            document.getElementById('limitSpeed').value = "";
         }
 
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                if(data.status === 'success') fetchData(); 
+                document.getElementById('loading').innerText = "";
+                // 這裡不用再呼叫 fetchData，因為 Firebase 會自動推播畫面變更！
             })
             .catch(error => {
-                document.getElementById('loading').innerText = "設定失敗";
+                document.getElementById('loading').innerText = "設定失敗，請檢查網路連線";
             });
     }
 
     window.onload = function() {
-        fetchData();
-        refreshInterval = setInterval(fetchData, 60000); 
+        initSystem();
     };
 </script>
 
