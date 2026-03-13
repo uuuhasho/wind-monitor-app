@@ -182,7 +182,8 @@
         const shipName = data.ship_name || "未知船隻";
         const limitSpeed = parseFloat(data.limit_speed) || 0;
         const currentSpeed = parseFloat(data.current_wind) || 0;
-        const seasonTime = localSeasonTime;
+        // 🌟 優化：直接從 Firebase 取得季節時間，若無則預設 06:00
+        const seasonTime = data.season_time || "06:00"; 
         const currentTime = getCurrentTimeHHMM();
         
         box.className = "dynamic-box"; 
@@ -262,20 +263,13 @@
         });
     }
 
-    // 系統初始化：先去 GAS 拿基本設定(如季節時間)，然後啟動 Firebase
+    // 🌟 優化：移除 GAS 初始化等待，網頁載入直接啟動 Firebase 即時監聽
     function initSystem() {
-        document.getElementById('loading').innerText = "連線初始化中...";
-        fetch(FIXED_GAS_API_URL + "action=display")
-            .then(response => response.json())
-            .then(data => {
-                if (data.seasonTime) localSeasonTime = data.seasonTime;
-                document.getElementById('loading').innerText = "";
-                startFirebaseListeners(); // 啟動雲端監聽
-            })
-            .catch(error => {
-                document.getElementById('loading').innerText = "GAS 連線異常，嘗試啟動監聽...";
-                startFirebaseListeners(); // 就算 GAS 慢，也先啟動 Firebase
-            });
+        document.getElementById('loading').innerText = "連線中...";
+        startFirebaseListeners();
+        setTimeout(() => {
+            document.getElementById('loading').innerText = "";
+        }, 800); // 短暫顯示後清除
     }
 
     // 按鈕控制 (透過 GAS 寫入 Firebase)
@@ -314,4 +308,5 @@
 
 </body>
 </html>
+
 
