@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控 (NV4.6.3)</title>
+    <title>臺中LNG船監控(NV4.6.5)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -113,7 +113,7 @@
 <body>
 
 <div class="container">
-    <h2>臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.6.3)</span></h2>
+    <h2>🚢臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.6.5)</span></h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
@@ -125,12 +125,12 @@
     <div id="dynamicBox" class="dynamic-box"></div>
 
     <div class="input-group">
-        <label for="shipName">船名 (含備註)</label>
-        <input type="text" id="shipName" placeholder="例如: Cobia LNG">
+        <label for="shipName">船名 </label>
+        <input type="text" id="shipName" placeholder="例如: Cobia">
     </div>
     <div class="input-group">
         <label for="limitSpeed">限制風速 (m/s)</label>
-        <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 15.0">
+        <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 12.0">
     </div>
 
     <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
@@ -272,33 +272,55 @@
         }, 800); // 短暫顯示後清除
     }
 
-    // 按鈕控制 (透過 GAS 寫入 Firebase)
-    function setMode(mode) {
-        if (mode === 'reset' && !confirm("確定要結束當前監控嗎？")) return; 
+    // 按鈕控制 (加入密碼驗證版)
+    async function setMode(mode) {
+        // 1. 彈出輸入框問密碼
+        const password = prompt("🔐 請輸入操作密碼：");
+        if (password === null) return; // 如果使用者按了「取消」，就什麼都不做
 
-        document.getElementById('loading').innerText = "指令傳送中...";
-        let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode;
-        
-        if (mode === 'start') {
-            const shipName = document.getElementById('shipName').value;
-            const limitSpeed = document.getElementById('limitSpeed').value;
-            if(!shipName || !limitSpeed) {
-                alert("請填寫船名與限制風速！");
+        document.getElementById('loading').innerText = "驗證身分中...";
+
+        try {
+            // 2. 跑去問後端 GAS 密碼對不對
+            const verifyUrl = FIXED_GAS_API_URL + "action=verify_password&pwd=" + encodeURIComponent(password);
+            const verifyResp = await fetch(verifyUrl);
+            const verifyData = await verifyResp.json();
+
+            // 3. 如果後端說錯了，就擋下來
+            if (!verifyData.success) {
+                alert("❌ 密碼錯誤！");
                 document.getElementById('loading').innerText = "";
                 return;
             }
-            url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
-        }
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
+            // 4. 密碼對了！如果是要結束，最後確認一次
+            if (mode === 'reset' && !confirm("⚠️ 確定要手動結束當前監控嗎？")) {
                 document.getElementById('loading').innerText = "";
-                // 這裡不用再呼叫 fetchData，因為 Firebase 會自動推播畫面變更！
-            })
-            .catch(error => {
-                document.getElementById('loading').innerText = "設定失敗，請檢查網路連線";
-            });
+                return;
+            }
+
+            // 5. 開始發送原本的開始/結束指令
+            document.getElementById('loading').innerText = "指令傳送中...";
+            let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode;
+            
+            if (mode === 'start') {
+                const shipName = document.getElementById('shipName').value;
+                const limitSpeed = document.getElementById('limitSpeed').value;
+                if(!shipName || !limitSpeed) {
+                    alert("請填寫船名與限制風速！");
+                    document.getElementById('loading').innerText = "";
+                    return;
+                }
+                url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+            document.getElementById('loading').innerText = "";
+            
+        } catch (error) {
+            document.getElementById('loading').innerText = "設定失敗，請檢查網路連線";
+        }
     }
 
     window.onload = function() {
@@ -308,5 +330,4 @@
 
 </body>
 </html>
-
 
