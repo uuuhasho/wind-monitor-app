@@ -108,6 +108,32 @@
             line-height: 1.6;
             display: none;
         }
+
+/* --- 密碼輸入視窗樣式 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background-color: white; padding: 20px; border-radius: 12px;
+            width: 80%; max-width: 300px; text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .modal-content input {
+            width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc;
+            border-radius: 6px; box-sizing: border-box; font-size: 1.2em; text-align: center;
+        }
+        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
+        .modal-btn {
+            flex: 1; padding: 10px; border: none; border-radius: 6px; 
+            font-size: 1em; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-cancel { background-color: #e9ecef; color: #333; }
+        .btn-cancel:hover { background-color: #ccc; }
+        .btn-confirm { background-color: var(--primary-color); color: white; }
+        .btn-confirm:hover { background-color: #357abd; }
+
     </style>
 </head>
 <body>
@@ -138,6 +164,18 @@
 
     <div id="loading"></div>
     <div id="pobList" class="pob-records"></div>
+</div>
+
+<div id="pwdModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; color: #333;">🔐 安全驗證</h3>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">請輸入操作授權密碼：</p>
+        <input type="password" id="modalPwdInput" placeholder="輸入密碼">
+        <div class="modal-buttons">
+            <button class="modal-btn btn-cancel" onclick="closePwdModal(false)">取消</button>
+            <button class="modal-btn btn-confirm" onclick="closePwdModal(true)">確認</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -272,50 +310,73 @@
         }, 800); // 短暫顯示後清除
     }
 
-    // 按鈕控制 (加入密碼驗證版)
-    async function setMode(mode) {
-        // 1. 彈出輸入框問密碼
-        const password = prompt("🔐 請輸入操作密碼：");
-        if (password === null) return; // 如果使用者按了「取消」，就什麼都不做
+   // --- 密碼視窗控制邏輯 ---
+    let pwdResolve = null; // 用來等待使用者按鈕的變數
 
-        document.getElementById('loading').innerText = "驗證身分中...";
+    function getPasswordFromModal() {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('pwdModal');
+            const input = document.getElementById('modalPwdInput');
+            input.value = ''; // 每次打開先清空密碼
+            modal.style.display = 'flex'; // 顯示視窗
+            input.focus(); // 自動對焦輸入框
+            pwdResolve = resolve; // 把決定權交給按鈕
+        });
+    }
+
+   function closePwdModal(isConfirm) {
+        const modal = document.getElementById('pwdModal');
+        const input = document.getElementById('modalPwdInput');
+        modal.style.display = 'none'; 
+        
+        if (pwdResolve) {
+            pwdResolve(isConfirm ? input.value : null); 
+            pwdResolve = null;
+        }
+    }
+
+    // --- 按鈕控制 (雙效合一 + 星號密碼視窗 + 邏輯優化版) ---
+    async function setMode(mode) {
+        // 🌟 優化：如果是開始監控，先檢查有沒有填寫資料，沒填就不往下走
+        let shipName = "";
+        let limitSpeed = "";
+        if (mode === 'start') {
+            shipName = document.getElementById('shipName').value;
+            limitSpeed = document.getElementById('limitSpeed').value;
+            if(!shipName || !limitSpeed) {
+                alert("❌ 請先填寫船名與限制風速！");
+                return; // 提早阻斷，不用問密碼了
+            }
+        }
+
+        // 1. 呼叫我們自訂的密碼視窗，並等待使用者輸入
+        const password = await getPasswordFromModal();
+        if (password === null) return; 
+
+        // 2. 如果是要結束，先在網頁端確認
+        if (mode === 'reset' && !confirm("⚠️ 確定要手動結束當前監控嗎？")) {
+            return;
+        }
+
+        document.getElementById('loading').innerText = "驗證與傳送指令中...";
 
         try {
-            // 2. 跑去問後端 GAS 密碼對不對
-            const verifyUrl = FIXED_GAS_API_URL + "action=verify_password&pwd=" + encodeURIComponent(password);
-            const verifyResp = await fetch(verifyUrl);
-            const verifyData = await verifyResp.json();
-
-            // 3. 如果後端說錯了，就擋下來
-            if (!verifyData.success) {
-                alert("❌ 密碼錯誤！");
-                document.getElementById('loading').innerText = "";
-                return;
-            }
-
-            // 4. 密碼對了！如果是要結束，最後確認一次
-            if (mode === 'reset' && !confirm("⚠️ 確定要手動結束當前監控嗎？")) {
-                document.getElementById('loading').innerText = "";
-                return;
-            }
-
-            // 5. 開始發送原本的開始/結束指令
-            document.getElementById('loading').innerText = "指令傳送中...";
-            let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode;
+            // 3. 將指令與密碼打包送給 GAS
+            let url = FIXED_GAS_API_URL + "action=set_mode&mode=" + mode + "&pwd=" + encodeURIComponent(password);
             
             if (mode === 'start') {
-                const shipName = document.getElementById('shipName').value;
-                const limitSpeed = document.getElementById('limitSpeed').value;
-                if(!shipName || !limitSpeed) {
-                    alert("請填寫船名與限制風速！");
-                    document.getElementById('loading').innerText = "";
-                    return;
-                }
                 url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
             }
 
+            // 4. 等待結果
             const response = await fetch(url);
             const data = await response.json();
+
+            // 5. 檢查後端回傳的狀態
+            if (data.status === "error") {
+                alert(data.msg); 
+            }
+            
             document.getElementById('loading').innerText = "";
             
         } catch (error) {
