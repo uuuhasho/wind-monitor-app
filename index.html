@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(NV4.6.5)</title>
+    <title>臺中LNG船監控(NV4.6.8)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -142,12 +142,18 @@
         .btn-confirm { background-color: var(--primary-color); color: white; }
         .btn-confirm:hover { background-color: #357abd; }
 
+        /* 🌟 縮小 POB 時間欄位的提示文字字體 */
+        #pobTime::placeholder {
+            font-size: 0.85em;
+            color: #bbb;
+        }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚢臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.6.5)</span></h2>
+    <h2>🚢臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.6.8)</span></h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
@@ -167,8 +173,13 @@
         <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 12.0">
     </div>
 
+    <div class="input-group" id="pobTimeGroup" style="display: none; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+        <label for="pobTime" style="color: var(--primary-color);">🕒 (非必要)手動輸入 POB 時間</label>
+        <input type="text" id="pobTime" placeholder="如14:56" maxlength="5" style="text-align: center; font-size: 1.1em; letter-spacing: 1px;" oninput="formatPobTime(this)">
+    </div>
+
     <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束 </button>
+    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
 
     <div id="loading"></div>
     <div id="pobList" class="pob-records"></div>
@@ -266,6 +277,7 @@
             if (data.app_mode === 'start') {
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('resetBtn').style.display = 'block';
+                document.getElementById('pobTimeGroup').style.display = 'block';
                 shipInput.disabled = true;
                 speedInput.disabled = true;
                 
@@ -274,11 +286,13 @@
             } else {
                 document.getElementById('startBtn').style.display = 'block';
                 document.getElementById('resetBtn').style.display = 'none';
+                document.getElementById('pobTimeGroup').style.display = 'none';
                 shipInput.disabled = false;
                 speedInput.disabled = false;
                 
                 if (document.activeElement !== shipInput) shipInput.value = "";
                 if (document.activeElement !== speedInput) speedInput.value = "";
+                document.getElementById('pobTime').value = ""; // 清空
             }
 
             // 更新呼吸燈
@@ -343,11 +357,23 @@
         }
     }
 
+    // 🌟 自動格式化 POB 時間：輸入 1423 自動轉 14:23
+    function formatPobTime(input) {
+        let val = input.value.replace(/[^\d]/g, ''); // 只保留數字
+        if (val.length >= 3) {
+            input.value = val.slice(0, 2) + ':' + val.slice(2, 4);
+        } else {
+            input.value = val;
+        }
+    }
+
     // --- 按鈕控制 (雙效合一 + 星號密碼視窗 + 邏輯優化版) ---
     async function setMode(mode) {
         // 🌟 優化：如果是開始監控，先檢查有沒有填寫資料，沒填就不往下走
         let shipName = "";
         let limitSpeed = "";
+        let pobTime = "";
+
         if (mode === 'start') {
             shipName = document.getElementById('shipName').value;
             limitSpeed = document.getElementById('limitSpeed').value;
@@ -357,12 +383,31 @@
             }
         }
 
+        if (mode === 'reset') {
+            pobTime = document.getElementById('pobTime').value;
+            if (pobTime) {
+                const parts = pobTime.split(':');
+                if (parts.length !== 2 || parts[0].length !== 2 || parts[1].length !== 2) {
+                    alert("❌ POB 時間格式錯誤，請輸入 4 位數字 (如 1423)");
+                    return;
+                }
+                
+                const hour = parseInt(parts[0]);
+                const min = parseInt(parts[1]);
+
+                if (hour < 4 || hour > 17 || min < 0 || min > 59) {
+                    alert("❌ POB 時間超出範圍：\n小時須為 04~17\n分鐘須為 00~59");
+                    return;
+                }
+            }
+        }
+
         // 1. 呼叫我們自訂的密碼視窗，並等待使用者輸入
         const password = await getPasswordFromModal();
         if (password === null) return; 
 
         // 2. 如果是要結束，先在網頁端確認
-        if (mode === 'reset' && !confirm("⚠️ 確定要手動結束當前監控嗎？")) {
+        if (mode === 'reset' && !confirm("⚠️ 確定要手動結束當前監控嗎？" + (pobTime ? `\n(將同步紀錄 ${pobTime} POB 並發送推播)` : ""))) {
             return;
         }
 
@@ -374,6 +419,8 @@
             
             if (mode === 'start') {
                 url += "&ship_name=" + encodeURIComponent(shipName) + "&limit_speed=" + encodeURIComponent(limitSpeed);
+            } else if (mode === 'reset' && pobTime) {
+                url += "&pob_time=" + encodeURIComponent(pobTime);
             }
 
             // 4. 等待結果
@@ -399,4 +446,3 @@
 
 </body>
 </html>
-
