@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(NV4.6.8)</title>
+    <title>臺中LNG船監控(NV4.6.9)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -153,7 +153,7 @@
 <body>
 
 <div class="container">
-    <h2>🚢臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;">(NV4.6.8)</span></h2>
+    <h2>🚢臺中LNG船監控 <span style="font-size: 0.6em; color:#4A90E2;"></h2>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
@@ -239,19 +239,19 @@
         const shipName = data.ship_name || "未知船隻";
         const limitSpeed = parseFloat(data.limit_speed) || 0;
         const currentSpeed = parseFloat(data.current_wind) || 0;
-        // 🌟 優化：直接從 Firebase 取得季節時間，若無則預設 06:00
-        const seasonTime = data.season_time || "06:00"; 
+        // 🌟 優化：直接從 Firebase 取得季節時間
+        const seasonTime = data.season_time || "--:--"; 
         const currentTime = getCurrentTimeHHMM();
         
         box.className = "dynamic-box"; 
         box.style.display = "block";
 
-        if (currentTime < seasonTime) {
+        if (seasonTime === "--:--" || currentTime < seasonTime) {
             box.classList.add('status-waiting');
             box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
         } else if (currentSpeed > limitSpeed) {
             box.classList.add('status-warning');
-            box.innerHTML = `<strong>${shipName} 風速超標</strong><br><span style="font-size:0.8em;">(目前 ${currentSpeed} > 限制 ${limitSpeed})</span>`;
+            box.innerHTML = `<strong>${shipName} 無法進港</strong><br><span style="font-size:0.8em;">(目前 ${currentSpeed} > 限制 ${limitSpeed})</span>`;
         } else {
             box.classList.add('status-safe');
             box.innerHTML = `<strong style="font-size:1.3em;">${shipName} 可進港</strong>`;
@@ -446,3 +446,4 @@
 
 </body>
 </html>
+
