@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(NV4.6.9)</title>
+    <title>臺中LNG船監控(NV4.7.1)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -188,7 +188,7 @@
 <div id="pwdModal" class="modal-overlay">
     <div class="modal-content">
         <h3 style="margin-top: 0; color: #333;">🔐 安全驗證</h3>
-        <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">請輸入操作授權密碼：</p>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">請輸入密碼：</p>
         <input type="password" id="modalPwdInput" placeholder="輸入密碼">
         <div class="modal-buttons">
             <button class="modal-btn btn-cancel" onclick="closePwdModal(false)">取消</button>
@@ -430,6 +430,26 @@
             // 5. 檢查後端回傳的狀態
             if (data.status === "error") {
                 alert(data.msg); 
+            } else if (mode === 'reset' && data.has_tomorrow_ship === false) {
+                // 🌟 新增：手動結束且明天無船，彈窗詢問預約
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const confirmMsg = `明日是否繼續監控 [${data.last_ship_name}]？`;
+                
+                if (confirm(confirmMsg)) {
+                    document.getElementById('loading').innerText = "正在為您預約明日監控...";
+                    const reserveUrl = FIXED_GAS_API_URL + "action=reserve_next&ship_name=" + encodeURIComponent(data.last_ship_name) + 
+                                       "&limit_speed=" + data.last_limit_speed + "&pwd=" + encodeURIComponent(password);
+                    
+                    const resRes = await fetch(reserveUrl);
+                    const resData = await resRes.json();
+                    
+                    if (resData.status === "success") {
+                        alert("✅ 預約成功！明日 04:00 將自動啟動。");
+                    } else {
+                        alert("❌ 預約失敗：" + resData.msg);
+                    }
+                }
             }
             
             document.getElementById('loading').innerText = "";
@@ -446,4 +466,3 @@
 
 </body>
 </html>
-
