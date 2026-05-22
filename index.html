@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(NV4.7.1)</title>
+    <title>臺中LNG船監控(NV4.7.2)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -148,6 +148,70 @@
             color: #bbb;
         }
 
+        /* --- 船期表樣式 --- */
+        .schedule-section {
+            margin-top: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+        .schedule-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;
+        }
+        .schedule-header h3 { margin: 0; font-size: 1.1em; color: var(--text-main); }
+        .cpc-btn {
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            transition: 0.1s transform, 0.2s opacity;
+            object-fit: contain;
+        }
+        .cpc-btn:hover {
+            opacity: 0.7;
+        }
+        .cpc-btn:active {
+            transform: scale(0.85);
+        }
+        .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .schedule-table th, .schedule-table td {
+            padding: 10px 5px; border-bottom: 1px solid #eee; text-align: center;
+        }
+        .schedule-table th { color: #666; font-weight: normal; }
+        
+        .schedule-row-safe {
+            background-color: #d4edda; color: var(--safe-color); font-weight: bold;
+            animation: row-breathing 2s infinite ease-in-out;
+        }
+        .schedule-row-warning { background-color: #ffeeba; color: var(--warning-color); font-weight: bold; }
+        .schedule-row-waiting { background-color: #e9ecef; color: var(--waiting-color); font-weight: bold; }
+
+        /* 修正 Apple 設備對於 tr 標籤不支援陰影動畫的問題，改為背景色柔和漸變 */
+        @keyframes row-breathing {
+            0% { background-color: #d4edda; }
+            50% { background-color: #c3e6cb; }
+            100% { background-color: #d4edda; }
+        }
+
+        /* 讓表格區塊可滾動的樣式 */
+        .table-wrapper {
+            max-height: 210px; /* 控制最大高度，超過時出現捲軸 */
+            overflow-y: auto;
+        }
+        .table-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-wrapper::-webkit-scrollbar-track { background: transparent; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        
+        /* 固定表格標題列 */
+        .schedule-table th {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
@@ -162,27 +226,43 @@
     
     <div class="time-display" id="dataTime">系統連線中...</div>
 
+    <!-- POB 紀錄板往上移 -->
+    <div id="pobList" class="pob-records" style="margin-bottom: 15px;"></div>
+
     <div id="dynamicBox" class="dynamic-box"></div>
 
-    <div class="input-group">
-        <label for="shipName">船名 </label>
-        <input type="text" id="shipName" placeholder="例如: Cobia">
+    <!-- 船期表區塊 -->
+    <div class="schedule-section">
+        <div class="schedule-header">
+            <h3>船期表</h3>
+            <img src="fast-forward.png" class="cpc-btn" onclick="openManualModal()" alt="設定" title="手動設定">
+        </div>
+        <div class="table-wrapper">
+            <table class="schedule-table">
+                <thead>
+                    <tr><th>日期</th><th>船名</th><th>限速</th></tr>
+                </thead>
+                <tbody id="scheduleBody">
+                    <tr><td colspan="3" style="text-align:center; color:#888;">載入中...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="input-group">
-        <label for="limitSpeed">限制風速 (m/s)</label>
-        <input type="number" id="limitSpeed" step="0.1" placeholder="例如: 12.0">
-    </div>
-
-    <div class="input-group" id="pobTimeGroup" style="display: none; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
-        <label for="pobTime" style="color: var(--primary-color);">🕒 (非必要)手動輸入 POB 時間</label>
-        <input type="text" id="pobTime" placeholder="如14:56" maxlength="5" style="text-align: center; font-size: 1.1em; letter-spacing: 1px;" oninput="formatPobTime(this)">
-    </div>
-
-    <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控 </button>
-    <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控 </button>
 
     <div id="loading"></div>
-    <div id="pobList" class="pob-records"></div>
+</div>
+
+<!-- 手動監控設定 Modal -->
+<div id="manualModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 320px;">
+        <h3 style="margin-top: 0; color: #333;">⚙️ 手動監控設定</h3>
+        <div class="input-group"><label for="shipName">船名</label><input type="text" id="shipName" placeholder="例如: Cobia"></div>
+        <div class="input-group"><label for="limitSpeed">限制風速 (m/s)</label><input type="number" id="limitSpeed" step="0.1" placeholder="例如: 12.0"></div>
+        <div class="input-group" id="pobTimeGroup" style="display: none; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;"><label for="pobTime" style="color: var(--primary-color);">🕒 (非必要)手動輸入 POB 時間</label><input type="text" id="pobTime" placeholder="如14:56" maxlength="5" style="text-align: center; font-size: 1.1em; letter-spacing: 1px;" oninput="formatPobTime(this)"></div>
+        <button class="btn btn-start" id="startBtn" onclick="setMode('start')">▶ 開始監控</button>
+        <button class="btn btn-reset" id="resetBtn" onclick="setMode('reset')" style="display: none;">⏹ 結束監控</button>
+        <button class="btn btn-cancel" onclick="closeManualModal()" style="width: 100%; margin-top: 10px; background-color: #eee;">關閉</button>
+    </div>
 </div>
 
 <div id="pwdModal" class="modal-overlay">
@@ -211,6 +291,9 @@
     }
     const db = firebase.database();
 
+    let currentAppData = {};
+    let scheduleDataList = [];
+
     let localSeasonTime = "06:00"; // 預設，會被 GAS 覆蓋
 
     function getCurrentDateStr() {
@@ -230,33 +313,90 @@
 
     // 當 Firebase 資料變更時，更新動態判定框
     function updateDynamicBox(data) {
+        currentAppData = data;
         const box = document.getElementById('dynamicBox');
+        let currentStatusClass = "";
+
         if (!data || data.app_mode !== 'start') {
             box.style.display = 'none';
-            return;
-        }
-
-        const shipName = data.ship_name || "未知船隻";
-        const limitSpeed = parseFloat(data.limit_speed) || 0;
-        const currentSpeed = parseFloat(data.current_wind) || 0;
-        // 🌟 優化：直接從 Firebase 取得季節時間
-        const seasonTime = data.season_time || "--:--"; 
-        const currentTime = getCurrentTimeHHMM();
-        
-        box.className = "dynamic-box"; 
-        box.style.display = "block";
-
-        if (seasonTime === "--:--" || currentTime < seasonTime) {
-            box.classList.add('status-waiting');
-            box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
-        } else if (currentSpeed > limitSpeed) {
-            box.classList.add('status-warning');
-            box.innerHTML = `<strong>${shipName} 無法進港</strong><br><span style="font-size:0.8em;">(目前 ${currentSpeed} > 限制 ${limitSpeed})</span>`;
         } else {
-            box.classList.add('status-safe');
-            box.innerHTML = `<strong style="font-size:1.3em;">${shipName} 可進港</strong>`;
+            const shipName = data.ship_name || "未知船隻";
+            const limitSpeed = parseFloat(data.limit_speed) || 0;
+            const currentSpeed = parseFloat(data.current_wind) || 0;
+            const seasonTime = data.season_time || "--:--"; 
+            const currentTime = getCurrentTimeHHMM();
+            
+            box.className = "dynamic-box"; 
+            box.style.display = "block";
+
+            if (seasonTime === "--:--" || currentTime < seasonTime) {
+                currentStatusClass = 'schedule-row-waiting';
+                box.classList.add('status-waiting');
+                box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
+            } else if (currentSpeed > limitSpeed) {
+                currentStatusClass = 'schedule-row-warning';
+                box.classList.add('status-warning');
+                box.innerHTML = `<strong>${shipName} 無法進港</strong><br><span style="font-size:0.8em;">(目前 ${currentSpeed} > 限制 ${limitSpeed})</span>`;
+            } else {
+                currentStatusClass = 'schedule-row-safe';
+                box.classList.add('status-safe');
+                box.innerHTML = `<strong style="font-size:1.3em;">${shipName} 可進港</strong>`;
+            }
+        }
+        updateTableHighlight(currentStatusClass);
+    }
+
+    // 🌟 更新表格特定列的亮燈特效
+    function updateTableHighlight(statusClass) {
+        const rows = document.querySelectorAll('#scheduleBody tr[data-shipname]');
+        rows.forEach(row => {
+            row.classList.remove('schedule-row-safe', 'schedule-row-warning', 'schedule-row-waiting');
+            const rowShipName = row.getAttribute('data-shipname');
+            if (currentAppData.app_mode === 'start' && rowShipName === currentAppData.ship_name && statusClass) {
+                row.classList.add(statusClass);
+            }
+        });
+    }
+
+    // 🌟 背景定時抓取 10 筆加工好的船期表
+    async function fetchSchedule() {
+        try {
+            const url = FIXED_GAS_API_URL + "action=display";
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.schedule_list) {
+                scheduleDataList = data.schedule_list;
+            } else {
+                scheduleDataList = [];
+            }
+            renderScheduleTable();
+        } catch (error) { 
+            console.error("無法取得船期表", error);
+            document.getElementById('scheduleBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#dc3545;">讀取失敗，請確認網路或 GAS 部署狀態</td></tr>';
         }
     }
+
+    // 🌟 將陣列渲染為表格
+    function renderScheduleTable() {
+        const tbody = document.getElementById('scheduleBody');
+        if (!scheduleDataList || scheduleDataList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">目前無未來船期資料</td></tr>';
+            return;
+        }
+        let html = '';
+        scheduleDataList.forEach(item => {
+            html += `<tr data-shipname="${item.ship_name}">
+                        <td>${item.d}</td>
+                        <td>${item.ship_name}</td>
+                        <td>${item.limit_speed}</td>
+                     </tr>`;
+        });
+        tbody.innerHTML = html;
+        updateDynamicBox(currentAppData); // 重繪表格燈號避免被洗掉
+    }
+
+    function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
+    function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
     // 啟動 Firebase 即時監聽
     function startFirebaseListeners() {
@@ -327,6 +467,7 @@
     function initSystem() {
         document.getElementById('loading').innerText = "連線中...";
         startFirebaseListeners();
+        fetchSchedule(); // 載入時拉一次船期
         setTimeout(() => {
             document.getElementById('loading').innerText = "";
         }, 800); // 短暫顯示後清除
@@ -430,8 +571,8 @@
             // 5. 檢查後端回傳的狀態
             if (data.status === "error") {
                 alert(data.msg); 
-            } else if (mode === 'reset' && data.has_tomorrow_ship === false) {
-                // 🌟 新增：手動結束且明天無船，彈窗詢問預約
+            } else if (mode === 'reset' && !pobTime && data.has_tomorrow_ship === false) {
+                // 🌟 修正：手動結束、未輸入 POB (代表未進港)、且明天無船，才彈窗詢問預約
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 const confirmMsg = `明日是否繼續監控 [${data.last_ship_name}]？`;
@@ -450,6 +591,11 @@
                         alert("❌ 預約失敗：" + resData.msg);
                     }
                 }
+                closeManualModal();
+                setTimeout(fetchSchedule, 1000); // 更新表單
+            } else {
+                closeManualModal();
+                setTimeout(fetchSchedule, 1000); // 更新表單
             }
             
             document.getElementById('loading').innerText = "";
