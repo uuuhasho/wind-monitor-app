@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(NV4.7.2)</title>
+    <title>臺中LNG船監控(NV4.7.3)</title>
     <link rel="icon" href="app_icon.png" type="image/png">
     <link rel="apple-touch-icon" href="app_icon.png">
 
@@ -358,23 +358,7 @@
         });
     }
 
-    // 🌟 背景定時抓取 10 筆加工好的船期表
-    async function fetchSchedule() {
-        try {
-            const url = FIXED_GAS_API_URL + "action=display";
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data.schedule_list) {
-                scheduleDataList = data.schedule_list;
-            } else {
-                scheduleDataList = [];
-            }
-            renderScheduleTable();
-        } catch (error) { 
-            console.error("無法取得船期表", error);
-            document.getElementById('scheduleBody').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#dc3545;">讀取失敗，請確認網路或 GAS 部署狀態</td></tr>';
-        }
-    }
+
 
     // 🌟 將陣列渲染為表格
     function renderScheduleTable() {
@@ -461,13 +445,18 @@
                 pobList.style.display = "none";
             }
         });
+
+        // 3. 監聽【未來船期表】(實時同步，秒速渲染)
+        db.ref('schedule_list').on('value', (snapshot) => {
+            scheduleDataList = snapshot.val() || [];
+            renderScheduleTable();
+        });
     }
 
     // 🌟 優化：移除 GAS 初始化等待，網頁載入直接啟動 Firebase 即時監聽
     function initSystem() {
         document.getElementById('loading').innerText = "連線中...";
         startFirebaseListeners();
-        fetchSchedule(); // 載入時拉一次船期
         setTimeout(() => {
             document.getElementById('loading').innerText = "";
         }, 800); // 短暫顯示後清除
@@ -592,10 +581,8 @@
                     }
                 }
                 closeManualModal();
-                setTimeout(fetchSchedule, 1000); // 更新表單
             } else {
                 closeManualModal();
-                setTimeout(fetchSchedule, 1000); // 更新表單
             }
             
             document.getElementById('loading').innerText = "";
