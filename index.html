@@ -379,6 +379,22 @@
         updateDynamicBox(currentAppData); // 重繪表格燈號避免被洗掉
     }
 
+    // 🌟 備用機制：若 Firebase 讀取失敗，直接向 GAS API 請求船期資料
+    async function fetchScheduleFromGas() {
+        try {
+            const response = await fetch(FIXED_GAS_API_URL + "action=display");
+            const data = await response.json();
+            if (data && data.schedule_list) {
+                scheduleDataList = data.schedule_list;
+                renderScheduleTable();
+            }
+        } catch (error) {
+            console.error("從 GAS 獲取船期表失敗:", error);
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#dc3545;">載入失敗，請檢查網路連線</td></tr>';
+        }
+    }
+
     function openManualModal() { document.getElementById('manualModal').style.display = 'flex'; }
     function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; }
 
@@ -450,6 +466,9 @@
         db.ref('schedule_list').on('value', (snapshot) => {
             scheduleDataList = snapshot.val() || [];
             renderScheduleTable();
+        }, (error) => {
+            console.warn("Firebase schedule_list 讀取受限，嘗試從 GAS 備用接口獲取...", error);
+            fetchScheduleFromGas();
         });
     }
 
