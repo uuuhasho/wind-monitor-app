@@ -1,0 +1,4 @@
+node_modules/
+.gemini/
+.antigravitycli/
+*.bak
