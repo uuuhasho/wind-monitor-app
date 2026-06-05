@@ -986,6 +986,8 @@
                             <div class="sim-schedule-section" style="margin-top: 10px; background: #fff; border-radius: 8px; border: 1px solid #ddd; padding: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
                                     <h4 style="margin: 0; font-size: 0.85rem; color: #333;">船期表</h4>
+                                    <!-- 鈴鐺音效按鈕：點選卡片2時顯示，預設關閉 -->
+                                    <span id="simSoundToggle" onclick="toggleSimSound()" style="display: none; cursor: pointer; font-size: 1.1em; user-select: none; transition: transform 0.2s;" title="提醒音效">🔕</span>
                                     <!-- Settings Gear Icon -->
                                     <svg class="sim-cpc-btn" onclick="selectSimState('menu_modal', 'c-btn')" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" alt="設定" title="手動設定">
                                         <circle cx="12" cy="12" r="3"></circle>
@@ -1059,8 +1061,8 @@
                             <div class="detail-item" id="c-status" onclick="selectSimState('monitoring', 'c-status')">
                                 <div class="num">2</div>
                                 <div>
-                                    <h4>動態判定狀態框</h4>
-                                    <p>顯示無法進港（紅色）與可進港（綠色呼吸燈）狀態，船期表同步顯示特效。</p>
+                                    <h4>動態判定狀態框 &amp; 🔔 音效提醒</h4>
+                                    <p>顯示無法進港（紅色）與可進港（綠色呼吸燈）狀態，船期表同步特效。<br>監控中可點擊船期表旁的 🔕 鈴鐺開啟音效，進港條件符合時會響起提示音，再按一次即可靜音。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-btn" onclick="selectSimState('menu_modal', 'c-btn')">
@@ -1150,6 +1152,34 @@
 
     <!-- Presentation Code -->
     <script>
+        // --- Simulator Sound ---
+        const simAudio = new Audio('https://github.com/extratone/macOSsystemsounds/raw/main/mp3/Crystals.mp3');
+        simAudio.loop = false;
+        let simSoundOn = false;
+
+        function toggleSimSound() {
+            simSoundOn = !simSoundOn;
+            const btn = document.getElementById('simSoundToggle');
+            if (simSoundOn) {
+                btn.innerText = '🔔';
+                btn.style.transform = 'scale(1.2)';
+                setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
+                simAudio.currentTime = 0;
+                // Play for 4 seconds then stop
+                simAudio.play().catch(() => {});
+                setTimeout(() => {
+                    if (simSoundOn) {
+                        simAudio.pause();
+                        simAudio.currentTime = 0;
+                    }
+                }, 4000);
+            } else {
+                btn.innerText = '🔕';
+                simAudio.pause();
+                simAudio.currentTime = 0;
+            }
+        }
+
         let currentSlide = 1;
         const totalSlides = 4;
 
@@ -1236,6 +1266,16 @@
                 appTime.innerText = "最後更新: 10:20";
                 appStatusBox.style.display = "none";
                 appPobRecords.style.display = "none";
+
+                // Hide and reset bell
+                const bellStandby = document.getElementById('simSoundToggle');
+                if (bellStandby) {
+                    bellStandby.style.display = 'none';
+                    bellStandby.innerText = '🔕';
+                    simSoundOn = false;
+                    simAudio.pause();
+                    simAudio.currentTime = 0;
+                }
             }
             else if (state === 'monitoring') {
                 isMonitoring = true;
@@ -1258,6 +1298,17 @@
                     rowCobia.style.color = "#28a745";
                     rowCobia.style.fontWeight = "bold";
                 }
+
+                // Show bell icon (default OFF)
+                const bellMonitor = document.getElementById('simSoundToggle');
+                if (bellMonitor) {
+                    bellMonitor.style.display = 'inline-block';
+                    // Only reset to OFF if not already showing (avoid flicker on re-click)
+                    if (bellMonitor.innerText !== '🔔') {
+                        bellMonitor.innerText = '🔕';
+                        simSoundOn = false;
+                    }
+                }
             }
             else if (state === 'pob_record') {
                 simState = 'pob_record';
@@ -1274,6 +1325,16 @@
                 
                 // Hide Cobia row from schedule table as it has completed entry
                 if (rowCobia) rowCobia.style.display = "none";
+
+                // Hide and reset bell
+                const bellPob = document.getElementById('simSoundToggle');
+                if (bellPob) {
+                    bellPob.style.display = 'none';
+                    bellPob.innerText = '🔕';
+                    simSoundOn = false;
+                    simAudio.pause();
+                    simAudio.currentTime = 0;
+                }
             }
             else if (state === 'menu_modal') {
                 simState = 'menu_modal';
