@@ -59,11 +59,29 @@
 
         h2 { 
             margin-top: 0; 
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             color: var(--text-navy); 
             font-size: 1.5em; 
             font-weight: 700;
             letter-spacing: -0.5px;
+        }
+        
+        .presentation-link {
+            margin-bottom: 24px;
+            font-size: 0.95em;
+        }
+        .presentation-link a {
+            text-decoration: none;
+            color: var(--text-blue);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .presentation-link a:hover {
+            opacity: 0.8;
+            color: #0D3A75;
         }
         
         .wind-container {
@@ -366,6 +384,9 @@
 
 <div class="container">
     <h2>🚢 臺中LNG船監控</h2>
+    <div class="presentation-link">
+        <a href="presentation/index.html">📖 介紹說明</a>
+    </div>
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
