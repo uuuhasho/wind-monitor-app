@@ -925,14 +925,14 @@
                             <div class="list-bullet">1</div>
                             <div class="list-content">
                                 <h4>限制風速極為嚴格</h4>
-                                <p>LNG 船進港限制（180K級為 12.0 m/s，其他為 15 m/s），風速是台中港判定LNG船進港的關鍵。</p>
+                                <p>LNG 船進港限制（180K為 12.0 m/s，其他為 15 m/s），風速是台中港判定LNG船進港的關鍵。</p>
                             </div>
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">2</div>
                             <div class="list-content">
-                                <h4>人工記錄時間誤差</h4>
-                                <p>過往依靠人工頻繁查詢網站及手寫記錄，容易造成搶進時效延遲與記錄時間差。</p>
+                                <h4>人工查詢誤差</h4>
+                                <p>過往依靠人工頻繁查詢網站，容易造成誤判或「搶進延遲」。</p>
                             </div>
                         </div>
                     </div>
@@ -944,15 +944,15 @@
                         <div class="list-item">
                             <div class="list-bullet">✓</div>
                             <div class="list-content">
-                                <h4>自動即時爬蟲</h4>
+                                <h4>即時風速</h4>
                                 <p>自動顯示台中港「北堤綠燈塔」風速計資料，避免人工查詢漏失。</p>
                             </div>
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">✓</div>
                             <div class="list-content">
-                                <h4>智慧動態判定</h4>
-                                <p>綜合即時風速、速限，並結合不同季節，決定進港判定時間，即時動態判斷進港狀況。</p>
+                                <h4>智慧判定</h4>
+                                <p>結合即時風速、進港速限，立即判斷進港狀況且訊息一致。</p>
                             </div>
                         </div>
                     </div>
@@ -976,7 +976,7 @@
 
                             <!-- POB records list -->
                             <div class="sim-pob-list" id="appPobRecords" style="display: none; background-color: #d4edda; border: 3px solid var(--app-safe); padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; text-align: left; margin-bottom: 10px; line-height: 1.4;">
-                                • Cobia 已於 14:56 POB，風速: 11.2 m/s。
+                                • Cobia 已於 14:56 POB，風速: 10 m/s。
                             </div>
 
                             <!-- Dynamic Box Indicator -->
@@ -1055,35 +1055,35 @@
                                 <div class="num">1</div>
                                 <div>
                                     <h4>即時風速與最後更新</h4>
-                                    <p>顯示台中港北堤綠燈塔之即時風力 (m/s) 與數據更新時間。</p>
+                                    <p>顯示台中港北堤綠燈塔之即時風力與更新時間。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-status" onclick="selectSimState('monitoring', 'c-status')">
                                 <div class="num">2</div>
                                 <div>
                                     <h4>動態判定狀態框 &amp; 🔔 音效提醒</h4>
-                                    <p>顯示無法進港（紅色）與可進港（綠色呼吸燈）狀態，船期表同步特效。<br>監控中可點擊船期表旁的 🔕 鈴鐺開啟音效，進港條件符合時會響起提示音，再按一次即可靜音。</p>
+                                    <p>顯示可進港（綠色呼吸燈）與無法進港（紅色）狀態。<br>監控中可點擊船期表旁的 🔕 鈴鐺開啟音效，進港條件符合時會響起提示音，再按一次即可靜音。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-btn" onclick="selectSimState('menu_modal', 'c-btn')">
                                 <div class="num">3</div>
                                 <div>
                                     <h4>手動設定視窗 (app介面可操作)</h4>
-                                    <p>點擊 工具 圖示，開啟手動設定視窗，可輸入船名與速限，或 POB 時間及 開始/結束 操作按鈕。</p>
+                                    <p>點擊 齒輪 圖示，開啟手動設定視窗，可輸入船名與速限，或 POB 時間及 開始/結束 操作按鈕。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-pob" onclick="selectSimState('password_modal', 'c-pob')">
                                 <div class="num">4</div>
                                 <div>
                                     <h4>安全密碼驗證視窗 (Modal)</h4>
-                                    <p>手動操作時，需輸入密碼才允許發布命令，防止誤觸。</p>
+                                    <p>手動操作時，需輸入密碼才允許送出。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-pob-records" onclick="selectSimState('pob_record', 'c-pob-records')">
                                 <div class="num">5</div>
                                 <div>
                                     <h4>當日 POB 記錄板 (POB 訊息)</h4>
-                                    <p>當日監控結束並儲存後，畫面會顯示此綠色區塊，記錄船隻的 POB 時間與當時回溯之風速。</p>
+                                    <p>當日監控結束後，綠色區塊顯示船隻的 POB 時間與進港風速。</p>
                                 </div>
                             </div>
                         </div>
@@ -1109,7 +1109,7 @@
                         <div class="back-icon">🕒 Start</div>
                         <div class="back-content">
                             <h3>監控啟動</h3>
-                            <p>自動依據船期表啟動監控。</p>
+                            <p>依船期表自動監控。</p>
                         </div>
                     </div>
                     <!-- Firebase Sync -->
@@ -1125,7 +1125,7 @@
                         <div class="back-icon">📁 Filing</div>
                         <div class="back-content">
                             <h3>資料歸檔</h3>
-                            <p>後台自動歸檔保存紀錄。</p>
+                            <p>自動歸檔保存紀錄。</p>
                         </div>
                     </div>
                 </div>
@@ -1282,7 +1282,7 @@
                 simState = 'monitoring';
                 document.getElementById('btn-state-monitoring').classList.add('active');
                 
-                appWind.innerText = "11.2";
+                appWind.innerText = "10";
                 appTime.innerText = "最後更新: 14:50";
                 appStatusBox.style.display = "block";
                 appStatusBox.className = "sim-status-box safe";
@@ -1315,13 +1315,13 @@
                 const pobBtn = document.getElementById('btn-state-pob');
                 if (pobBtn) pobBtn.classList.add('active');
                 
-                appWind.innerText = "11.2";
+                appWind.innerText = "10";
                 appTime.innerText = "最後更新: 14:50";
                 appStatusBox.style.display = "none";
                 
                 // Show POB records
                 appPobRecords.style.display = "block";
-                appPobRecords.innerHTML = "• Cobia 已於 14:56 POB，風速: 11.2 m/s。";
+                appPobRecords.innerHTML = "• Cobia 已於 14:56 POB，風速: 10 m/s。";
                 
                 // Hide Cobia row from schedule table as it has completed entry
                 if (rowCobia) rowCobia.style.display = "none";
