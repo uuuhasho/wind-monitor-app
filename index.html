@@ -469,8 +469,8 @@
 
     // --- 音效提醒變數 ---
     let isSoundEnabled = false; // 預設關閉音效
-    // 🌟 已更換為相容性佳的 MP3 Crystals 音效，單次播放約 4 秒
-    const notificationSound = new Audio('https://github.com/extratone/macOSsystemsounds/raw/main/mp3/Crystals.mp3');
+    // 🌟 已更換為本機及 GitHub 專案中的 MP3 通知音效 (Option C)
+    const notificationSound = new Audio('notification_option_C.mp3');
 
     // 🌟 獲取台灣時間 (Asia/Taipei) 的日期與時間物件，解決跨時區與日夜切換 Bug
     function getTaiwanDateTime() {
