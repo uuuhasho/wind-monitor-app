@@ -516,9 +516,9 @@
         /* Tooltip 覆寫樣式 */
         .custom-tooltip {
             padding: 10px 14px;
-            background: rgba(13, 17, 23, 0.6) !important;
-            backdrop-filter: blur(8px) !important;
-            -webkit-backdrop-filter: blur(8px) !important;
+            background: rgba(22, 27, 34, 0.35) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
             border: 1px solid rgba(88, 166, 255, 0.3) !important;
             border-radius: 8px !important;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
@@ -648,11 +648,11 @@
             <!-- 自訂無圓點圖例 -->
             <div style="position: absolute; top: 0px; right: 4%; display: flex; gap: 15px; font-size: 11px; color: #8b949e; pointer-events: none; z-index: 10;">
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <span style="display: inline-block; width: 20px; height: 2.2px; background-color: #8b949e;"></span>
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#8b949e" stroke-width="2.2" /></svg>
                     <span>空軍預測</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <span style="display: inline-block; width: 20px; height: 0px; border-bottom: 2px dashed #8b949e;"></span>
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#8b949e" stroke-width="2" stroke-dasharray="6,4" /></svg>
                     <span>ECMWF陣風</span>
                 </div>
             </div>
