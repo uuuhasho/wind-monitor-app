@@ -1,4 +1,22 @@
-node_modules/
-.gemini/
+# 敏感設定與金鑰檔案 (絕不能上傳)
+config.json
+service_account.json
+
+# 暫存資料夾與圖檔
+temp/
+__pycache__/
+*.pyc
+*.doc
+*.docx
+*.png
+*.jpg
+*.pdf
+
+# Python 虛擬環境
+venv/
+env/
+.env
+
+# 專案無關檔案
 .antigravitycli/
-*.bak
+diagnostics/
