@@ -627,19 +627,19 @@
 <div id="forecastModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 1001;">
     <div class="forecast-modal-content">
         <div class="forecast-header">
-            <h3>🚢 天氣預測儀表板</h3>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <h3 style="margin: 0;">天氣預測儀表板</h3>
+                <button id="forecastUpdateBtn" class="btn-update-forecast" onclick="triggerForecastUpdate()" style="margin: 0; padding: 4px 10px; font-size: 0.75rem;">
+                    <span>🔄 手動更新</span>
+                </button>
+            </div>
             <span class="forecast-close" onclick="closeForecastModal()">&times;</span>
         </div>
         
         <div class="forecast-controls">
-            <div class="forecast-select-group">
-                <label for="shipForecastSelect">選擇船期:</label>
-                <select id="shipForecastSelect" class="forecast-select" onchange="onForecastShipChange()"></select>
+            <div class="forecast-select-group" style="width: 100%;">
+                <select id="shipForecastSelect" class="forecast-select" style="width: 100%;" onchange="onForecastShipChange()"></select>
             </div>
-            
-            <button id="forecastUpdateBtn" class="btn-update-forecast" onclick="triggerForecastUpdate()">
-                <span>🔄 手動更新</span>
-            </button>
         </div>
         
         <div class="chart-wrapper">
@@ -973,7 +973,7 @@
             if (updateBtn) {
                 if (data.forecast_updating === true) {
                     updateBtn.disabled = true;
-                    updateBtn.innerHTML = `<span>⏳ 雲端更新中(約需1分鐘)...</span>`;
+                    updateBtn.innerHTML = `<span>⏳ 更新中...</span>`;
                 } else {
                     const wasUpdating = updateBtn.disabled;
                     updateBtn.disabled = false;
@@ -1260,8 +1260,7 @@
                 const mm = String(lastTime.getMonth() + 1).padStart(2, '0');
                 const dd = String(lastTime.getDate()).padStart(2, '0');
                 const hh = String(lastTime.getHours()).padStart(2, '0');
-                statusEl.innerText = `更新時間: ${mm}/${dd} ${hh}:00`;
-                statusEl.style.color = "#8b949e";
+                // 依需求，不再顯示更新時間
             }
         } catch (err) {
             console.error("Firestore 載入預估數據失敗:", err);
@@ -1290,6 +1289,7 @@
             backgroundColor: 'transparent',
             tooltip: {
                 trigger: 'axis',
+                axisPointer: { type: 'line', lineStyle: { color: '#30363d', type: 'dashed' } },
                 className: 'custom-tooltip',
                 borderWidth: 0,
                 shadowBlur: 0,
@@ -1326,7 +1326,7 @@
                         </div>
                         <div class="tooltip-row">
                             <span>ECMWF陣風:</span>
-                            <span class="tooltip-val" style="color:#8b949e;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
+                            <span class="tooltip-val" style="color:#ffffff;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                     `;
                 }
@@ -1334,7 +1334,6 @@
             legend: {
                 data: ['空軍預測', 'ECMWF陣風'],
                 textStyle: { color: '#8b949e', fontSize: 11 },
-                icon: 'line', // 曲線標籤改用實虛線區分，而非顏色方塊
                 top: '0%'
             },
             grid: {
