@@ -644,7 +644,7 @@
         
         <div class="chart-wrapper" style="position: relative;">
             <div id="forecastChart" style="width: 100%; height: 100%;"></div>
-            <span id="forecastStatus" style="position: absolute; right: 4%; bottom: 20px; color: #58a6ff; font-size: 0.72rem; font-weight: bold; pointer-events: none;">系統就緒</span>
+            <span id="forecastStatus" style="position: absolute; right: 4%; bottom: 35px; color: #58a6ff; font-size: 0.72rem; font-weight: bold; pointer-events: none;">系統就緒</span>
         </div>
         
         <div style="margin-top: 15px; font-size: 0.72rem; color: #8b949e; border-top: 1px solid rgba(48,54,61,0.5); padding-top: 10px; text-align: center; width: 100%;">
@@ -1332,8 +1332,9 @@
             legend: {
                 data: ['空軍預測', 'ECMWF陣風'],
                 textStyle: { color: '#8b949e', fontSize: 11 },
+                icon: 'path://M0,0 L10,0', // 徹底隱藏圓點，僅保留線條
                 top: '0%',
-                right: '4%'
+                right: '0%'
             },
             grid: {
                 left: '4%',
@@ -1368,7 +1369,8 @@
                     start: 0,
                     end: 35,
                     textStyle: { color: '#8b949e', fontSize: 9 },
-                    borderColor: '#30363d',
+                    borderColor: 'transparent', // 隱藏外框
+                    backgroundColor: 'transparent', // 隱藏底色
                     fillerColor: 'rgba(56, 139, 253, 0.15)',
                     handleSize: '100%',
                     handleStyle: {
