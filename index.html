@@ -668,10 +668,10 @@
     }
     const db = firebase.database();
 
-    // 🌟 初始化第二個 Firebase App 用於 Cloud Firestore (wind-monitor-app)
+    // 🌟 初始化第二個 Firebase App 用於 Cloud Firestore (真實專案名稱為 milkshake-monitor)
     let firestoreDb = null;
     try {
-        const forecastApp = firebase.initializeApp({ projectId: "wind-monitor-app" }, "forecastApp");
+        const forecastApp = firebase.initializeApp({ projectId: "milkshake-monitor" }, "forecastApp");
         firestoreDb = firebase.firestore(forecastApp);
     } catch (err) {
         console.error("Firestore 專屬 App 初始化失敗，嘗試回退至預設 App:", err);
