@@ -1288,6 +1288,8 @@
                 trigger: 'axis',
                 confine: true,
                 axisPointer: { type: 'line', lineStyle: { color: '#30363d', type: 'dashed' } },
+                backgroundColor: 'rgba(22, 27, 34, 0.75)', // 半透明背景
+                extraCssText: 'backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px;', // 毛玻璃效果
                 className: 'custom-tooltip',
                 borderWidth: 0,
                 shadowBlur: 0,
@@ -1332,7 +1334,6 @@
             legend: {
                 data: ['空軍預測', 'ECMWF陣風'],
                 textStyle: { color: '#8b949e', fontSize: 11 },
-                icon: 'path://M0,0 L10,0', // 徹底隱藏圓點，僅保留線條
                 top: '0%',
                 right: '0%'
             },
@@ -1363,6 +1364,9 @@
                     type: 'slider', // 在圖表下方顯示一個實體滑動條，方便精準拖移
                     showDetail: false,
                     showDataShadow: false,
+                    zoomLock: true, // 固定寬度，不允許縮放
+                    dataBackground: { lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 } },
+                    selectedDataBackground: { lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 } },
                     orient: 'horizontal',
                     bottom: '0%',
                     height: 16,
@@ -1385,7 +1389,7 @@
                     data: cpcData,
                     smooth: true,
                     connectNulls: true,
-                    symbol: 'none',
+                    symbolSize: 0,
                     showSymbol: false,
                     emphasis: { focus: 'none', scale: false },
                     // 空軍預測為：淺灰色實線
@@ -1402,7 +1406,7 @@
                     data: omData,
                     smooth: true,
                     connectNulls: true,
-                    symbol: 'none',
+                    symbolSize: 0,
                     showSymbol: false,
                     emphasis: { focus: 'none', scale: false },
                     // ECMWF陣風為：淺灰色虛線
