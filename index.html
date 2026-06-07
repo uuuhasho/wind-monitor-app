@@ -215,7 +215,7 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             display: none;
-            justify-content: center; align-items: center; z-index: 1000;
+            justify-content: center; align-items: center; z-index: 2000;
         }
         .modal-content {
             background-color: white; 
@@ -1449,7 +1449,7 @@
                 statusEl.innerText = "指令已下達，雲端正在運行 Pipeline...";
                 statusEl.style.color = "#e3b341";
             } else {
-                alert("❌ 更新失敗: " + resData.msg);
+                alert("❌ 更新失敗: " + (resData.msg || resData.message || "未知錯誤"));
                 updateBtn.disabled = false;
                 updateBtn.innerHTML = `<span>🔄 手動更新</span>`;
                 statusEl.innerText = "驗證失敗";
