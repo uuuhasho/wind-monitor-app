@@ -646,9 +646,9 @@
             <div id="forecastChart" style="width: 100%; height: 100%;"></div>
         </div>
         
-        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #8b949e; border-top: 1px solid rgba(48,54,61,0.5); padding-top: 10px;">
-            <span>© 本預報僅用於判斷LNG船進出港 | 橫軸為台灣時間</span>
-            <span id="forecastStatus" style="color: #58a6ff;">系統就緒</span>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.72rem; color: #8b949e; border-top: 1px solid rgba(48,54,61,0.5); padding-top: 10px;">
+            <span style="width: 100%; text-align: left;">© 本預報僅用於判斷LNG船進出港 | 橫軸為台灣時間</span>
+            <span id="forecastStatus" style="color: #58a6ff; width: 100%; text-align: right;">系統就緒</span>
         </div>
     </div>
 </div>
@@ -1254,13 +1254,10 @@
             lastFetchedForecastData = data;
             renderForecastChart(data);
             
-            // 取得最後更新時間
+            // 如果成功渲染出資料，更新狀態文字為「數據已更新」
             if (data.length > 0) {
-                const lastTime = new Date(data[data.length - 1].timestamp);
-                const mm = String(lastTime.getMonth() + 1).padStart(2, '0');
-                const dd = String(lastTime.getDate()).padStart(2, '0');
-                const hh = String(lastTime.getHours()).padStart(2, '0');
-                // 依需求，不再顯示更新時間
+                statusEl.innerText = "數據已更新";
+                statusEl.style.color = "#58a6ff";
             }
         } catch (err) {
             console.error("Firestore 載入預估數據失敗:", err);
@@ -1334,7 +1331,8 @@
             legend: {
                 data: ['空軍預測', 'ECMWF陣風'],
                 textStyle: { color: '#8b949e', fontSize: 11 },
-                top: '0%'
+                top: '0%',
+                right: '4%'
             },
             grid: {
                 left: '4%',
@@ -1353,20 +1351,16 @@
             },
             yAxis: {
                 type: 'value',
-                name: '風速 (m/s)',
+                name: '',
                 nameTextStyle: { color: '#8b949e', fontSize: 10 },
                 axisLabel: { color: '#8b949e', fontSize: 10 },
                 splitLine: { show: true, lineStyle: { color: '#21262d' } }
             },
             dataZoom: [
                 {
-                    type: 'inside', // 支援在圖表上直接用手指拖動與縮放
-                    orient: 'horizontal',
-                    start: 0,
-                    end: 35 // 預設只顯示前 35% 數據，避免資料被擋住，其餘需滑動查看
-                },
-                {
                     type: 'slider', // 在圖表下方顯示一個實體滑動條，方便精準拖移
+                    showDetail: false,
+                    showDataShadow: false,
                     orient: 'horizontal',
                     bottom: '0%',
                     height: 16,
@@ -1435,8 +1429,8 @@
         // 前端立刻進入鎖定狀態，防止二次點選
         updateBtn.disabled = true;
         updateBtn.innerHTML = `<span>⏳ 雲端更新中(約需1分鐘)...</span>`;
-        statusEl.innerText = "正在傳送更新指令至雲端...";
-        statusEl.style.color = "#f1c40f";
+        statusEl.innerText = "數據更新中...";
+        statusEl.style.color = "#d29922";
 
         try {
             // 呼叫 GAS 並帶入 trigger_update 行動與密碼
