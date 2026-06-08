@@ -1181,6 +1181,9 @@
         document.getElementById('forecastModal').style.display = 'flex';
         populateShipForecastSelect();
         initForecastChart();
+        if (lastFetchedForecastData) {
+            renderForecastChart(lastFetchedForecastData);
+        }
         loadForecastData();
     }
 
@@ -1286,6 +1289,9 @@
     // 渲染 ECharts 雙曲線圖表
     function renderForecastChart(data) {
         if (!forecastChartInstance) return;
+
+        // 確保圖表正確調整大小以防範 Modal 初始化尺寸問題
+        forecastChartInstance.resize();
 
         // 格式化 X 軸時間顯示為 CST (UTC+8) mm/dd HH:00
         const timeData = data.map(item => {
@@ -1448,7 +1454,7 @@
 
         forecastChartInstance.setOption(option, true);
 
-        // 🚢 UX 新增：選中船期時，自動定位到該船當天 05:00 的預測數據點並顯示 Tooltip
+        // 🚢 UX 新增：選中船期時，自動定位到該船當天預報數據點並顯示 Tooltip (夏季 05:00 / 冬季 06:00)
         try {
             const selectEl = document.getElementById('shipForecastSelect');
             if (selectEl && selectEl.options.length > 0) {
@@ -1459,7 +1465,14 @@
                     const parts = datePart.split('/');
                     const mm = parts[0].padStart(2, '0');
                     const dd = parts[1].padStart(2, '0');
-                    const targetLabel = `${mm}/${dd} 05:00`;
+                    
+                    // 判斷夏季或冬季：
+                    // 夏季月份：4, 5, 6, 7, 8, 9
+                    // 冬季月份：10, 11, 12, 1, 2, 3
+                    const month = parseInt(parts[0], 10);
+                    const isSummer = [4, 5, 6, 7, 8, 9].includes(month);
+                    const targetTime = isSummer ? "05:00" : "06:00";
+                    const targetLabel = `${mm}/${dd} ${targetTime}`;
                     
                     const targetIndex = timeData.indexOf(targetLabel);
                     if (targetIndex !== -1) {
