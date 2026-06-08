@@ -647,13 +647,13 @@
         <div class="chart-wrapper" style="position: relative;">
             <!-- 自訂無圓點圖例 -->
             <div style="position: absolute; top: 0px; right: 4%; display: flex; gap: 15px; font-size: 11px; color: #8b949e; pointer-events: none; z-index: 10;">
-                <div style="display: flex; align-items: center; gap: 5px; color: #ff7b43;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#ff7b43" stroke-width="2.2" /></svg>
+                <div style="display: flex; align-items: center; gap: 5px; color: #ff7b72;">
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#ff7b72" stroke-width="2.2" /></svg>
                     <span style="font-weight: bold;">空軍預測</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 5px; color: #38bdf8;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4" /></svg>
-                    <span style="font-weight: bold;">ECMWF陣風</span>
+                <div style="display: flex; align-items: center; gap: 5px; color: #58a6ff;">
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6,4" /></svg>
+                    <span style="font-weight: bold;">Open-Meteo預測陣風</span>
                 </div>
             </div>
             
@@ -1325,7 +1325,7 @@
 
                     params.forEach(param => {
                         if (param.seriesName === '空軍預測') cpcVal = param.value;
-                        if (param.seriesName === 'ECMWF陣風') ecmwfVal = param.value;
+                        if (param.seriesName === 'Open-Meteo預測陣風') ecmwfVal = param.value;
                     });
 
                     // 💡 安全判定：若空軍預測 < 該船限速，顯示綠字"可進港"，否則紅字"無法進港" (適應深色背景)
@@ -1339,11 +1339,11 @@
                         <div style="font-weight:bold; margin-bottom:8px; color: #f0f6fc;">${shipName} ${statusHtml}</div>
                         <div class="tooltip-row" style="color: #c9d1d9;">
                             <span>空軍預測:</span>
-                            <span class="tooltip-val" style="color:#ff7b43; font-weight:bold;">${cpcVal !== null ? cpcVal.toFixed(2) + ' m/s' : '無資料'}</span>
+                            <span class="tooltip-val" style="color:#ff7b72; font-weight:bold;">${cpcVal !== null ? cpcVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                         <div class="tooltip-row" style="color: #c9d1d9;">
-                            <span>ECMWF陣風:</span>
-                            <span class="tooltip-val" style="color:#38bdf8; font-weight:bold;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
+                            <span>Open-Meteo預測陣風:</span>
+                            <span class="tooltip-val" style="color:#58a6ff; font-weight:bold;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                     `;
                 }
@@ -1404,33 +1404,44 @@
                     data: cpcData,
                     smooth: true,
                     connectNulls: true,
-                    symbolSize: 0,
                     showSymbol: false,
-                    emphasis: { focus: 'none', scale: false },
-                    // 空軍預測：暖橘色實線
                     lineStyle: {
-                        width: 2.2,
-                        color: '#ff7b43',
-                        type: 'solid'
+                        width: 3.5,
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#f97316' },
+                            { offset: 1, color: '#ff7b72' }
+                        ])
                     },
-                    itemStyle: { color: '#ff7b43' }
+                    itemStyle: { color: '#ff7b72' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(255, 123, 114, 0.15)' },
+                            { offset: 1, color: 'rgba(255, 123, 114, 0)' }
+                        ])
+                    }
                 },
                 {
-                    name: 'ECMWF陣風',
+                    name: 'Open-Meteo預測陣風',
                     type: 'line',
                     data: omData,
                     smooth: true,
                     connectNulls: true,
-                    symbolSize: 0,
                     showSymbol: false,
-                    emphasis: { focus: 'none', scale: false },
-                    // ECMWF陣風：天藍色虛線
                     lineStyle: {
-                        width: 2,
+                        width: 3,
                         type: 'dashed',
-                        color: '#38bdf8'
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#06b6d4' },
+                            { offset: 1, color: '#58a6ff' }
+                        ])
                     },
-                    itemStyle: { color: '#38bdf8' }
+                    itemStyle: { color: '#58a6ff' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(88, 166, 255, 0.1)' },
+                            { offset: 1, color: 'rgba(88, 166, 255, 0)' }
+                        ])
+                    }
                 }
             ]
         };
