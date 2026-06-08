@@ -1242,10 +1242,10 @@
         }
 
         try {
-            // 獲取最新 300 筆資料，依 timestamp 升序排列
+            // 獲取最新 200 筆資料，依 timestamp 降序排列 (確保拿到最新預報而非舊歷史)，並在前端反轉
             const snapshot = await firestoreDb.collection("wind_forecasts")
-                .orderBy("timestamp", "asc")
-                .limit(300)
+                .orderBy("timestamp", "desc")
+                .limit(200)
                 .get();
 
             if (snapshot.empty) {
@@ -1264,6 +1264,9 @@
                     open_meteo_wind_speed: docData.open_meteo_wind
                 });
             });
+
+            // 反轉回時間升序排列，以供折線圖由左至右正常顯示
+            data.reverse();
 
             lastFetchedForecastData = data;
             renderForecastChart(data);
