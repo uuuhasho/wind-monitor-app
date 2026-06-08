@@ -516,23 +516,22 @@
         /* Tooltip 覆寫樣式 */
         .custom-tooltip {
             padding: 10px 14px;
-            background: rgba(22, 27, 34, 0.35) !important;
+            background: rgba(240, 242, 245, 0.75) !important; /* 淺灰色半透明 */
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(88, 166, 255, 0.3) !important;
+            border: 1px solid rgba(0, 0, 0, 0.12) !important; /* 淡淡的深色邊框 */
             border-radius: 8px !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
-            color: #f0f6fc !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+            color: #24292f !important; /* 文字改為深色 */
             font-family: system-ui, -apple-system, sans-serif !important;
-            backdrop-filter: blur(4px);
         }
         .tooltip-time {
             font-size: 0.85rem;
             font-weight: 700;
             margin-bottom: 6px;
-            border-bottom: 1px solid rgba(240, 246, 252, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important; /* 改用深色分隔線 */
             padding-bottom: 4px;
-            color: #58a6ff;
+            color: #57606a !important; /* 時間改用深灰色 */
         }
         .tooltip-row {
             display: flex;
@@ -540,6 +539,7 @@
             gap: 20px;
             font-size: 0.8rem;
             margin-bottom: 4px;
+            color: #24292f !important; /* 文字改為深色 */
         }
         .tooltip-row:last-child {
             margin-bottom: 0;
@@ -647,13 +647,13 @@
         <div class="chart-wrapper" style="position: relative;">
             <!-- 自訂無圓點圖例 -->
             <div style="position: absolute; top: 0px; right: 4%; display: flex; gap: 15px; font-size: 11px; color: #8b949e; pointer-events: none; z-index: 10;">
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#8b949e" stroke-width="2.2" /></svg>
-                    <span>空軍預測</span>
+                <div style="display: flex; align-items: center; gap: 5px; color: #ff7b43;">
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#ff7b43" stroke-width="2.2" /></svg>
+                    <span style="font-weight: bold;">空軍預測</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#8b949e" stroke-width="2" stroke-dasharray="6,4" /></svg>
-                    <span>ECMWF陣風</span>
+                <div style="display: flex; align-items: center; gap: 5px; color: #38bdf8;">
+                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4" /></svg>
+                    <span style="font-weight: bold;">ECMWF陣風</span>
                 </div>
             </div>
             
@@ -1305,8 +1305,8 @@
                 trigger: 'axis',
                 confine: true,
                 axisPointer: { type: 'line', lineStyle: { color: '#30363d', type: 'dashed' } },
-                backgroundColor: 'rgba(22, 27, 34, 0.75)', // 半透明背景
-                extraCssText: 'backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px;', // 毛玻璃效果
+                backgroundColor: 'rgba(240, 242, 245, 0.75)', // 淺灰色半透明背景，與 CSS 同步
+                extraCssText: 'backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px;',
                 className: 'custom-tooltip',
                 borderWidth: 0,
                 shadowBlur: 0,
@@ -1328,22 +1328,22 @@
                         if (param.seriesName === 'ECMWF陣風') ecmwfVal = param.value;
                     });
 
-                    // 💡 安全判定：若空軍預測 < 該船限速，顯示綠字"可進港"，否則紅字"無法進港"
+                    // 💡 安全判定：若空軍預測 < 該船限速，顯示綠字"可進港"，否則紅字"無法進港" (調整顏色對比以適應淺灰色背景)
                     const isSafe = cpcVal !== null && cpcVal < limitSpeed;
                     const statusHtml = isSafe 
-                        ? `<span style="color:#2ecc71; font-weight:bold;">(可進港)</span>`
-                        : `<span style="color:#e74c3c; font-weight:bold;">(無法進港)</span>`;
+                        ? `<span style="color:#1a7f37; font-weight:bold;">(可進港)</span>`
+                        : `<span style="color:#d1242f; font-weight:bold;">(無法進港)</span>`;
 
                     return `
-                        <div class="tooltip-time">${time}</div>
-                        <div style="font-weight:bold; margin-bottom:8px;">${shipName} ${statusHtml}</div>
-                        <div class="tooltip-row">
+                        <div class="tooltip-time" style="color: #57606a; border-bottom: 1px solid rgba(0, 0, 0, 0.08); font-weight: bold;">${time}</div>
+                        <div style="font-weight:bold; margin-bottom:8px; color: #1f2328;">${shipName} ${statusHtml}</div>
+                        <div class="tooltip-row" style="color: #24292f;">
                             <span>空軍預測:</span>
-                            <span class="tooltip-val" style="color:#ffffff;">${cpcVal !== null ? cpcVal.toFixed(2) + ' m/s' : '無資料'}</span>
+                            <span class="tooltip-val" style="color:#ff7b43; font-weight:bold;">${cpcVal !== null ? cpcVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
-                        <div class="tooltip-row">
+                        <div class="tooltip-row" style="color: #24292f;">
                             <span>ECMWF陣風:</span>
-                            <span class="tooltip-val" style="color:#ffffff;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
+                            <span class="tooltip-val" style="color:#0969da; font-weight:bold;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                     `;
                 }
@@ -1407,13 +1407,13 @@
                     symbolSize: 0,
                     showSymbol: false,
                     emphasis: { focus: 'none', scale: false },
-                    // 空軍預測為：淺灰色實線
+                    // 空軍預測：暖橘色實線
                     lineStyle: {
                         width: 2.2,
-                        color: '#8b949e',
+                        color: '#ff7b43',
                         type: 'solid'
                     },
-                    itemStyle: { color: '#8b949e' }
+                    itemStyle: { color: '#ff7b43' }
                 },
                 {
                     name: 'ECMWF陣風',
@@ -1424,13 +1424,13 @@
                     symbolSize: 0,
                     showSymbol: false,
                     emphasis: { focus: 'none', scale: false },
-                    // ECMWF陣風為：淺灰色虛線
+                    // ECMWF陣風：天藍色虛線
                     lineStyle: {
                         width: 2,
                         type: 'dashed',
-                        color: '#8b949e'
+                        color: '#38bdf8'
                     },
-                    itemStyle: { color: '#8b949e' }
+                    itemStyle: { color: '#38bdf8' }
                 }
             ]
         };
