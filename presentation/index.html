@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚢 臺中 LNG 船監控系統 - 互動式簡報</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --slate-900: #0b0f19;
+            --slate-800: #151b2d;
+            --slate-700: #1e293b;
+            --slate-600: #334155;
+            --slate-100: #f1f5f9;
+            --sky-500: #0ea5e9;
+            --sky-400: #38bdf8;
+            --emerald-500: #10b981;
+            --rose-500: #f43f5e;
+            --amber-500: #f59e0b;
+            
+            /* App Simulator UI Colors */
+            --app-bg: #f4f7f6;
+            --app-card: #ffffff;
+            --app-text: #333333;
+            --app-primary: #4A90E2;
+            --app-safe: #28a745;
+            --app-warning: #dc3545;
+            --app-waiting: #6c757d;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--slate-900);
+            color: var(--slate-100);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Presentation Container */
+        .presentation-deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            padding: 40px;
+        }
+
+        /* Top Progress Bar */
+        .progress-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sky-500), var(--emerald-500));
+            width: 20%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Header */
+        .deck-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .system-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .system-title span {
+            color: var(--sky-400);
+        }
+
+        /* Slides Container */
+        .slides-wrapper {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 45px 0 20px 0;
+            position: relative;
+        }
+
+        #slide-3 h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 2.0rem;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            max-width: 1100px;
+            height: 100%;
+            max-height: 600px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            z-index: 5;
+        }
+
+        /* Slide Titles */
+        .slide h2 {
+            font-size: 2.2rem;
+            margin: 0 0 24px 0;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .slide h2 span {
+            color: var(--sky-400);
+        }
+
+        /* --- Slide 1: Cover --- */
+        .cover-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .cover-badge {
+            background-color: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: var(--sky-400);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .cover-content h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            color: #ffffff;
+            font-weight: 700;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .cover-subtitle {
+            font-size: 1.3rem;
+            color: #94a3b8;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .cover-decoration {
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--sky-500), var(--emerald-500));
+            border-radius: 2px;
+            margin-top: 10px;
+        }
+
+        /* --- Slide 2: Intro & Challenges --- */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: stretch;
+        }
+
+        .intro-card {
+            background-color: var(--slate-800);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header.challenge { color: var(--rose-500); }
+        .card-header.solution { color: var(--emerald-500); }
+
+        .list-item {
+            display: flex;
+            gap: 15px;
+            align-items: start;
+        }
+
+        .list-bullet {
+            background-color: rgba(255,255,255,0.05);
+            color: #ffffff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .list-item:hover .list-bullet {
+            background-color: var(--sky-500);
+        }
+
+        .list-content h4 {
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+
+        .list-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* --- Slide 3: App Simulator UI --- */
+        .ui-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        /* Interactive Simulator Frame */
+        .sim-container {
+            background: #060913;
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .sim-app {
+            background-color: var(--app-bg);
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 300px;
+            color: var(--app-text);
+            font-family: Arial, sans-serif;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .sim-app h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .sim-wind-val {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .sim-wind-unit {
+            font-size: 1rem;
+            color: #555;
+        }
+
+        .sim-time-str {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .sim-status-box {
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .sim-status-box.waiting { background: #e9ecef; border: 1px solid var(--app-waiting); color: var(--app-waiting); }
+        .sim-status-box.safe { background: #d4edda; border: 1px solid var(--app-safe); color: var(--app-safe); animation: breathing 2s infinite; }
+        .sim-status-box.warning { background: #ffeeba; border: 1px solid var(--app-warning); color: var(--app-warning); }
+
+        @keyframes breathing {
+            0% { box-shadow: 0 0 2px rgba(40, 167, 69, 0.4); }
+            50% { box-shadow: 0 0 12px rgba(40, 167, 69, 0.7); }
+            100% { box-shadow: 0 0 2px rgba(40, 167, 69, 0.4); }
+        }
+
+        .sim-field {
+            text-align: left;
+            margin-bottom: 8px;
+        }
+
+        .sim-field label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #444;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .sim-field input {
+            width: 100%;
+            padding: 6px 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .sim-field input:disabled { background: #e9ecef; color: #777; }
+
+        .sim-btn {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+            font-weight: bold;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .sim-btn.start { background: var(--app-primary); }
+        .sim-btn.reset { background: #e83e8c; }
+
+        .sim-pob-list {
+            background: #d4edda;
+            border: 2px solid var(--app-safe);
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #000;
+            text-align: left;
+            margin-top: 10px;
+        }
+
+        /* Password Modal inside simulator */
+        .sim-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .sim-modal-content {
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            width: 80%;
+            text-align: center;
+            color: #333;
+        }
+
+        .sim-modal-content h4 { margin: 0 0 5px 0; font-size: 0.9rem; }
+        .sim-modal-content input { width: 100%; padding: 5px; text-align: center; border-radius: 4px; border: 1px solid #ccc; margin: 8px 0; }
+
+        /* Simulator Hotspots (Cancelled) */
+
+        /* Schedule Row Breathing Animation */
+        .schedule-row-safe {
+            animation: row-breathing 2s infinite ease-in-out;
+        }
+        @keyframes row-breathing {
+            0% { background-color: #d4edda; }
+            50% { background-color: #c3e6cb; }
+            100% { background-color: #d4edda; }
+        }
+
+        /* Simulator CPC Button Styles matching index_NV4.7.3.html */
+        .sim-cpc-btn {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #64748b; /* 齒輪預設顏色 */
+        }
+        .sim-cpc-btn:hover {
+            color: var(--sky-500); /* 懸停時變為亮藍色 */
+            transform: rotate(45deg); /* 懸停時旋轉 45 度 */
+        }
+        .sim-cpc-btn:active {
+            transform: scale(0.85) rotate(45deg);
+        }
+
+        /* Simulator Toggler */
+        .sim-toggle-bar {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .sim-toggle-btn {
+            background: var(--slate-700);
+            border: none;
+            color: #ccc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .sim-toggle-btn.active {
+            background: var(--sky-500);
+            color: #fff;
+        }
+
+        /* Detail List on the Right */
+        .detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 330px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        /* Premium Scrollbar for detail list */
+        .detail-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .detail-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        .detail-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .detail-list::-webkit-scrollbar-thumb:hover {
+            background: var(--sky-500);
+        }
+
+        .detail-item {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: start;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .detail-item:hover, .detail-item.active {
+            background: rgba(14,165,233,0.06);
+            border-color: rgba(14,165,233,0.3);
+        }
+
+        .detail-item .num {
+            background: var(--slate-700);
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .detail-item:hover .num, .detail-item.active .num {
+            background: var(--sky-500);
+        }
+
+        .detail-item h4 {
+            margin: 0 0 3px 0;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        .detail-item p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        /* --- Slide 4: Workflow --- */
+        .wf-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .wf-card {
+            background: var(--slate-800);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .wf-step-num {
+            background: linear-gradient(135deg, var(--sky-500), var(--sky-400));
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(14,165,233,0.3);
+        }
+
+        .wf-card h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .wf-card p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* --- Slide 5: Backend & Automation --- */
+        /* --- Slide 4: Backend & Automation --- */
+        .back-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .back-card {
+            background-color: var(--slate-800);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .back-icon {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-500);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .back-card.blue .back-icon {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--sky-500);
+        }
+
+        .back-card.amber .back-icon {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--amber-500);
+        }
+
+        .back-card.rose .back-icon {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose-500);
+        }
+
+        .back-content h3 {
+            margin: 0 0 6px 0;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .back-content p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            line-height: 1.45;
+        }
+
+        /* Footer Controls */
+        .deck-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 20px;
+            z-index: 10;
+        }
+
+        .slide-counter {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: var(--slate-800);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: var(--sky-500);
+            border-color: var(--sky-500);
+            transform: scale(1.05);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Download Banner Styles --- */
+        .download-banner {
+            margin-top: 35px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 12px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .download-banner:hover {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.35);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .thumbs-up-icon {
+            font-size: 1.8rem;
+            line-height: 1;
+            display: inline-block;
+            animation: thumb-wiggle 3s infinite ease-in-out;
+        }
+
+        .download-banner p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .download-banner a {
+            color: var(--sky-400);
+            text-decoration: underline;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .download-banner a:hover {
+            color: #56cbf9 !important;
+        }
+
+        @keyframes thumb-wiggle {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(15deg) scale(1.15); }
+        }
+
+        /* --- RWD Responsive Styles --- */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;
+            }
+
+            .presentation-deck {
+                height: auto;
+                min-height: 100vh;
+                padding: 15px 15px 25px 15px;
+                overflow-y: auto;
+                justify-content: flex-start;
+                gap: 20px;
+            }
+
+            .deck-header {
+                margin-bottom: 10px;
+            }
+
+            .system-title {
+                font-size: 0.95rem;
+            }
+
+            .slides-wrapper {
+                margin-top: 30px;
+                margin-bottom: 20px;
+                height: auto;
+                flex-grow: 1;
+                display: block;
+            }
+
+            .slide {
+                position: relative;
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+                max-height: none;
+                opacity: 1;
+                pointer-events: auto;
+                transform: none;
+                display: none;
+                transition: none;
+                justify-content: flex-start;
+            }
+
+            .slide.active {
+                display: flex;
+            }
+
+            .slide h2 {
+                font-size: 1.6rem;
+                margin-bottom: 15px;
+                text-align: center;
+            }
+
+            /* Cover Slide */
+            .cover-content h1 {
+                font-size: 2.0rem;
+                line-height: 1.3;
+            }
+
+            .cover-subtitle {
+                font-size: 0.95rem;
+            }
+
+            /* Slide 2: Intro Grid */
+            .intro-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .intro-card {
+                padding: 20px;
+            }
+
+            /* Slide 3: App UI Tour */
+            .ui-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .sim-container {
+                padding: 10px;
+                background: none;
+                border: none;
+            }
+
+            .sim-app {
+                max-width: 290px;
+            }
+
+            .detail-list {
+                max-height: none;
+                overflow-y: visible;
+                padding-right: 0;
+            }
+
+            .detail-item {
+                padding: 10px 12px;
+            }
+
+            .sim-toggle-bar {
+                justify-content: center;
+                gap: 4px;
+            }
+
+            .sim-toggle-btn {
+                padding: 4px 6px;
+                font-size: 0.7rem;
+            }
+
+            /* Slide 4: Backend Grid */
+            .back-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .back-card {
+                padding: 15px;
+            }
+
+            .download-banner {
+                margin-top: 20px;
+                padding: 12px 16px;
+                gap: 10px;
+            }
+
+            .download-banner p {
+                font-size: 0.85rem;
+            }
+
+            .thumbs-up-icon {
+                font-size: 1.5rem;
+            }
+
+            /* Footer Controls */
+            .deck-footer {
+                margin-top: auto;
+                padding-top: 15px;
+                border-top: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .nav-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="presentation-deck">
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="deck-header">
+            <div class="system-title">🚢 臺中 LNG 船監控系統 <span></span></div>
+            <div style="font-size: 0.8rem; color: #64748b;"> ◀ / ▶ 切換</div>
+        </div>
+
+        <!-- Slides Wrapper -->
+        <div class="slides-wrapper">
+            <!-- Slide 1: Cover -->
+            <div class="slide active" id="slide-1">
+                <div class="cover-content">
+                    <div class="cover-badge">AUTOMATION SYSTEM</div>
+                    <h1>臺中 LNG 船監控系統</h1>
+                    <div class="cover-subtitle">透過自動化評估，判斷 LNG 船進港時機</div>
+                    <div class="cover-decoration"></div>
+                </div>
+            </div>
+
+            <!-- Slide 2: Introduction & Problems -->
+            <div class="slide" id="slide-2">
+                <h2>系統簡介 & <span>痛點解決</span></h2>
+                <div class="intro-grid">
+                    <!-- Challenges -->
+                    <div class="intro-card">
+                        <div class="card-header challenge">
+                            ⚠️ 核心挑戰
+                        </div>
+                        <div class="list-item">
+                            <div class="list-bullet">1</div>
+                            <div class="list-content">
+                                <h4>限制風速極為嚴格</h4>
+                                <p>LNG 船進港限制（180K為 12.0 m/s，其他為 15 m/s），風速是台中港判定LNG船進港的關鍵。</p>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-bullet">2</div>
+                            <div class="list-content">
+                                <h4>人工查詢誤差</h4>
+                                <p>過往依靠人工頻繁查詢網站，容易造成誤判或「搶進延遲」。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Solutions -->
+                    <div class="intro-card">
+                        <div class="card-header solution">
+                            💡 解決方案
+                        </div>
+                        <div class="list-item">
+                            <div class="list-bullet">✓</div>
+                            <div class="list-content">
+                                <h4>即時風速</h4>
+                                <p>自動顯示台中港「北堤綠燈塔」風速計資料，避免人工查詢漏失。</p>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="list-bullet">✓</div>
+                            <div class="list-content">
+                                <h4>智慧判定</h4>
+                                <p>結合即時風速、進港速限，立即判斷進港狀況且訊息一致。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: App UI Tour -->
+            <div class="slide" id="slide-3">
+                <div class="ui-grid">
+                    <!-- Simulator -->
+                    <div class="sim-container">
+                        <!-- Inside simulator app -->
+                        <div class="sim-app">
+                            <h3 style="margin-top: 0; color: #000000; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 4px;">🚢臺中LNG船監控</h3>
+                            
+                            <div style="display: flex; justify-content: center; align-items: baseline; margin: 10px 0; color: #000000;">
+                                <span class="sim-wind-val" id="appWind" style="font-size: 2.5rem; font-weight: bold;">8.4</span>
+                                <span class="sim-wind-unit" style="font-size: 1rem; margin-left: 4px; color: #555;">m/s</span>
+                            </div>
+                            <div class="sim-time-str" id="appTime" style="font-size: 0.8rem; color: #888; margin-bottom: 12px;">最後更新: 10:20</div>
+
+                            <!-- POB records list -->
+                            <div class="sim-pob-list" id="appPobRecords" style="display: none; background-color: #d4edda; border: 3px solid var(--app-safe); padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; text-align: left; margin-bottom: 10px; line-height: 1.4;">
+                                • Cobia 已於 14:56 POB，風速: 10 m/s。
+                            </div>
+
+                            <!-- Dynamic Box Indicator -->
+                            <div class="sim-status-box waiting" id="appStatusBox" style="display: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; margin-bottom: 12px;">等待進港</div>
+
+                            <!-- Schedule Section -->
+                            <div class="sim-schedule-section" style="margin-top: 10px; background: #fff; border-radius: 8px; border: 1px solid #ddd; padding: 10px; text-align: left;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
+                                    <h4 style="margin: 0; font-size: 0.85rem; color: #333;">船期表</h4>
+                                    <!-- 鈴鐺音效按鈕：點選卡片2時顯示，預設關閉 -->
+                                    <span id="simSoundToggle" onclick="toggleSimSound()" style="display: none; cursor: pointer; font-size: 1.1em; user-select: none; transition: transform 0.2s;" title="提醒音效">🔕</span>
+                                    <!-- Settings Gear Icon -->
+                                    <svg class="sim-cpc-btn" onclick="selectSimState('menu_modal', 'c-btn')" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" alt="設定" title="手動設定">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                    </svg>
+                                </div>
+                                <div style="max-height: 100px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+                                        <thead>
+                                            <tr style="color: #666; border-bottom: 1px solid #eee;"><th style="padding: 4px 2px; font-weight: normal; text-align: center;">日期</th><th style="padding: 4px 2px; font-weight: normal; text-align: center;">船名</th><th style="padding: 4px 2px; font-weight: normal; text-align: center;">限速</th></tr>
+                                        </thead>
+                                        <tbody id="appScheduleBody">
+                                            <tr id="row-cobia"><td style="padding: 4px 2px; text-align: center;">5/22</td><td style="padding: 4px 2px; text-align: center;">Cobia</td><td style="padding: 4px 2px; text-align: center;">12</td></tr>
+                                            <tr><td style="padding: 4px 2px; text-align: center;">5/23</td><td style="padding: 4px 2px; text-align: center;">LNG Pioneer</td><td style="padding: 4px 2px; text-align: center;">15</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Manual Monitoring Setting Modal -->
+                            <div class="sim-modal" id="appManualModal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 12px; justify-content: center; align-items: center; z-index: 15;">
+                                <div class="sim-modal-content" style="background: #fff; padding: 12px; border-radius: 8px; width: 85%; text-align: center; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                    <h4 style="margin: 0 0 8px 0; font-size: 0.85rem; font-weight: bold; color: #333;">⚙️ 手動監控設定</h4>
+                                    
+                                    <div class="sim-field" style="text-align: left; margin-bottom: 6px;">
+                                        <label style="font-size: 0.7rem; font-weight: bold; color: #444; display: block; margin-bottom: 1px;">船名</label>
+                                        <input type="text" id="appShipName" placeholder="例如: Cobia" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem;">
+                                    </div>
+                                    <div class="sim-field" style="text-align: left; margin-bottom: 6px;">
+                                        <label style="font-size: 0.7rem; font-weight: bold; color: #444; display: block; margin-bottom: 1px;">限制風速 (m/s)</label>
+                                        <input type="number" id="appLimitSpeed" placeholder="例如: 12.0" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem;">
+                                    </div>
+                                    <!-- POB field -->
+                                    <div class="sim-field" id="appPobField" style="display: none; text-align: left; margin-bottom: 6px; border-top: 1px dashed #ccc; padding-top: 4px;">
+                                        <label style="font-size: 0.7rem; font-weight: bold; color: var(--app-primary); display: block; margin-bottom: 1px;">🕒 (非必要)手動輸入 POB 時間</label>
+                                        <input type="text" id="appPobTimeInput" placeholder="如14:56" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; text-align: center;">
+                                    </div>
+
+                                    <button class="sim-btn start" id="appStartBtn" style="padding: 6px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: none; font-weight: bold; color: #fff; cursor: pointer;" onclick="setSimState('password_modal')">▶ 開始監控</button>
+                                    <button class="sim-btn reset" id="appResetBtn" style="display: none; padding: 6px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: none; font-weight: bold; color: #fff; cursor: pointer;" onclick="setSimState('password_modal')">⏹ 結束監控</button>
+                                    <button class="sim-btn" style="background:#eee; color:#333; padding: 4px; font-size: 0.75rem; width: 100%; margin-top: 6px; border-radius: 4px; border: none;" onclick="setSimState('main_screen')">關閉</button>
+                                </div>
+                            </div>
+
+                            <!-- Password Modal Overlay -->
+                            <div class="sim-modal" id="appPwdModal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 12px; justify-content: center; align-items: center; z-index: 20;">
+                                <div class="sim-modal-content" style="background: #fff; padding: 12px; border-radius: 8px; width: 80%; text-align: center; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                    <h4 style="margin: 0 0 4px 0; font-size: 0.85rem; font-weight: bold; color: #333;">🔐 安全驗證</h4>
+                                    <p style="font-size: 0.65rem; color: #666; margin: 0 0 5px 0;">請輸入操作授權密碼：</p>
+                                    <input type="password" value="••••" style="width: 100%; padding: 6px; text-align: center; border-radius: 4px; border: 1px solid #ccc; margin: 6px 0; font-size: 0.9rem;" disabled>
+                                    <div style="display:flex; gap:6px;">
+                                        <button class="sim-btn" style="background:#e9ecef; color:#333; flex:1; padding:4px; font-size: 0.75rem; border: none; border-radius: 4px;" onclick="setSimState('menu_modal')">取消</button>
+                                        <button class="sim-btn" style="background:var(--app-primary); color: #fff; flex:1; padding:4px; font-size: 0.75rem; border: none; border-radius: 4px;" onclick="confirmModal()">確認</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Column (Right) -->
+                    <div class="detail-column" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+                        <h2>App 介面 <span>與操作介紹</span></h2>
+                        <div class="detail-list" style="flex-grow: 1;">
+                            <div class="detail-item" id="c-wind" onclick="selectSimState('standby', 'c-wind')">
+                                <div class="num">1</div>
+                                <div>
+                                    <h4>即時風速與最後更新</h4>
+                                    <p>顯示台中港北堤綠燈塔之即時風力與更新時間。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-status" onclick="selectSimState('monitoring', 'c-status')">
+                                <div class="num">2</div>
+                                <div>
+                                    <h4>動態判定狀態框 &amp; 🔔 音效提醒</h4>
+                                    <p>顯示可進港（綠色呼吸燈）與無法進港（紅色）狀態。<br>監控中可點擊船期表旁的 🔕 鈴鐺開啟音效，進港條件符合時會響起提示音，再按一次即可靜音。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-btn" onclick="selectSimState('menu_modal', 'c-btn')">
+                                <div class="num">3</div>
+                                <div>
+                                    <h4>手動設定視窗 (app介面可操作)</h4>
+                                    <p>點擊 齒輪 圖示，開啟手動設定視窗，可輸入船名與速限，或 POB 時間及 開始/結束 操作按鈕。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-pob" onclick="selectSimState('password_modal', 'c-pob')">
+                                <div class="num">4</div>
+                                <div>
+                                    <h4>安全密碼驗證視窗 (Modal)</h4>
+                                    <p>手動操作時，需輸入密碼才允許送出。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-pob-records" onclick="selectSimState('pob_record', 'c-pob-records')">
+                                <div class="num">5</div>
+                                <div>
+                                    <h4>當日 POB 記錄板 (POB 訊息)</h4>
+                                    <p>當日監控結束後，綠色區塊顯示船隻的 POB 時間與進港風速。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Toggle Simulator state in Slide 3 (aligned left inside right column) -->
+                        <div class="sim-toggle-bar">
+                            <button class="sim-toggle-btn active" id="btn-state-standby" onclick="selectSimState('standby', 'c-wind')">平常 APP 畫面</button>
+                            <button class="sim-toggle-btn" id="btn-state-monitoring" onclick="selectSimState('monitoring', 'c-status')">監控狀態</button>
+                            <button class="sim-toggle-btn" id="btn-state-menu" onclick="selectSimState('menu_modal', 'c-btn')">開啟手動設定</button>
+                            <button class="sim-toggle-btn" id="btn-state-password" onclick="selectSimState('password_modal', 'c-pob')">驗證密碼</button>
+                            <button class="sim-toggle-btn" id="btn-state-pob" onclick="selectSimState('pob_record', 'c-pob-records')">顯示 POB 訊息</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4: Backend / Schedule (Three cards parallel side-by-side) -->
+            <div class="slide" id="slide-4">
+                <h2>後台<span>自動化管理</span></h2>
+                <div class="back-grid">
+                    <!-- Schedule Run -->
+                    <div class="back-card blue">
+                        <div class="back-icon">🕒 Start</div>
+                        <div class="back-content">
+                            <h3>監控啟動</h3>
+                            <p>依船期表自動監控。</p>
+                        </div>
+                    </div>
+                    <!-- Firebase Sync -->
+                    <div class="back-card amber">
+                        <div class="back-icon">⚡ Sync</div>
+                        <div class="back-content">
+                            <h3>船期同步</h3>
+                            <p>行事曆船期表與app同步。</p>
+                        </div>
+                    </div>
+                    <!-- Archiving -->
+                    <div class="back-card">
+                        <div class="back-icon">📁 Filing</div>
+                        <div class="back-content">
+                            <h3>資料歸檔</h3>
+                            <p>自動歸檔保存紀錄。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Banner -->
+                <div class="download-banner">
+                    <span class="thumbs-up-icon">👍</span>
+                    <p>
+                        下載請點選 <a href="https://uuuhasho.github.io/wind-monitor-app/" target="_blank">https://uuuhasho.github.io/wind-monitor-app/</a>，並加到主畫面或安裝
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="deck-footer">
+            <div class="slide-counter" id="slideNum">SLIDE 1 OF 4</div>
+            <div class="nav-controls">
+                <button class="nav-btn" onclick="prevSlide()">◀</button>
+                <button class="nav-btn" onclick="nextSlide()">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Presentation Code -->
+    <script>
+        // --- Simulator Sound ---
+        const simAudio = new Audio('notification_option_C.mp3');
+        simAudio.loop = false;
+        let simSoundOn = false;
+
+        function toggleSimSound() {
+            simSoundOn = !simSoundOn;
+            const btn = document.getElementById('simSoundToggle');
+            if (simSoundOn) {
+                btn.innerText = '🔔';
+                btn.style.transform = 'scale(1.2)';
+                setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
+                simAudio.currentTime = 0;
+                // Play for 4 seconds then stop
+                simAudio.play().catch(() => {});
+                setTimeout(() => {
+                    if (simSoundOn) {
+                        simAudio.pause();
+                        simAudio.currentTime = 0;
+                    }
+                }, 4000);
+            } else {
+                btn.innerText = '🔕';
+                simAudio.pause();
+                simAudio.currentTime = 0;
+            }
+        }
+
+        let currentSlide = 1;
+        const totalSlides = 4;
+
+        function updateDeck() {
+            // Update Active Slide Class
+            for (let i = 1; i <= totalSlides; i++) {
+                const s = document.getElementById('slide-' + i);
+                if (i === currentSlide) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            }
+
+            // Update Progress Bar
+            const percent = (currentSlide / totalSlides) * 100;
+            document.getElementById('progressBar').style.width = percent + '%';
+
+            // Update Footer Counter
+            document.getElementById('slideNum').innerText = `SLIDE ${currentSlide} OF ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateDeck();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateDeck();
+            }
+        }
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+                prevSlide();
+            }
+        });
+
+        // --- Simulator Interactivity ---
+        let simState = 'standby'; 
+        let isMonitoring = false; 
+
+        function setSimState(state) {
+            // Update Active Toggle Buttons
+            document.querySelectorAll('.sim-toggle-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Hide all overlays first
+            document.getElementById('appManualModal').style.display = 'none';
+            document.getElementById('appPwdModal').style.display = 'none';
+            
+            // Get references
+            const appWind = document.getElementById('appWind');
+            const appTime = document.getElementById('appTime');
+            const appStatusBox = document.getElementById('appStatusBox');
+            const appPobRecords = document.getElementById('appPobRecords');
+            const appShipName = document.getElementById('appShipName');
+            const appLimitSpeed = document.getElementById('appLimitSpeed');
+            const appPobField = document.getElementById('appPobField');
+            const appStartBtn = document.getElementById('appStartBtn');
+            const appResetBtn = document.getElementById('appResetBtn');
+            const rowCobia = document.getElementById('row-cobia');
+
+            // Reset table row highlights by default (only monitoring highlights it)
+            if (rowCobia) {
+                rowCobia.className = "";
+                rowCobia.style.cssText = "";
+            }
+
+            // --- Hotspots Show/Hide Logic (Cancelled) ---
+
+            if (state === 'standby' || state === 'main_screen') {
+                isMonitoring = false;
+                simState = 'standby';
+                document.getElementById('btn-state-standby').classList.add('active');
+                
+                appWind.innerText = "8.4";
+                appTime.innerText = "最後更新: 10:20";
+                appStatusBox.style.display = "none";
+                appPobRecords.style.display = "none";
+
+                // Hide and reset bell
+                const bellStandby = document.getElementById('simSoundToggle');
+                if (bellStandby) {
+                    bellStandby.style.display = 'none';
+                    bellStandby.innerText = '🔕';
+                    simSoundOn = false;
+                    simAudio.pause();
+                    simAudio.currentTime = 0;
+                }
+            }
+            else if (state === 'monitoring') {
+                isMonitoring = true;
+                simState = 'monitoring';
+                document.getElementById('btn-state-monitoring').classList.add('active');
+                
+                appWind.innerText = "10";
+                appTime.innerText = "最後更新: 14:50";
+                appStatusBox.style.display = "block";
+                appStatusBox.className = "sim-status-box safe";
+                appStatusBox.innerHTML = "Cobia 可進港";
+                
+                // Hide POB records in monitoring state
+                appPobRecords.style.display = "none";
+                
+                // Table highlight (safe/breathing)
+                if (rowCobia) {
+                    rowCobia.className = "schedule-row-safe";
+                    rowCobia.style.backgroundColor = "#d4edda";
+                    rowCobia.style.color = "#28a745";
+                    rowCobia.style.fontWeight = "bold";
+                }
+
+                // Show bell icon (default OFF)
+                const bellMonitor = document.getElementById('simSoundToggle');
+                if (bellMonitor) {
+                    bellMonitor.style.display = 'inline-block';
+                    // Only reset to OFF if not already showing (avoid flicker on re-click)
+                    if (bellMonitor.innerText !== '🔔') {
+                        bellMonitor.innerText = '🔕';
+                        simSoundOn = false;
+                    }
+                }
+            }
+            else if (state === 'pob_record') {
+                simState = 'pob_record';
+                const pobBtn = document.getElementById('btn-state-pob');
+                if (pobBtn) pobBtn.classList.add('active');
+                
+                appWind.innerText = "10";
+                appTime.innerText = "最後更新: 14:50";
+                appStatusBox.style.display = "none";
+                
+                // Show POB records
+                appPobRecords.style.display = "block";
+                appPobRecords.innerHTML = "• Cobia 已於 14:56 POB，風速: 10 m/s。";
+                
+                // Hide Cobia row from schedule table as it has completed entry
+                if (rowCobia) rowCobia.style.display = "none";
+
+                // Hide and reset bell
+                const bellPob = document.getElementById('simSoundToggle');
+                if (bellPob) {
+                    bellPob.style.display = 'none';
+                    bellPob.innerText = '🔕';
+                    simSoundOn = false;
+                    simAudio.pause();
+                    simAudio.currentTime = 0;
+                }
+            }
+            else if (state === 'menu_modal') {
+                simState = 'menu_modal';
+                document.getElementById('btn-state-menu').classList.add('active');
+                
+                // Show manual modal overlay
+                document.getElementById('appManualModal').style.display = 'flex';
+                
+                if (isMonitoring) {
+                    appShipName.value = "Cobia";
+                    appShipName.disabled = true;
+                    appLimitSpeed.value = "12";
+                    appLimitSpeed.disabled = true;
+                    appPobField.style.display = "block";
+                    document.getElementById('appPobTimeInput').value = "14:56";
+                    appStartBtn.style.display = "none";
+                    appResetBtn.style.display = "block";
+                } else {
+                    appShipName.value = "";
+                    appShipName.disabled = false;
+                    appLimitSpeed.value = "";
+                    appLimitSpeed.disabled = false;
+                    appPobField.style.display = "none";
+                    appStartBtn.style.display = "block";
+                    appResetBtn.style.display = "none";
+                }
+            }
+            else if (state === 'password_modal') {
+                simState = 'password_modal';
+                document.getElementById('btn-state-password').classList.add('active');
+                
+                // Keep manual modal open in background of password modal
+                document.getElementById('appManualModal').style.display = 'flex';
+                document.getElementById('appPwdModal').style.display = 'flex';
+            }
+        }
+
+        function selectSimState(state, cardId) {
+            // 1. Set the simulator state
+            setSimState(state);
+
+            // 2. Clear previous active states on detail items and activate the current one
+            document.querySelectorAll('.detail-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (cardId) {
+                const selectedItem = document.getElementById(cardId);
+                if (selectedItem) {
+                    selectedItem.classList.add('active');
+                    selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        function confirmModal() {
+            if (isMonitoring) {
+                selectSimState('standby', 'c-wind');
+            } else {
+                selectSimState('monitoring', 'c-status');
+            }
+        }
+    </script>
+</body>
+</html>
