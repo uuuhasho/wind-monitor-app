@@ -88,49 +88,37 @@ def _run_pipeline_impl(target_date=None):
     
     # 1. Download / Locating mail attachment
     print("\n[Step 1] Fetching forecast document...")
+    gemini_output = None
     try:
         doc_path = download_forecast_attachment(target_date=target_date)
         print(f"Forecast document located at: {doc_path}")
-    except Exception as e:
-        print(f"Error in Step 1: {e}")
-        return False
         
-    # Get filenames
-    base_name = os.path.basename(doc_path).replace(".doc", "")
-    temp_dir = os.path.join(os.path.dirname(doc_path), "temp")
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    docx_path = os.path.join(temp_dir, f"{base_name}.docx")
-    raw_img_path = os.path.join(temp_dir, f"{base_name}_raw.png")
-    processed_img_path = os.path.join(temp_dir, f"{base_name}_processed.png")
-    
-    # 2. Document conversion and image extraction
-    print("\n[Step 2] Converting doc and extracting image...")
-    try:
+        # Get filenames
+        base_name = os.path.basename(doc_path).replace(".doc", "")
+        temp_dir = os.path.join(os.path.dirname(doc_path), "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        docx_path = os.path.join(temp_dir, f"{base_name}.docx")
+        raw_img_path = os.path.join(temp_dir, f"{base_name}_raw.png")
+        processed_img_path = os.path.join(temp_dir, f"{base_name}_processed.png")
+        
+        # 2. Document conversion and image extraction
+        print("\n[Step 2] Converting doc and extracting image...")
         convert_doc_to_docx(doc_path, docx_path)
         extract_image_from_docx(docx_path, raw_img_path)
-    except Exception as e:
-        print(f"Error in Step 2: {e}")
-        return False
-        
-    # 3. OpenCV image processing (Skipped - cv2_parser now handles raw image directly)
-    print("\n[Step 3] Preprocessing image (Skipped - using robust contour detection)...")
-    # try:
-    #     remove_horizontal_red_line(raw_img_path, processed_img_path)
-    # except Exception as e:
-    #     print(f"Error in Step 3: {e}")
-    #     return False
-        
-    # 4. Programmatic CV2 chart recognition
-    print("\n[Step 4] Calling CV2 Parser for chart parsing...")
-    try:
+            
+        # 3. OpenCV image processing (Skipped - cv2_parser now handles raw image directly)
+        print("\n[Step 3] Preprocessing image (Skipped - using robust contour detection)...")
+            
+        # 4. Programmatic CV2 chart recognition
+        print("\n[Step 4] Calling CV2 Parser for chart parsing...")
         # cv2_parser now reads raw_img_path and dynamically extracts the largest red contour
         gemini_output = parse_chart_with_cv2(raw_img_path, target_date)
         print("CV2 raw parser output:")
         print(gemini_output)
     except Exception as e:
-        print(f"Error in Step 4: {e}")
-        return False
+        print(f"Error in Step 1-4 (CPC Forecast Processing): {e}")
+        print("Will proceed to update Open-Meteo ECMWF data using existing forecast.")
         
     # 5. Open-Meteo & OpenWeather fetching, timezone/unit alignment and data writing
     print("\n[Step 5] Performing data fusion and writing to database...")
