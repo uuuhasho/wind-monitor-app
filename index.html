@@ -653,7 +653,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px; color: #58a6ff;">
                     <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6,4" /></svg>
-                    <span style="font-weight: bold;">Open-Meteo預測陣風</span>
+                    <span style="font-weight: bold;">ECMWF陣風</span>
                 </div>
             </div>
             
@@ -1325,7 +1325,7 @@
 
                     params.forEach(param => {
                         if (param.seriesName === '空軍預測') cpcVal = param.value;
-                        if (param.seriesName === 'Open-Meteo預測陣風') ecmwfVal = param.value;
+                        if (param.seriesName === 'ECMWF陣風') ecmwfVal = param.value;
                     });
 
                     // 💡 安全判定：若空軍預測 < 該船限速，顯示綠字"可進港"，否則紅字"無法進港"
@@ -1342,7 +1342,7 @@
                             <span class="tooltip-val" style="color:#ffffff;">${cpcVal !== null ? cpcVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                         <div class="tooltip-row">
-                            <span>Open-Meteo預測陣風:</span>
+                            <span>ECMWF陣風:</span>
                             <span class="tooltip-val" style="color:#ffffff;">${ecmwfVal !== null ? ecmwfVal.toFixed(2) + ' m/s' : '無資料'}</span>
                         </div>
                     `;
@@ -1406,7 +1406,7 @@
                     connectNulls: true,
                     showSymbol: false,
                     lineStyle: {
-                        width: 3.5,
+                        width: 2,
                         color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
                             { offset: 0, color: '#f97316' },
                             { offset: 1, color: '#ff7b72' }
@@ -1421,14 +1421,14 @@
                     }
                 },
                 {
-                    name: 'Open-Meteo預測陣風',
+                    name: 'ECMWF陣風',
                     type: 'line',
                     data: omData,
                     smooth: true,
                     connectNulls: true,
                     showSymbol: false,
                     lineStyle: {
-                        width: 3,
+                        width: 1.5,
                         type: 'dashed',
                         color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
                             { offset: 0, color: '#06b6d4' },
