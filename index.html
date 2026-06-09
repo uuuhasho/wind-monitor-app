@@ -1295,12 +1295,12 @@
         // 確保圖表正確調整大小以防範 Modal 初始化尺寸問題
         forecastChartInstance.resize();
 
-        // 格式化 X 軸時間顯示為 CST (UTC+8) mm/dd HH:00
+        // 格式化 X 軸時間顯示為 M/D HH:00 (直接讀取 UTC 值，修正 8 小時偏移)
         const timeData = data.map(item => {
             const date = new Date(item.timestamp);
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            const hh = String(date.getHours()).padStart(2, '0');
+            const mm = String(date.getUTCMonth() + 1);
+            const dd = String(date.getUTCDate());
+            const hh = String(date.getUTCHours()).padStart(2, '0');
             return `${mm}/${dd} ${hh}:00`;
         });
 
