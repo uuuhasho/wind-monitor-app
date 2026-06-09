@@ -1276,7 +1276,9 @@
             
             // 如果成功渲染出資料，更新狀態文字為「數據已更新」
             if (data.length > 0) {
-                statusEl.innerText = "數據已更新";
+                const today = new Date();
+                const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
+                statusEl.innerText = `${dateStr}數據已更新`;
                 statusEl.style.color = "#58a6ff";
             }
         } catch (err) {
@@ -1330,15 +1332,20 @@
                     let ecmwfVal = null;
 
                     params.forEach(param => {
-                        if (param.seriesName === '空軍預測') cpcVal = param.value;
-                        if (param.seriesName === 'ECMWF陣風') ecmwfVal = param.value;
+                        if (param.seriesName === '空軍預測' && param.value != null) cpcVal = param.value;
+                        if (param.seriesName === 'ECMWF陣風' && param.value != null) ecmwfVal = param.value;
                     });
 
                     // 💡 安全判定：若空軍預測 < 該船限速，顯示綠字"可進港"，否則紅字"無法進港"
-                    const isSafe = cpcVal !== null && cpcVal < limitSpeed;
-                    const statusHtml = isSafe 
-                        ? `<span style="color:#2ecc71; font-weight:bold;">(可進港)</span>`
-                        : `<span style="color:#e74c3c; font-weight:bold;">(無法進港)</span>`;
+                    let statusHtml = '';
+                    if (cpcVal !== null) {
+                        const isSafe = cpcVal < limitSpeed;
+                        statusHtml = isSafe 
+                            ? `<span style="color:#2ecc71; font-weight:bold;">(可進港)</span>`
+                            : `<span style="color:#e74c3c; font-weight:bold;">(無法進港)</span>`;
+                    } else {
+                        statusHtml = `<span style="color:#8b949e; font-weight:bold;">(無預測資料)</span>`;
+                    }
 
                     return `
                         <div class="tooltip-time">${time}</div>

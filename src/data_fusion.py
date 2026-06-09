@@ -123,6 +123,9 @@ def fuse_and_save_data(gemini_output=None):
 
     fused_data = []
     
+    if not gemini_output:
+        raise ValueError("CPC data is required for update. Fallback is disabled.")
+        
     if gemini_output:
         # 1. Parse Gmail points to local CST timestamps
         initial_date = gemini_output["initial_date"]
@@ -182,23 +185,7 @@ def fuse_and_save_data(gemini_output=None):
                         fused_data[last_valid_idx + j]["cpc_wind_speed"] = round(interp_val, 2)
                 last_valid_idx = i
 
-    else:
-        print("No new CPC data provided. Using existing data.json to update ECMWF.")
-        if os.path.exists(local_db_path):
-            with open(local_db_path, "r", encoding="utf-8") as f:
-                fused_data = json.load(f)
-        else:
-            print("No existing data.json found. Cannot update ECMWF.")
-            return []
 
-        if not fused_data:
-            return []
-
-        timestamps = [item["timestamp"] for item in fused_data]
-        start_dt = datetime.strptime(timestamps[0][:10], "%Y-%m-%d")
-        end_dt = datetime.strptime(timestamps[-1][:10], "%Y-%m-%d")
-        start_date_str = start_dt.strftime("%Y-%m-%d")
-        end_date_str = end_dt.strftime("%Y-%m-%d")
 
     # 3. Fetch Open-Meteo hourly data
     om_map = fetch_open_meteo_data(start_date_str, end_date_str)
@@ -236,6 +223,21 @@ def fuse_and_save_data(gemini_output=None):
             db = firestore.client()
             batch = db.batch()
             col_ref = db.collection("wind_forecasts")
+            
+            # Clear old documents in Firestore to keep only today's data
+            docs = col_ref.stream()
+            delete_count = 0
+            for doc in docs:
+                batch.delete(doc.reference)
+                delete_count += 1
+                if delete_count >= 400:
+                    batch.commit()
+                    batch = db.batch()
+                    delete_count = 0
+            if delete_count > 0:
+                batch.commit()
+                batch = db.batch()
+                print("Cleared old wind_forecasts documents.")
             
             write_count = 0
             for record in fused_data:

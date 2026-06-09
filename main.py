@@ -118,7 +118,8 @@ def _run_pipeline_impl(target_date=None):
         print(gemini_output)
     except Exception as e:
         print(f"Error in Step 1-4 (CPC Forecast Processing): {e}")
-        print("Will proceed to update Open-Meteo ECMWF data using existing forecast.")
+        print("Pipeline aborted because today's CPC data is missing or could not be parsed.")
+        return False
         
     # 5. Open-Meteo & OpenWeather fetching, timezone/unit alignment and data writing
     print("\n[Step 5] Performing data fusion and writing to database...")

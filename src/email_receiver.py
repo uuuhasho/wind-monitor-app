@@ -116,11 +116,6 @@ def download_forecast_attachment(target_date=None, save_dir=None):
             except:
                 pass
                 
-    # Final fallback: return any .doc file in the workspace or the default template
-    print("Email receiver failed or no match. Falling back to default template '0530中油.doc'...")
-    default_path = os.path.join(save_dir, "0530中油.doc")
-    if os.path.exists(default_path):
-        print(f"Using default template file: {default_path}")
-        return default_path
-        
-    raise FileNotFoundError("No wind forecast .doc file found locally or via Gmail.")
+    # No fallback allowed
+    print("Email receiver failed or no match.")
+    raise FileNotFoundError("No wind forecast .doc file found for today via Gmail.")
