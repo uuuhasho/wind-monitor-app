@@ -2,8 +2,8 @@ name: CPC Wind Forecast Pipeline
 
 on:
   schedule:
-    # 台灣時間每日 15:00（即 UTC 07:00）自動觸發
-    - cron: '0 7 * * *'
+    # 台灣時間每日 15:15（即 UTC 07:15）自動觸發，避免 GitHub Actions 整點擁塞與信件延遲
+    - cron: '15 7 * * *'
   workflow_dispatch:
     # 允許手動觸發
 
