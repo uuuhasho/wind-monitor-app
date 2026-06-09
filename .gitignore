@@ -20,3 +20,6 @@ env/
 # 專案無關檔案
 .antigravitycli/
 diagnostics/
+
+# Google Apps Script
+gs_*.js
