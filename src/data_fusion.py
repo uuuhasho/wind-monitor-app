@@ -126,64 +126,63 @@ def fuse_and_save_data(gemini_output=None):
     if not gemini_output:
         raise ValueError("CPC data is required for update. Fallback is disabled.")
         
-    if gemini_output:
-        # 1. Parse Gmail points to local CST timestamps
-        initial_date = gemini_output["initial_date"]
-        points = gemini_output["points"]
-        cpc_points = parse_forecast_dates(initial_date, points)
+    # 1. Parse Gmail points to local CST timestamps
+    initial_date = gemini_output["initial_date"]
+    points = gemini_output["points"]
+    cpc_points = parse_forecast_dates(initial_date, points)
+    
+    if not cpc_points:
+        raise ValueError("No valid data points parsed from Gemini chart output.")
         
-        if not cpc_points:
-            raise ValueError("No valid data points parsed from Gemini chart output.")
+    # Map CPC points by timestamp
+    cpc_map = {}
+    for pt in cpc_points:
+        ts = pt["timestamp_cst"]
+        kt = pt["wind_speed_kt"]
+        # Convert KT to m/s by dividing by WindRatio
+        ms_val = round(kt / ratio, 2)
+        cpc_map[ts] = ms_val
             
-        # Map CPC points by timestamp
-        cpc_map = {}
-        for pt in cpc_points:
-            ts = pt["timestamp_cst"]
-            kt = pt["wind_speed_kt"]
-            # Convert KT to m/s by dividing by WindRatio
-            ms_val = round(kt / ratio, 2)
-            cpc_map[ts] = ms_val
-            
-        timestamps = sorted(list(cpc_map.keys()))
-        start_dt = datetime.strptime(timestamps[0][:10], "%Y-%m-%d")
-        end_dt = datetime.strptime(timestamps[-1][:10], "%Y-%m-%d")
+    timestamps = sorted(list(cpc_map.keys()))
+    start_dt = datetime.strptime(timestamps[0][:10], "%Y-%m-%d")
+    end_dt = datetime.strptime(timestamps[-1][:10], "%Y-%m-%d")
+    
+    start_date_str = start_dt.strftime("%Y-%m-%d")
+    end_date_str = end_dt.strftime("%Y-%m-%d")
+    
+    # 4. Merge datasets
+    # We will generate a complete hourly sequence between start and end date
+    current_dt = datetime.fromisoformat(timestamps[0][:13] + ":00:00+08:00")
+    end_forecast_dt = datetime.fromisoformat(timestamps[-1][:13] + ":00:00+08:00")
+    
+    tz_cst = timezone(timedelta(hours=8))
+    
+    while current_dt <= end_forecast_dt:
+        ts_cst = current_dt.isoformat()
         
-        start_date_str = start_dt.strftime("%Y-%m-%d")
-        end_date_str = end_dt.strftime("%Y-%m-%d")
+        cpc_val = cpc_map.get(ts_cst, None)
         
-        # 4. Merge datasets
-        # We will generate a complete hourly sequence between start and end date
-        current_dt = datetime.strptime(timestamps[0][:13] + ":00:00+08:00", "%Y-%m-%dT%H:%M:%S+08:00")
-        end_forecast_dt = datetime.strptime(timestamps[-1][:13] + ":00:00+08:00", "%Y-%m-%dT%H:%M:%S+08:00")
+        fused_data.append({
+            "timestamp": ts_cst,
+            "cpc_wind_speed": cpc_val,
+            "open_meteo_wind_speed": None
+        })
         
-        tz_cst = timezone(timedelta(hours=8))
-        
-        while current_dt <= end_forecast_dt:
-            ts_cst = current_dt.strftime("%Y-%m-%dT%H:%M:%S+08:00")
+        current_dt += timedelta(hours=1)
             
-            cpc_val = cpc_map.get(ts_cst, None)
-            
-            fused_data.append({
-                "timestamp": ts_cst,
-                "cpc_wind_speed": cpc_val,
-                "open_meteo_wind_speed": None
-            })
-            
-            current_dt += timedelta(hours=1)
-            
-        # Perform linear interpolation on cpc_wind_speed to fill hourly gaps
-        last_valid_idx = None
-        for i in range(len(fused_data)):
-            if fused_data[i]["cpc_wind_speed"] is not None:
-                if last_valid_idx is not None and i > last_valid_idx + 1:
-                    v_start = fused_data[last_valid_idx]["cpc_wind_speed"]
-                    v_end = fused_data[i]["cpc_wind_speed"]
-                    gap = i - last_valid_idx
-                    
-                    for j in range(1, gap):
-                        interp_val = v_start + (v_end - v_start) * (j / gap)
-                        fused_data[last_valid_idx + j]["cpc_wind_speed"] = round(interp_val, 2)
-                last_valid_idx = i
+    # Perform linear interpolation on cpc_wind_speed to fill hourly gaps
+    last_valid_idx = None
+    for i in range(len(fused_data)):
+        if fused_data[i]["cpc_wind_speed"] is not None:
+            if last_valid_idx is not None and i > last_valid_idx + 1:
+                v_start = fused_data[last_valid_idx]["cpc_wind_speed"]
+                v_end = fused_data[i]["cpc_wind_speed"]
+                gap = i - last_valid_idx
+                
+                for j in range(1, gap):
+                    interp_val = v_start + (v_end - v_start) * (j / gap)
+                    fused_data[last_valid_idx + j]["cpc_wind_speed"] = round(interp_val, 2)
+            last_valid_idx = i
 
 
 
@@ -243,7 +242,7 @@ def fuse_and_save_data(gemini_output=None):
             for record in fused_data:
                 # Firestore doc ID format: YYYY-MM-DD_HH
                 # E.g. '2026-05-29_20'
-                dt_obj = datetime.strptime(record["timestamp"], "%Y-%m-%dT%H:%M:%S+08:00")
+                dt_obj = datetime.fromisoformat(record["timestamp"])
                 doc_id = dt_obj.strftime("%Y-%m-%d_%H")
                 
                 doc_ref = col_ref.document(doc_id)

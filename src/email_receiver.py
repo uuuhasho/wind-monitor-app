@@ -27,10 +27,10 @@ def download_forecast_attachment(target_date=None, save_dir=None):
         # We can calculate CST time offset
         import time
         # Standard timezone offset check
-        cst_time = datetime.utcnow()
-        # Add 8 hours for CST
-        from datetime import timedelta
-        cst_time = datetime.utcnow() + timedelta(hours=8)
+        # Check if we should override date processing for the incoming email
+        # Determine the target date to match based on local CST time
+        from datetime import timezone, timedelta
+        cst_time = datetime.now(timezone(timedelta(hours=8)))
         target_date = cst_time.strftime("%m%d")
         
     subject_pattern = f"中油{target_date}"
