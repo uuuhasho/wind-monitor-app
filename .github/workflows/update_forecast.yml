@@ -38,3 +38,11 @@ jobs:
     - name: Run Pipeline
       run: |
         python main.py
+
+    - name: Commit and Push Updated data.json
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add data.json
+        git diff --staged --quiet || git commit -m "chore: auto-update wind forecast data"
+        git push

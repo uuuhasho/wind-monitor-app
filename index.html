@@ -1258,6 +1258,7 @@
             }
 
             const data = [];
+            let latestUpdatedAt = null; // 追蹤 Firestore 中最新的 updatedAt 時間
             snapshot.forEach(doc => {
                 const docData = doc.data();
                 const dateObj = docData.timestamp.toDate();
@@ -1266,6 +1267,13 @@
                     cpc_wind_speed: docData.cpc_wind,
                     open_meteo_wind_speed: docData.open_meteo_wind
                 });
+                // 取得所有文件中最新的 updatedAt 時間戳記
+                if (docData.updatedAt) {
+                    const updAt = docData.updatedAt.toDate();
+                    if (!latestUpdatedAt || updAt > latestUpdatedAt) {
+                        latestUpdatedAt = updAt;
+                    }
+                }
             });
 
             // 反轉回時間升序排列，以供折線圖由左至右正常顯示
@@ -1274,11 +1282,19 @@
             lastFetchedForecastData = data;
             renderForecastChart(data);
             
-            // 如果成功渲染出資料，更新狀態文字為「數據已更新」
+            // 🌟 修正：使用 Firestore 中真實的 updatedAt 時間，而非瀏覽器本地日期
             if (data.length > 0) {
-                const today = new Date();
-                const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
-                statusEl.innerText = `${dateStr}數據已更新`;
+                if (latestUpdatedAt) {
+                    // 強制轉換為台灣時間顯示
+                    const twTime = new Date(latestUpdatedAt.getTime() + 8 * 60 * 60 * 1000);
+                    const m = twTime.getUTCMonth() + 1;
+                    const d = twTime.getUTCDate();
+                    const hh = String(twTime.getUTCHours()).padStart(2, '0');
+                    const mm = String(twTime.getUTCMinutes()).padStart(2, '0');
+                    statusEl.innerText = `${m}/${d} ${hh}:${mm} 數據已更新`;
+                } else {
+                    statusEl.innerText = "數據已載入 (無更新時間)";
+                }
                 statusEl.style.color = "#58a6ff";
             }
         } catch (err) {
@@ -1295,12 +1311,14 @@
         // 確保圖表正確調整大小以防範 Modal 初始化尺寸問題
         forecastChartInstance.resize();
 
-        // 格式化 X 軸時間顯示為 M/D HH:00 (直接讀取 UTC 值，修正 8 小時偏移)
+        // 格式化 X 軸時間顯示為 M/D HH:00 (強制轉換為台灣時間)
         const timeData = data.map(item => {
             const date = new Date(item.timestamp);
-            const mm = String(date.getUTCMonth() + 1);
-            const dd = String(date.getUTCDate());
-            const hh = String(date.getUTCHours()).padStart(2, '0');
+            // 加上 8 小時毫秒數，然後使用 UTC 方法取得台灣時間，避免瀏覽器時區差異
+            const twDate = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+            const mm = String(twDate.getUTCMonth() + 1);
+            const dd = String(twDate.getUTCDate());
+            const hh = String(twDate.getUTCHours()).padStart(2, '0');
             return `${mm}/${dd} ${hh}:00`;
         });
 
