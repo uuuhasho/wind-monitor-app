@@ -362,6 +362,12 @@
             100% { background-color: #E6F4EA; }
         }
 
+        @keyframes pulse-highlight {
+            0% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.7); }
+            50% { box-shadow: 0 0 12px 4px rgba(255, 165, 0, 0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 165, 0, 0); }
+        }
+
         /* 讓表格區塊可滾動的樣式 */
         .table-wrapper {
             max-height: 215px; /* 控制最大高度，超過時出現捲軸 */
@@ -991,7 +997,15 @@
                 } else {
                     const wasUpdating = updateBtn.disabled;
                     updateBtn.disabled = false;
-                    updateBtn.innerHTML = `<span>🔄 手動更新</span>`;
+                    
+                    // 🌟 若自動更新超時失敗，提示使用者手動更新
+                    if (data.forecast_auto_failed === true) {
+                        updateBtn.innerHTML = `<span>⚠️ 請手動更新</span>`;
+                        updateBtn.style.animation = 'pulse-highlight 1.5s ease-in-out 3';
+                    } else {
+                        updateBtn.innerHTML = `<span>🔄 手動更新</span>`;
+                        updateBtn.style.animation = '';
+                    }
                     
                     // 若是剛更新完畢，自動重新抓取 Firestore 最新氣象預報
                     if (wasUpdating && typeof loadForecastData === 'function') {

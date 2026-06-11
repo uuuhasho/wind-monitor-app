@@ -6,6 +6,8 @@ on:
     - cron: '15 7 * * *'
   workflow_dispatch:
     # 允許手動觸發
+  repository_dispatch:
+    types: [trigger-forecast-update]
 
 jobs:
   run-pipeline:
