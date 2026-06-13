@@ -90,32 +90,14 @@ def parse_chart_with_cv2(image_path, target_date_str):
     max_x = max(x_to_y.keys())
     total_width = max_x - min_x
     
-    # Number of points dynamic allocation via heuristic
-    # A standard dx is usually around 20-22 pixels.
-    dx_33 = total_width / 32.0
-    dx_23 = total_width / 22.0
-    
-    if abs(dx_33 - 21.0) < abs(dx_23 - 21.0):
-        num_points = 33
-    else:
-        num_points = 23
-        
-    dx = total_width / (num_points - 1)
-    
-    print(f"[CV2 Parser] Red curve spans X:{min_x} to {max_x}. total_width={total_width}. Selected num_points={num_points}, dx={dx:.2f}")
-
-    # 3. Calculate timestamps using OCR
+    # 3. Calculate timestamps and num_points using full-image OCR
     current_year = datetime.now().year
     target_dt = datetime.strptime(f"{current_year}{target_date_str}", "%Y%m%d")
     
-    # OCR Extraction for Initial Time
-    h, w = img.shape[:2]
-    roi = img[0:max(60, int(h*0.1)), max(0, w-350):w]
-    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    gray_roi = cv2.resize(gray_roi, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    _, thresh_roi = cv2.threshold(gray_roi, 150, 255, cv2.THRESH_BINARY_INV)
-    ocr_text = pytesseract.image_to_string(thresh_roi, config='--psm 7')
+    # Run OCR on the entire image for better accuracy
+    ocr_text = pytesseract.image_to_string(img)
     
+    # Extract Initial Time anywhere in the text
     match = re.search(r'([0O12]{2})Z(\d{2})([A-Z]{3})', ocr_text.upper())
     if match:
         hour_val = int(match.group(1).replace('O', '0'))
@@ -136,9 +118,30 @@ def parse_chart_with_cv2(image_path, target_date_str):
             initial_dt = target_dt - timedelta(days=1)
             initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
     else:
-        print(f"[CV2 Parser] OCR regex did not match in text: '{ocr_text.strip()}'. Using fallback (target date - 1 day 12Z).")
+        print(f"[CV2 Parser] OCR regex did not match initial time. Using fallback (target date - 1 day 12Z).")
         initial_dt = target_dt - timedelta(days=1)
         initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
+
+    # Determine num_points dynamically based on the X-axis text
+    num_points = 33 # Default fallback
+    date_match = re.search(r'Date\s+([\d\s]+)', ocr_text)
+    time_match = re.search(r'Time.*?\s+([\d\s]+)', ocr_text)
+    
+    parsed_points = []
+    if date_match:
+        parsed_points = date_match.group(1).split()
+    elif time_match:
+        parsed_points = time_match.group(1).split()
+        
+    if parsed_points and 10 <= len(parsed_points) <= 50:
+        num_points = len(parsed_points)
+        print(f"[CV2 Parser] OCR detected {num_points} data points from axis labels.")
+    else:
+        print(f"[CV2 Parser] OCR axis detection failed. Falling back to 33 points.")
+        num_points = 33
+            
+    dx = total_width / (num_points - 1)
+    print(f"[CV2 Parser] Red curve spans X:{min_x} to {max_x}. total_width={total_width}. Selected num_points={num_points}, dx={dx:.2f}")
 
     # 4. Generate points JSON
     points = []
