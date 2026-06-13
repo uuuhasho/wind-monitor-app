@@ -2,6 +2,12 @@ import cv2
 import numpy as np
 import os
 from datetime import datetime, timedelta
+import pytesseract
+import re
+
+# Cross-platform Tesseract path config
+if os.name == 'nt':
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def parse_chart_with_cv2(image_path, target_date_str):
     """
@@ -82,20 +88,57 @@ def parse_chart_with_cv2(image_path, target_date_str):
 
     min_x = min(x_to_y.keys())
     max_x = max(x_to_y.keys())
+    total_width = max_x - min_x
     
-    # Number of points is fixed at 33 for a standard CPC forecast (8 days)
-    # 2 points (Day 1) + 4*7 (Days 2-8) + 3 points (Day 9) = 33 points
-    num_points = 33
-    dx = (max_x - min_x) / (num_points - 1)
+    # Number of points dynamic allocation via heuristic
+    # A standard dx is usually around 20-22 pixels.
+    dx_33 = total_width / 32.0
+    dx_23 = total_width / 22.0
     
-    print(f"[CV2 Parser] Red curve spans X:{min_x} to {max_x}. dx={dx:.2f}")
+    if abs(dx_33 - 21.0) < abs(dx_23 - 21.0):
+        num_points = 33
+    else:
+        num_points = 23
+        
+    dx = total_width / (num_points - 1)
+    
+    print(f"[CV2 Parser] Red curve spans X:{min_x} to {max_x}. total_width={total_width}. Selected num_points={num_points}, dx={dx:.2f}")
 
-    # 3. Calculate timestamps
-    # target_date_str e.g., "0530" -> May 30. Initial field is May 29 12Z.
+    # 3. Calculate timestamps using OCR
     current_year = datetime.now().year
     target_dt = datetime.strptime(f"{current_year}{target_date_str}", "%Y%m%d")
-    initial_dt = target_dt - timedelta(days=1)
-    initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
+    
+    # OCR Extraction for Initial Time
+    h, w = img.shape[:2]
+    roi = img[0:max(60, int(h*0.1)), max(0, w-350):w]
+    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    gray_roi = cv2.resize(gray_roi, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    _, thresh_roi = cv2.threshold(gray_roi, 150, 255, cv2.THRESH_BINARY_INV)
+    ocr_text = pytesseract.image_to_string(thresh_roi, config='--psm 7')
+    
+    match = re.search(r'([0O12]{2})Z(\d{2})([A-Z]{3})', ocr_text.upper())
+    if match:
+        hour_val = int(match.group(1).replace('O', '0'))
+        day_val = int(match.group(2))
+        
+        possible_dates = [target_dt, target_dt - timedelta(days=1), target_dt - timedelta(days=2)]
+        matched = False
+        for pd in possible_dates:
+            if pd.day == day_val:
+                initial_dt = pd.replace(hour=hour_val, minute=0, second=0)
+                matched = True
+                break
+                
+        if matched:
+            print(f"[CV2 Parser] OCR successfully found initial time: {hour_val:02d}Z{day_val:02d}")
+        else:
+            print(f"[CV2 Parser] OCR day {day_val} doesn't match near target date. Using fallback.")
+            initial_dt = target_dt - timedelta(days=1)
+            initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
+    else:
+        print(f"[CV2 Parser] OCR regex did not match in text: '{ocr_text.strip()}'. Using fallback (target date - 1 day 12Z).")
+        initial_dt = target_dt - timedelta(days=1)
+        initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
 
     # 4. Generate points JSON
     points = []
@@ -135,6 +178,6 @@ def parse_chart_with_cv2(image_path, target_date_str):
 
 if __name__ == "__main__":
     # Test script
-    res = parse_chart_with_cv2("temp/0603中油_raw.png", "0603")
+    res = parse_chart_with_cv2("temp/0612中油_raw.png", "0612")
     import json
     print(json.dumps(res, indent=2))
