@@ -146,8 +146,8 @@ def fuse_and_save_data(gemini_output=None):
     timestamps = sorted(list(cpc_map.keys()))
     start_dt = datetime.fromisoformat(timestamps[0])
     
-    # Always fetch 9 days of Open-Meteo data so gust forecasts don't disappear if CPC provides fewer days
-    end_dt = start_dt + timedelta(days=9)
+    # Align Open-Meteo end date with CPC data end date as requested
+    end_dt = datetime.fromisoformat(timestamps[-1])
     
     start_date_str = start_dt.strftime("%Y-%m-%d")
     end_date_str = end_dt.strftime("%Y-%m-%d")
@@ -156,11 +156,8 @@ def fuse_and_save_data(gemini_output=None):
     # We will generate a complete hourly sequence between start and end date
     current_dt = datetime.fromisoformat(timestamps[0][:13] + ":00:00+08:00")
     
-    # Set the end time for the fused data to 9 days later
-    end_forecast_dt = current_dt + timedelta(days=9)
-    
-    # Note the actual CPC end time for interpolation limits
-    cpc_end_dt = datetime.fromisoformat(timestamps[-1][:13] + ":00:00+08:00")
+    # Set the end time for the fused data to exactly match CPC
+    end_forecast_dt = datetime.fromisoformat(timestamps[-1][:13] + ":00:00+08:00")
     
     tz_cst = timezone(timedelta(hours=8))
     
