@@ -325,6 +325,16 @@
             border-bottom-right-radius: 10px;
         }
         
+        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行 */
+        .schedule-table th:first-child,
+        .schedule-table td:first-child,
+        .schedule-table th:last-child,
+        .schedule-table td:last-child {
+            width: 60px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
         .schedule-table td {
             color: #555555; /* 「日期」、「船名」、「速限」保持深灰字體 */
         }
