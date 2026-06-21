@@ -325,12 +325,12 @@
             border-bottom-right-radius: 10px;
         }
         
-        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行 */
+        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行，加寬至 80px */
         .schedule-table th:first-child,
         .schedule-table td:first-child,
         .schedule-table th:last-child,
         .schedule-table td:last-child {
-            width: 60px;
+            width: 80px;
             white-space: nowrap;
             text-align: center;
         }
@@ -382,10 +382,13 @@
         .table-wrapper {
             max-height: 215px; /* 控制最大高度，超過時出現捲軸 */
             overflow-y: auto;
+            scrollbar-width: none; /* Firefox 隱藏滾動條 */
+            -ms-overflow-style: none;  /* IE/Edge 隱藏滾動條 */
         }
-        .table-wrapper::-webkit-scrollbar { width: 6px; }
-        .table-wrapper::-webkit-scrollbar-track { background: transparent; }
-        .table-wrapper::-webkit-scrollbar-thumb { background: #D5E1F2; border-radius: 4px; }
+        /* Chrome, Safari, Opera 隱藏滾動條 */
+        .table-wrapper::-webkit-scrollbar {
+            display: none;
+        }
         
         /* 固定表格標題列 */
         .schedule-table th {
