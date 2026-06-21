@@ -325,12 +325,16 @@
             border-bottom-right-radius: 10px;
         }
         
-        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行，加寬至 80px */
+        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行 */
         .schedule-table th:first-child,
-        .schedule-table td:first-child,
+        .schedule-table td:first-child {
+            width: 70px;
+            white-space: nowrap;
+            text-align: center;
+        }
         .schedule-table th:last-child,
         .schedule-table td:last-child {
-            width: 80px;
+            width: 60px;
             white-space: nowrap;
             text-align: center;
         }
@@ -872,11 +876,11 @@
         scheduleDataList.forEach(item => {
             let badgeHtml = '';
             if (item.terminal === 'W12') {
-                badgeHtml = '<span class="badge badge-w12" style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; margin-right: 4px; font-weight: bold; display: inline-block; vertical-align: middle;">W12</span>';
+                badgeHtml = '<br><span class="badge badge-w12" style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; vertical-align: middle;">W12</span>';
             }
             html += `<tr data-shipname="${item.ship_name}">
-                        <td>${item.d}</td>
-                        <td>${badgeHtml}<span style="vertical-align: middle;">${item.ship_name}</span></td>
+                        <td>${item.d}${badgeHtml}</td>
+                        <td><span style="vertical-align: middle;">${item.ship_name}</span></td>
                         <td>${item.limit_speed}</td>
                      </tr>`;
         });
