@@ -797,10 +797,10 @@
             box.className = "dynamic-box"; 
             box.style.display = "block";
 
-            if (seasonTime === "--:--" || currentTime < seasonTime) {
+            if (seasonTime === "--:--" || currentTime < "04:00") {
                 currentStatusClass = 'schedule-row-waiting';
                 box.classList.add('status-waiting');
-                box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(表定時間 ${seasonTime} 開始判定)</span>`;
+                box.innerHTML = `<strong>${shipName} 等待進港</strong><br><span style="font-size:0.8em;">(04:00 後開始判定)</span>`;
                 currentStatus = "waiting";
             } else if (currentSpeed > limitSpeed) {
                 currentStatusClass = 'schedule-row-warning';
