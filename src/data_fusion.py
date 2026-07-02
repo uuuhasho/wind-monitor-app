@@ -78,7 +78,7 @@ def fetch_open_meteo_data(start_date_str, end_date_str):
         "latitude": lat,
         "longitude": lon,
         "hourly": "wind_gusts_10m",
-        "models": "ecmwf_ifs",
+        "models": "best_match",
         "timezone": "Asia/Taipei",
         "wind_speed_unit": "ms",
         "start_date": start_date_str,
@@ -200,20 +200,82 @@ def fuse_and_save_data(gemini_output=None):
         if om_val is not None:
             item["open_meteo_wind_speed"] = om_val
 
-    # 5. Write to local JSON file
-    from src.config import BASE_DIR
-    local_db_path = os.path.join(BASE_DIR, "data.json")
+    # Write to local JSON file (CRITICAL for PROD Github Actions workflow)
     try:
         with open(local_db_path, "w", encoding="utf-8") as f:
             json.dump(fused_data, f, indent=2, ensure_ascii=False)
         print(f"Saved fused data locally to {local_db_path}")
     except Exception as e:
         print(f"Error saving local JSON: {e}")
-        
-    # 6. Write to Firebase Firestore (if credentials exist)
+
+    # Write to Firebase RTDB
+    rtdb_settings = config.get("Firebase_RTDB_Settings", {})
+    # For test environment, override with env var if exists
+    db_url = os.environ.get("FIREBASE_RTDB_URL", rtdb_settings.get("DbUrl"))
+    db_secret = os.environ.get("FIREBASE_RTDB_SECRET", rtdb_settings.get("DbSecret"))
+    
+    # 🌟 動態獲取 Firebase OAuth2 Token (用來代替 DbSecret)
+    access_token = None
     sa_path = get_service_account_path()
     if sa_path:
-        print("Connecting to Firebase Firestore...")
+        try:
+            from google.oauth2 import service_account
+            import google.auth.transport.requests
+            creds = service_account.Credentials.from_service_account_file(
+                sa_path,
+                scopes=[
+                    'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/firebase.database'
+                ]
+            )
+            auth_req = google.auth.transport.requests.Request()
+            creds.refresh(auth_req)
+            access_token = creds.token
+            print("[+] Successfully obtained Firebase OAuth token from service account.")
+        except Exception as e:
+            print(f"[Warning] Failed to generate Firebase OAuth token from service account: {e}")
+            
+    if db_url and (db_secret or access_token):
+        print("Connecting to Firebase RTDB...")
+        try:
+            # We are writing to `/test/forecast_data` and `/test/forecast_metadata`
+            # Wait, to support both test and prod, let's use an env var for prefix
+            prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "/test")
+            
+            if prefix == "/test":
+                print("WARNING: Using default '/test' prefix for Firebase RTDB. If this is PRODUCTION, ensure FIREBASE_RTDB_PREFIX is set to an empty string ''!")
+            elif prefix == "":
+                print("INFO: FIREBASE_RTDB_PREFIX is empty. Writing to PRODUCTION RTDB Root!")
+                
+            # 依據是否有 access_token 選擇認證參數
+            if access_token:
+                auth_param = f"access_token={access_token}"
+            else:
+                auth_param = f"auth={db_secret}"
+            
+            # PATCH forecast_data
+            url_data = f"{db_url.rstrip('/')}{prefix}/forecast_data.json?{auth_param}"
+            response_data = requests.put(url_data, json=fused_data, timeout=15)
+            response_data.raise_for_status()
+            
+            # PATCH metadata with updatedAt
+            url_meta = f"{db_url.rstrip('/')}{prefix}/forecast_metadata.json?{auth_param}"
+            meta_payload = {
+                "updatedAt": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+            }
+            response_meta = requests.patch(url_meta, json=meta_payload, timeout=15)
+            response_meta.raise_for_status()
+            
+            print(f"Successfully uploaded {len(fused_data)} records to Firebase RTDB at {prefix}/forecast_data!")
+        except Exception as e:
+            print(f"Firebase RTDB upload failed: {e}")
+    else:
+        print("Firebase RTDB credentials missing. Upload bypassed.")
+        
+    # Write to Firebase Firestore (CRITICAL for PROD Github Actions workflow)
+    sa_path = get_service_account_path()
+    if sa_path:
+        print("Connecting to Firebase Firestore (PROD)...")
         try:
             import firebase_admin
             from firebase_admin import credentials, firestore
@@ -244,13 +306,10 @@ def fuse_and_save_data(gemini_output=None):
             
             write_count = 0
             for record in fused_data:
-                # Firestore doc ID format: YYYY-MM-DD_HH
-                # E.g. '2026-05-29_20'
                 dt_obj = datetime.fromisoformat(record["timestamp"])
                 doc_id = dt_obj.strftime("%Y-%m-%d_%H")
                 
                 doc_ref = col_ref.document(doc_id)
-                # Convert timestamp string to native datetime object for Firestore
                 doc_data = {
                     "timestamp": dt_obj,
                     "cpc_wind": record["cpc_wind_speed"],
@@ -261,7 +320,7 @@ def fuse_and_save_data(gemini_output=None):
                 batch.set(doc_ref, doc_data, merge=True)
                 write_count += 1
                 
-                if write_count >= 400: # Commit in batches (Firestore limit is 500)
+                if write_count >= 400:
                     batch.commit()
                     batch = db.batch()
                     write_count = 0
@@ -272,8 +331,8 @@ def fuse_and_save_data(gemini_output=None):
             print(f"Successfully uploaded {len(fused_data)} records to Cloud Firestore!")
         except Exception as e:
             print(f"Firebase Firestore upload failed: {e}")
-            print("Firestore upload bypassed. Local database 'data.json' remains valid.")
+            print("Firestore upload bypassed.")
     else:
         print("Firebase service account credentials missing. Firestore upload bypassed.")
-        
+
     return fused_data

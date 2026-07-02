@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Add the project directory to the path so modules can be imported
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +29,8 @@ def reset_rtdb_updating_state():
             print("\n[RTDB Reset] Firebase RTDB settings not configured in config.json. Skipping state reset.")
             return
             
-        url = f"{db_url.rstrip('/')}/active_status.json?auth={db_secret}"
+        prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "")
+        url = f"{db_url.rstrip('/')}{prefix}/active_status.json?auth={db_secret}"
         payload = {
             "forecast_updating": False
         }
@@ -77,7 +78,7 @@ def run_pipeline(target_date=None):
 
 def _run_pipeline_impl(target_date=None):
     if not target_date:
-        cst_time = datetime.utcnow() + timedelta(hours=8)
+        cst_time = datetime.now(timezone.utc) + timedelta(hours=8)
         target_date = cst_time.strftime("%m%d")
 
     print("=" * 60)

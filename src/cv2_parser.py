@@ -1,13 +1,67 @@
 import cv2
 import numpy as np
 import os
-from datetime import datetime, timedelta
-import pytesseract
 import re
+import requests
+import base64
+from datetime import datetime, timedelta
 
-# Cross-platform Tesseract path config
-if os.name == 'nt':
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+def get_initial_time_via_gemini(image_path, api_key):
+    """
+    Calls Gemini 2.5 Flash REST API to perform OCR on the top-right corner.
+    Features auto MIME-type detection and transient network retries.
+    """
+    # 1. Dynamically detect MIME-Type
+    ext = os.path.splitext(image_path)[1].lower()
+    mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png"
+    
+    with open(image_path, "rb") as f:
+        image_data = base64.b64encode(f.read()).decode("utf-8")
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    
+    prompt = (
+        "This is a weather forecast chart. Please look at the text in the top-right corner. "
+        "It usually looks like '00Z13JUN' or '12Z02JUL' followed by 'initial field' or similar text. "
+        "Please extract this time code (e.g., '00Z13JUN' or '12Z02JUL') and return ONLY the time code, "
+        "such as '00Z13JUN'. Do not include any other characters, explanation, or markdown formatting."
+    )
+    
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {
+                    "inlineData": {
+                        "mimeType": mime_type,
+                        "data": image_data
+                    }
+                }
+            ]
+        }]
+    }
+    
+    # 2. Network Retry Mechanism (3 attempts)
+    max_retries = 3
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            response.raise_for_status()
+            result = response.json()
+            text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return text.replace('"', '').replace("'", "").strip()
+        except Exception as e:
+            last_err = e
+            print(f"[Warning] Gemini API attempt {attempt+1}/{max_retries} failed: {e}")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(2)
+                
+    raise ValueError(f"Gemini API failed after {max_retries} attempts. Last error: {last_err}")
+
+
 
 def parse_chart_with_cv2(image_path, target_date_str):
     """
@@ -81,47 +135,51 @@ def parse_chart_with_cv2(image_path, target_date_str):
     total_width = max_x - min_x
     
     # 3. OCR to find Initial Time
-    top_right_roi = img[0:int(height*0.15), int(width*0.5):width]
-    roi_gray = cv2.cvtColor(top_right_roi, cv2.COLOR_BGR2GRAY)
-    _, roi_thresh = cv2.threshold(roi_gray, 150, 255, cv2.THRESH_BINARY_INV)
-    
     initial_dt = None
     initial_date_str = ""
+    
+    # Load Gemini API Key: Priority 1: Environment variable, Priority 2: config.json
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            from src.config import load_config
+            config = load_config()
+            api_key = config.get("Algorithm", {}).get("GeminiApiKey")
+        except Exception as e:
+            print(f"[Warning] Failed to load config.json: {e}")
+        
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is missing! Cannot run forecast pipeline without Gemini API Key.")
+        
     try:
-        ocr_text = pytesseract.image_to_string(roi_thresh)
-        # e.g., "00Z13JUN initial fileld"
-        # 放寬正則表達式，容許 'O' 被當成 '0'
-        match = re.search(r"([0-9O]{2})Z(\d{2})([A-Z]{3})", ocr_text, re.IGNORECASE)
+        # Call Gemini 2.5 Flash for precise OCR
+        detected_time = get_initial_time_via_gemini(image_path, api_key)
+        print(f"[Gemini 2.5 Flash OCR] Successfully detected: {detected_time}")
+        
+        # Parse the output (expected format "00Z01JUL")
+        match = re.search(r"([0-9]{2})Z(\d{2})([A-Z]{3})", detected_time, re.IGNORECASE)
         if match:
-            z_hour_str = match.group(1).upper()
+            z_hour = int(match.group(1))
             day = int(match.group(2))
             month_str = match.group(3).upper()
             
-            # OCR 容錯：空軍預報只有 00Z 和 12Z
-            if "12" in z_hour_str:
-                z_hour = 12
-            else:
-                z_hour = 0 # 00Z (包括 02Z, OOZ 等誤判)
-                
             months_map = {"JAN":1, "FEB":2, "MAR":3, "APR":4, "MAY":5, "JUN":6,
                           "JUL":7, "AUG":8, "SEP":9, "OCT":10, "NOV":11, "DEC":12}
-            month = months_map.get(month_str, datetime.now().month)
+            
+            if month_str not in months_map:
+                raise ValueError(f"Unrecognized month abbreviation: '{month_str}' in detected time '{detected_time}'")
+                
+            month = months_map[month_str]
             year = datetime.now().year
             
             initial_dt = datetime(year, month, day, z_hour, 0, 0)
             initial_date_str = f"{z_hour:02d}Z{day:02d}{month_str}"
-            print(f"[OCR] Successfully detected Initial Time: {initial_date_str}")
+        else:
+            raise ValueError(f"Gemini output '{detected_time}' does not match expected MMDD hour format.")
+            
     except Exception as e:
-        print(f"[OCR Warning] {e}")
-        
-    # Fallback if OCR fails
-    if initial_dt is None:
-        print("[Warning] OCR failed to detect initial time. Using fallback logic (Target - 1 day, 12Z).")
-        current_year = datetime.now().year
-        target_dt = datetime.strptime(f"{current_year}{target_date_str}", "%Y%m%d")
-        initial_dt = target_dt - timedelta(days=1)
-        initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
-        initial_date_str = initial_dt.strftime("%HZ%d%b").upper()
+        print(f"[-] Gemini OCR failed. Pipeline aborted (No Fallback Allowed): {e}")
+        raise e
         
     # 4. Determine Number of Points using Plan B (Dynamic Feature Thickness Detection via Autocorrelation)
     # Project the red mask vertically to get the thickness profile

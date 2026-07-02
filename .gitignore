@@ -11,6 +11,11 @@ __pycache__/
 *.png
 *.jpg
 *.pdf
+.gas/
+test_monitor/
+gas_test_project/
+測試版/
+
 
 # Python 虛擬環境
 venv/
@@ -21,9 +26,15 @@ env/
 .antigravitycli/
 diagnostics/
 
+
 # Google Apps Script
 gs_*.js
 
 # Antigravity CLI preferences
 GEMINI.md
 
+# 其他忽略規則
+6-14修改.md
+大改測試.md
+代碼加入OCR.md
+notes.md
