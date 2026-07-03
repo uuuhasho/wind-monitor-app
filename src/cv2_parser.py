@@ -123,8 +123,30 @@ def parse_chart_with_cv2(image_path, target_date_str):
         initial_dt = initial_dt.replace(hour=12, minute=0, second=0)
         initial_date_str = initial_dt.strftime("%HZ%d%b").upper()
         
-    # 4. Determine Number of Points using Plan B (Dynamic Feature Thickness Detection via Autocorrelation)
-    # Project the red mask vertically to get the thickness profile
+    # 4. Determine Chart Boundaries and Number of Points
+    # Find vertical grid lines to determine the true chart width, independent of the red curve
+    vert_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 40))
+    detect_vert = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, vert_kernel, iterations=2)
+    vert_cnts, _ = cv2.findContours(detect_vert, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    vert_x_coords = []
+    for c in vert_cnts:
+        vx, vy, vw, vh = cv2.boundingRect(c)
+        if vh > 100: # Valid vertical grid line
+            vert_x_coords.append(vx + vw//2)
+            
+    if len(vert_x_coords) >= 2:
+        chart_min_x = min(vert_x_coords)
+        chart_max_x = max(vert_x_coords)
+    else:
+        print("[Warning] Could not detect vertical grid lines. Using fallback values.")
+        chart_min_x = 80
+        chart_max_x = 780
+        
+    chart_width = chart_max_x - chart_min_x
+    print(f"[CV2 Parser] Chart Grid Bounds: X:{chart_min_x} to {chart_max_x}, Width={chart_width}")
+
+    # Determine Number of Points using Autocorrelation on the red curve
     col_sums = np.sum(clean_mask > 0, axis=0)
     col_sums = col_sums - np.mean(col_sums)
     autocorr = np.correlate(col_sums, col_sums, mode='full')
@@ -137,25 +159,25 @@ def parse_chart_with_cv2(image_path, target_date_str):
     # Restrict search for dx to reasonable ranges: 15 to 45
     dx_peak = np.argmax(autocorr[15:45]) + 15
     
-    # Calculate number of points dynamically
-    num_points = int(round(total_width / dx_peak)) + 1
+    # Calculate number of points dynamically based on CHART width
+    num_points = int(round(chart_width / dx_peak)) + 1
     
     print(f"[Heuristic Plan B] Detected dx={dx_peak} via dynamic feature thickness (Autocorrelation).")
     
-    # Use the detected num_points, but cap to closest expected (23 or 33) to be safe if desired,
-    # or just trust the dynamic point count. The air force charts are usually 23 or 33 points.
+    # Use the detected num_points, but cap to closest expected (23 or 33) to be safe if desired
     if abs(num_points - 23) < abs(num_points - 33):
         num_points = 23
     else:
         num_points = 33
 
-    dx = total_width / (num_points - 1)
-    print(f"[CV2 Parser] Red curve spans X:{min_x} to {max_x}. dx={dx:.2f}, points={num_points}")
+    dx = chart_width / (num_points - 1)
+    print(f"[CV2 Parser] Chart spans X:{chart_min_x} to {chart_max_x}. dx={dx:.2f}, points={num_points}")
 
     # 5. Generate points JSON
     points = []
     for i in range(num_points):
-        target_x = int(round(min_x + i * dx))
+        target_x = int(round(chart_min_x + i * dx))
+        # Handle cases where the red curve is missing at target_x
         if target_x not in x_to_y:
             closest_x = min(x_to_y.keys(), key=lambda k: abs(k - target_x))
             pixel_y = np.mean(x_to_y[closest_x])
