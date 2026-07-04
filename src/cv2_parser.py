@@ -1,11 +1,11 @@
-import cv2
+﻿import cv2
 import numpy as np
 import os
-from datetime import datetime, timedelta
-import pytesseract
 import re
+import pytesseract
+from datetime import datetime, timedelta
 
-# Cross-platform Tesseract path config
+# 確保 Windows Tesseract 路徑正確 (如果系統有安裝)
 if os.name == 'nt':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -62,9 +62,13 @@ def parse_chart_with_cv2(image_path, target_date_str):
     if not cnts:
         raise ValueError("No red pixels found in the image!")
         
-    largest_cnt = max(cnts, key=lambda c: cv2.boundingRect(c)[2])
     clean_mask = np.zeros_like(red_mask)
-    cv2.drawContours(clean_mask, [largest_cnt], -1, 255, thickness=cv2.FILLED)
+    for c in cnts:
+        # Keep contours that are reasonably wide or have a significant area
+        # This prevents picking up red noise spots/text, but keeps broken line segments
+        x, y, w, h = cv2.boundingRect(c)
+        if w > 40 or h > 40 or cv2.contourArea(c) > 100:
+            cv2.drawContours(clean_mask, [c], -1, 255, thickness=cv2.FILLED)
 
     rows, cols = np.where(clean_mask > 0)
     if len(rows) == 0:
@@ -179,8 +183,23 @@ def parse_chart_with_cv2(image_path, target_date_str):
         target_x = int(round(chart_min_x + i * dx))
         # Handle cases where the red curve is missing at target_x
         if target_x not in x_to_y:
-            closest_x = min(x_to_y.keys(), key=lambda k: abs(k - target_x))
-            pixel_y = np.mean(x_to_y[closest_x])
+            left_xs = [k for k in x_to_y.keys() if k < target_x]
+            right_xs = [k for k in x_to_y.keys() if k > target_x]
+            
+            if left_xs and right_xs:
+                left_x = max(left_xs)
+                right_x = min(right_xs)
+                y_left = np.mean(x_to_y[left_x])
+                y_right = np.mean(x_to_y[right_x])
+                # Linear interpolation between the gap
+                pixel_y = y_left + (y_right - y_left) * ((target_x - left_x) / (right_x - left_x))
+            elif left_xs:
+                pixel_y = np.mean(x_to_y[max(left_xs)])
+            elif right_xs:
+                pixel_y = np.mean(x_to_y[min(right_xs)])
+            else:
+                pixel_y = y_bottom # Fallback
+
         else:
             pixel_y = np.mean(x_to_y[target_x])
             
@@ -204,7 +223,7 @@ def parse_chart_with_cv2(image_path, target_date_str):
     return result_data
 
 if __name__ == "__main__":
-    # Test script
-    res = parse_chart_with_cv2("temp/0612中油_raw.png", "0612")
+    res = parse_chart_with_cv2("temp/0613中油_raw.png", "0613")
     import json
     print(json.dumps(res, indent=2))
+
