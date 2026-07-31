@@ -33,8 +33,8 @@ def download_forecast_attachment(target_date=None, save_dir=None):
         cst_time = datetime.now(timezone(timedelta(hours=8)))
         target_date = cst_time.strftime("%m%d")
         
-    subject_pattern = f"中油{target_date}"
-    print(f"Targeting date MMDD: {target_date} (Subject: {subject_pattern})")
+    subject_pattern = f"{target_date}"
+    print(f"Targeting date MMDD: {target_date} (Subject containing: {subject_pattern})")
     
     # Try searching for a local file first as a cache/fallback
     local_filename = f"{target_date}中油.doc"
@@ -59,7 +59,7 @@ def download_forecast_attachment(target_date=None, save_dir=None):
             raise Exception("IMAP search failed")
             
         message_ids = messages[0].split()
-        print(f"Found {len(message_ids)} emails from {target_sender}. Scanning for subject '{subject_pattern}'...")
+        print(f"Found {len(message_ids)} emails from {target_sender}. Scanning for subject containing '{subject_pattern}'...")
         
         # Scan from newest to oldest
         for msg_id in reversed(message_ids):
@@ -75,10 +75,10 @@ def download_forecast_attachment(target_date=None, save_dir=None):
             if isinstance(subject, bytes):
                 subject = subject.decode(encoding or "utf-8", errors="ignore")
             
-            # Check if subject matches (e.g. contains "中油" and the MMDD date)
-            # Match variations like "中油0530", "中油 0530", "中油-0530"
+            # Check if subject matches (contains the MMDD date)
+            # Match any variation containing target_date (e.g. "0530", "中油0530", "預報0530")
             clean_subject = re.sub(r"\s+", "", subject)
-            if "中油" in clean_subject and target_date in clean_subject:
+            if target_date in clean_subject:
                 print(f"Match found! Subject: {subject}")
                 
                 # Extract attachments
