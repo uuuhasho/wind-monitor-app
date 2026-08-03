@@ -1,4 +1,4 @@
-﻿import cv2
+import cv2
 import numpy as np
 import os
 import re
@@ -6,8 +6,7 @@ import pytesseract
 from datetime import datetime, timedelta
 
 # 確保 Windows Tesseract 路徑正確 (如果系統有安裝)
-if os.name == 'nt':
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def parse_chart_with_cv2(image_path, target_date_str):
     """
@@ -19,7 +18,7 @@ def parse_chart_with_cv2(image_path, target_date_str):
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Processed image not found: {image_path}")
 
-    img = cv2.imread(image_path)
+    img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError("Failed to load image for CV2 parsing.")
 
@@ -150,29 +149,37 @@ def parse_chart_with_cv2(image_path, target_date_str):
     chart_width = chart_max_x - chart_min_x
     print(f"[CV2 Parser] Chart Grid Bounds: X:{chart_min_x} to {chart_max_x}, Width={chart_width}")
 
-    # Determine Number of Points using Autocorrelation on the red curve
+    # Determine Number of Points: "Known Format Comparison" method
+    # ----------------------------------------------------------------
+    # Root cause of fragility with global-max search: the 2nd harmonic (lag=2*dx) can
+    # sometimes have a higher autocorrelation value than the fundamental (lag=dx),
+    # depending on the specific shape of the wind curve that day.
+    #
+    # Robust fix: instead of searching for the global maximum (which harmonics can win),
+    # compute the *expected* autocorrelation lag for each known chart format from the
+    # measured chart_width, then pick whichever format scores higher at its own expected lag.
+    # This is self-adapting to any chart width and completely immune to harmonics.
+    #
+    # Known formats: 33 points (8-day, every 6h) or 23 points (5.5-day, every 6h)
     col_sums = np.sum(clean_mask > 0, axis=0)
     col_sums = col_sums - np.mean(col_sums)
     autocorr = np.correlate(col_sums, col_sums, mode='full')
     autocorr = autocorr[autocorr.size // 2:]
-    
-    # Ignore the first few pixels (lag 0) and find the first major peak
-    # dx is typically around 20~24 (for 33 points) or 30~34 (for 23 points)
-    autocorr[:15] = 0 
-    
-    # Restrict search for dx to reasonable ranges: 15 to 45
-    dx_peak = np.argmax(autocorr[15:45]) + 15
-    
-    # Calculate number of points dynamically based on CHART width
-    num_points = int(round(chart_width / dx_peak)) + 1
-    
-    print(f"[Heuristic Plan B] Detected dx={dx_peak} via dynamic feature thickness (Autocorrelation).")
-    
-    # Use the detected num_points, but cap to closest expected (23 or 33) to be safe if desired
-    if abs(num_points - 23) < abs(num_points - 33):
-        num_points = 23
-    else:
+
+    lag_33 = int(round(chart_width / 32))  # expected spacing for 33-point (8-day) chart
+    lag_23 = int(round(chart_width / 22))  # expected spacing for 23-point (5.5-day) chart
+
+    corr_33 = autocorr[lag_33] if lag_33 < len(autocorr) else -np.inf
+    corr_23 = autocorr[lag_23] if lag_23 < len(autocorr) else -np.inf
+
+    if corr_33 >= corr_23:
         num_points = 33
+        dx_detected = lag_33
+    else:
+        num_points = 23
+        dx_detected = lag_23
+
+    print(f"[CV2 Parser] Format vote: 33pts(lag={lag_33},corr={corr_33:.0f}) vs 23pts(lag={lag_23},corr={corr_23:.0f}) -> {num_points} points selected.")
 
     dx = chart_width / (num_points - 1)
     print(f"[CV2 Parser] Chart spans X:{chart_min_x} to {chart_max_x}. dx={dx:.2f}, points={num_points}")
@@ -226,4 +233,3 @@ if __name__ == "__main__":
     res = parse_chart_with_cv2("temp/0613中油_raw.png", "0613")
     import json
     print(json.dumps(res, indent=2))
-

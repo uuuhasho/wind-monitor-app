@@ -209,6 +209,43 @@ def fuse_and_save_data(gemini_output=None):
         print(f"Saved fused data locally to {local_db_path}")
     except Exception as e:
         print(f"Error saving local JSON: {e}")
+
+    # Write to Firebase RTDB
+    rtdb_settings = config.get("Firebase_RTDB_Settings", {})
+    # For test environment, override with env var if exists
+    db_url = os.environ.get("FIREBASE_RTDB_URL", rtdb_settings.get("DbUrl"))
+    db_secret = os.environ.get("FIREBASE_RTDB_SECRET", rtdb_settings.get("DbSecret"))
+    
+    if db_url and db_secret:
+        print("Connecting to Firebase RTDB...")
+        try:
+            # We are writing to `/test/forecast_data` and `/test/forecast_metadata`
+            # Wait, to support both test and prod, let's use an env var for prefix
+            prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "/test")
+            
+            if prefix == "/test":
+                print("WARNING: Using default '/test' prefix for Firebase RTDB. If this is PRODUCTION, ensure FIREBASE_RTDB_PREFIX is set to an empty string ''!")
+            elif prefix == "":
+                print("INFO: FIREBASE_RTDB_PREFIX is empty. Writing to PRODUCTION RTDB Root!")
+            
+            # PATCH forecast_data
+            url_data = f"{db_url.rstrip('/')}{prefix}/forecast_data.json?auth={db_secret}"
+            response_data = requests.put(url_data, json=fused_data, timeout=15)
+            response_data.raise_for_status()
+            
+            # PATCH metadata with updatedAt
+            url_meta = f"{db_url.rstrip('/')}{prefix}/forecast_metadata.json?auth={db_secret}"
+            meta_payload = {
+                "updatedAt": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+            }
+            response_meta = requests.patch(url_meta, json=meta_payload, timeout=15)
+            response_meta.raise_for_status()
+            
+            print(f"Successfully uploaded {len(fused_data)} records to Firebase RTDB at {prefix}/forecast_data!")
+        except Exception as e:
+            print(f"Firebase RTDB upload failed: {e}")
+    else:
+        print("Firebase RTDB credentials missing. Upload bypassed.")
         
     # 6. Write to Firebase Firestore (if credentials exist)
     sa_path = get_service_account_path()
