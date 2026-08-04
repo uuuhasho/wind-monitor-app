@@ -582,11 +582,11 @@
 <body>
 
 <!-- 🛠️ 系統例行維護中全螢幕遮罩 (由 Firebase /system_status/maintenance 控制) -->
-<div id="system-maintenance-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 999999; align-items: center; justify-content: center; text-align: center; color: #f8fafc; padding: 24px;">
-    <div style="background: #1e293b; padding: 44px 32px; border-radius: 24px; border: 1px solid #334155; max-width: 440px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+<div id="system-maintenance-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 999999; align-items: center; justify-content: center; text-align: center; color: #f8fafc; padding: 20px; box-sizing: border-box; margin: 0;">
+    <div style="background: #1e293b; padding: 36px 24px; border-radius: 24px; border: 1px solid #334155; max-width: 380px; width: 100%; margin: auto; box-sizing: border-box; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
         <div style="font-size: 3.5rem; margin-bottom: 20px;">🛠️</div>
-        <h2 style="color: #38bdf8; font-size: 1.75rem; font-weight: 700; margin-bottom: 14px;">正式版系統例行維護中</h2>
-        <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.7; margin-bottom: 24px;">臺中 LNG 船風速監測系統目前正在進行全系統保養與維護作業。<br>期間暫時停止服務，造成不便敬請見諒。</p>
+        <h2 style="color: #38bdf8; font-size: 1.6rem; font-weight: 700; margin-bottom: 14px; margin-top: 0;">正式版系統例行維護中</h2>
+        <p style="color: #94a3b8; font-size: 1rem; line-height: 1.7; margin-bottom: 24px;">臺中 LNG 船風速監測系統目前正在進行全系統保養與維護作業。<br>期間暫時停止服務，造成不便敬請見諒。</p>
         <span style="display: inline-block; background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 8px 18px; border-radius: 99px; font-size: 0.875rem; font-weight: 600; border: 1px solid rgba(56, 189, 248, 0.2);">維護完成後將自動恢復存取</span>
     </div>
 </div>
