@@ -717,11 +717,14 @@
 
     // 💡 靜默監聽 Firebase 維護模式狀態 (管道 1: Milkshake-monitor /system_status/maintenance)
     db.ref('system_status/maintenance').on('value', (snapshot) => {
-        const isMaintenance = snapshot.val() === true;
+        const val = snapshot.val();
+        const isMaintenance = val === true || val === 'true' || val === 'TRUE' || val === 1;
         const overlay = document.getElementById('system-maintenance-overlay');
         if (overlay) {
             overlay.style.display = isMaintenance ? 'flex' : 'none';
         }
+    }, (error) => {
+        console.warn("⚠️ Firebase 維護狀態讀取失敗 (權限或網路問題):", error);
     });
 
     // 🌟 初始化第二個 Firebase App 用於 Cloud Firestore (真實專案名稱為 milkshake-monitor)
