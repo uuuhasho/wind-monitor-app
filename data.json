@@ -1,967 +1,967 @@
 [
   {
-    "timestamp": "2026-10-03T20:00:00+08:00",
-    "cpc_wind_speed": 5.21,
-    "open_meteo_wind_speed": 2.2
-  },
-  {
-    "timestamp": "2026-10-03T21:00:00+08:00",
-    "cpc_wind_speed": 4.71,
-    "open_meteo_wind_speed": 2.6
-  },
-  {
-    "timestamp": "2026-10-03T22:00:00+08:00",
-    "cpc_wind_speed": 4.21,
-    "open_meteo_wind_speed": 5.0
-  },
-  {
-    "timestamp": "2026-10-03T23:00:00+08:00",
-    "cpc_wind_speed": 3.72,
-    "open_meteo_wind_speed": 5.1
-  },
-  {
-    "timestamp": "2026-10-04T00:00:00+08:00",
-    "cpc_wind_speed": 3.22,
-    "open_meteo_wind_speed": 3.4
-  },
-  {
-    "timestamp": "2026-10-04T01:00:00+08:00",
-    "cpc_wind_speed": 2.72,
-    "open_meteo_wind_speed": 5.2
-  },
-  {
-    "timestamp": "2026-10-04T02:00:00+08:00",
-    "cpc_wind_speed": 2.22,
-    "open_meteo_wind_speed": 5.0
-  },
-  {
-    "timestamp": "2026-10-04T03:00:00+08:00",
-    "cpc_wind_speed": 2.05,
-    "open_meteo_wind_speed": 4.0
-  },
-  {
-    "timestamp": "2026-10-04T04:00:00+08:00",
-    "cpc_wind_speed": 1.88,
-    "open_meteo_wind_speed": 4.1
-  },
-  {
-    "timestamp": "2026-10-04T05:00:00+08:00",
-    "cpc_wind_speed": 1.7,
-    "open_meteo_wind_speed": 3.8
-  },
-  {
-    "timestamp": "2026-10-04T06:00:00+08:00",
-    "cpc_wind_speed": 1.53,
-    "open_meteo_wind_speed": 3.5
-  },
-  {
-    "timestamp": "2026-10-04T07:00:00+08:00",
-    "cpc_wind_speed": 1.36,
-    "open_meteo_wind_speed": 2.7
-  },
-  {
-    "timestamp": "2026-10-04T08:00:00+08:00",
-    "cpc_wind_speed": 1.19,
-    "open_meteo_wind_speed": 2.3
-  },
-  {
-    "timestamp": "2026-10-04T09:00:00+08:00",
-    "cpc_wind_speed": 1.73,
-    "open_meteo_wind_speed": 2.2
-  },
-  {
-    "timestamp": "2026-10-04T10:00:00+08:00",
-    "cpc_wind_speed": 2.28,
-    "open_meteo_wind_speed": 3.7
-  },
-  {
-    "timestamp": "2026-10-04T11:00:00+08:00",
-    "cpc_wind_speed": 2.82,
-    "open_meteo_wind_speed": 4.9
-  },
-  {
-    "timestamp": "2026-10-04T12:00:00+08:00",
-    "cpc_wind_speed": 3.36,
-    "open_meteo_wind_speed": 5.5
-  },
-  {
-    "timestamp": "2026-10-04T13:00:00+08:00",
-    "cpc_wind_speed": 3.91,
-    "open_meteo_wind_speed": 6.1
-  },
-  {
-    "timestamp": "2026-10-04T14:00:00+08:00",
-    "cpc_wind_speed": 4.45,
-    "open_meteo_wind_speed": 6.3
-  },
-  {
-    "timestamp": "2026-10-04T15:00:00+08:00",
-    "cpc_wind_speed": 5.02,
-    "open_meteo_wind_speed": 6.1
-  },
-  {
-    "timestamp": "2026-10-04T16:00:00+08:00",
-    "cpc_wind_speed": 5.59,
-    "open_meteo_wind_speed": 6.7
-  },
-  {
-    "timestamp": "2026-10-04T17:00:00+08:00",
-    "cpc_wind_speed": 6.16,
-    "open_meteo_wind_speed": 7.0
-  },
-  {
-    "timestamp": "2026-10-04T18:00:00+08:00",
-    "cpc_wind_speed": 6.73,
-    "open_meteo_wind_speed": 6.9
-  },
-  {
-    "timestamp": "2026-10-04T19:00:00+08:00",
-    "cpc_wind_speed": 7.3,
-    "open_meteo_wind_speed": 6.4
-  },
-  {
     "timestamp": "2026-10-04T20:00:00+08:00",
-    "cpc_wind_speed": 7.87,
+    "cpc_wind_speed": 6.4,
     "open_meteo_wind_speed": 6.4
   },
   {
     "timestamp": "2026-10-04T21:00:00+08:00",
-    "cpc_wind_speed": 8.0,
-    "open_meteo_wind_speed": 6.9
+    "cpc_wind_speed": 6.72,
+    "open_meteo_wind_speed": 5.3
   },
   {
     "timestamp": "2026-10-04T22:00:00+08:00",
-    "cpc_wind_speed": 8.14,
-    "open_meteo_wind_speed": 7.3
+    "cpc_wind_speed": 7.05,
+    "open_meteo_wind_speed": 5.9
   },
   {
     "timestamp": "2026-10-04T23:00:00+08:00",
-    "cpc_wind_speed": 8.27,
-    "open_meteo_wind_speed": 7.7
+    "cpc_wind_speed": 7.38,
+    "open_meteo_wind_speed": 6.4
   },
   {
     "timestamp": "2026-10-05T00:00:00+08:00",
-    "cpc_wind_speed": 8.4,
-    "open_meteo_wind_speed": 8.0
+    "cpc_wind_speed": 7.7,
+    "open_meteo_wind_speed": 6.3
   },
   {
     "timestamp": "2026-10-05T01:00:00+08:00",
-    "cpc_wind_speed": 8.54,
-    "open_meteo_wind_speed": 8.4
+    "cpc_wind_speed": 8.02,
+    "open_meteo_wind_speed": 6.9
   },
   {
     "timestamp": "2026-10-05T02:00:00+08:00",
-    "cpc_wind_speed": 8.67,
-    "open_meteo_wind_speed": 9.0
+    "cpc_wind_speed": 8.35,
+    "open_meteo_wind_speed": 7.8
   },
   {
     "timestamp": "2026-10-05T03:00:00+08:00",
-    "cpc_wind_speed": 8.83,
-    "open_meteo_wind_speed": 9.0
-  },
-  {
-    "timestamp": "2026-10-05T04:00:00+08:00",
-    "cpc_wind_speed": 8.99,
-    "open_meteo_wind_speed": 9.1
-  },
-  {
-    "timestamp": "2026-10-05T05:00:00+08:00",
-    "cpc_wind_speed": 9.15,
-    "open_meteo_wind_speed": 9.1
-  },
-  {
-    "timestamp": "2026-10-05T06:00:00+08:00",
-    "cpc_wind_speed": 9.31,
-    "open_meteo_wind_speed": 9.1
-  },
-  {
-    "timestamp": "2026-10-05T07:00:00+08:00",
-    "cpc_wind_speed": 9.47,
+    "cpc_wind_speed": 8.23,
     "open_meteo_wind_speed": 8.4
   },
   {
+    "timestamp": "2026-10-05T04:00:00+08:00",
+    "cpc_wind_speed": 8.11,
+    "open_meteo_wind_speed": 8.1
+  },
+  {
+    "timestamp": "2026-10-05T05:00:00+08:00",
+    "cpc_wind_speed": 7.99,
+    "open_meteo_wind_speed": 7.8
+  },
+  {
+    "timestamp": "2026-10-05T06:00:00+08:00",
+    "cpc_wind_speed": 7.88,
+    "open_meteo_wind_speed": 7.4
+  },
+  {
+    "timestamp": "2026-10-05T07:00:00+08:00",
+    "cpc_wind_speed": 7.76,
+    "open_meteo_wind_speed": 7.4
+  },
+  {
     "timestamp": "2026-10-05T08:00:00+08:00",
-    "cpc_wind_speed": 9.63,
-    "open_meteo_wind_speed": 8.2
+    "cpc_wind_speed": 7.64,
+    "open_meteo_wind_speed": 7.2
   },
   {
     "timestamp": "2026-10-05T09:00:00+08:00",
-    "cpc_wind_speed": 11.0,
-    "open_meteo_wind_speed": 9.0
+    "cpc_wind_speed": 9.37,
+    "open_meteo_wind_speed": 8.4
   },
   {
     "timestamp": "2026-10-05T10:00:00+08:00",
-    "cpc_wind_speed": 12.37,
-    "open_meteo_wind_speed": 10.0
+    "cpc_wind_speed": 11.1,
+    "open_meteo_wind_speed": 9.8
   },
   {
     "timestamp": "2026-10-05T11:00:00+08:00",
-    "cpc_wind_speed": 13.74,
-    "open_meteo_wind_speed": 12.3
+    "cpc_wind_speed": 12.82,
+    "open_meteo_wind_speed": 11.6
   },
   {
     "timestamp": "2026-10-05T12:00:00+08:00",
-    "cpc_wind_speed": 15.12,
-    "open_meteo_wind_speed": 14.4
+    "cpc_wind_speed": 14.55,
+    "open_meteo_wind_speed": 12.7
   },
   {
     "timestamp": "2026-10-05T13:00:00+08:00",
-    "cpc_wind_speed": 16.49,
-    "open_meteo_wind_speed": 15.6
+    "cpc_wind_speed": 16.28,
+    "open_meteo_wind_speed": 14.8
   },
   {
     "timestamp": "2026-10-05T14:00:00+08:00",
-    "cpc_wind_speed": 17.86,
-    "open_meteo_wind_speed": 16.8
+    "cpc_wind_speed": 18.01,
+    "open_meteo_wind_speed": 16.2
   },
   {
     "timestamp": "2026-10-05T15:00:00+08:00",
-    "cpc_wind_speed": 18.37,
-    "open_meteo_wind_speed": 17.2
-  },
-  {
-    "timestamp": "2026-10-05T16:00:00+08:00",
-    "cpc_wind_speed": 18.88,
-    "open_meteo_wind_speed": 17.5
-  },
-  {
-    "timestamp": "2026-10-05T17:00:00+08:00",
-    "cpc_wind_speed": 19.39,
+    "cpc_wind_speed": 18.65,
     "open_meteo_wind_speed": 17.4
   },
   {
+    "timestamp": "2026-10-05T16:00:00+08:00",
+    "cpc_wind_speed": 19.3,
+    "open_meteo_wind_speed": 17.6
+  },
+  {
+    "timestamp": "2026-10-05T17:00:00+08:00",
+    "cpc_wind_speed": 19.94,
+    "open_meteo_wind_speed": 17.6
+  },
+  {
     "timestamp": "2026-10-05T18:00:00+08:00",
-    "cpc_wind_speed": 19.9,
-    "open_meteo_wind_speed": 16.9
+    "cpc_wind_speed": 20.58,
+    "open_meteo_wind_speed": 16.8
   },
   {
     "timestamp": "2026-10-05T19:00:00+08:00",
-    "cpc_wind_speed": 20.41,
-    "open_meteo_wind_speed": 17.2
+    "cpc_wind_speed": 21.23,
+    "open_meteo_wind_speed": 16.7
   },
   {
     "timestamp": "2026-10-05T20:00:00+08:00",
-    "cpc_wind_speed": 20.92,
-    "open_meteo_wind_speed": 18.4
+    "cpc_wind_speed": 21.87,
+    "open_meteo_wind_speed": 16.9
   },
   {
     "timestamp": "2026-10-05T21:00:00+08:00",
-    "cpc_wind_speed": 20.74,
-    "open_meteo_wind_speed": 19.0
+    "cpc_wind_speed": 21.72,
+    "open_meteo_wind_speed": 17.7
   },
   {
     "timestamp": "2026-10-05T22:00:00+08:00",
-    "cpc_wind_speed": 20.55,
-    "open_meteo_wind_speed": 19.6
+    "cpc_wind_speed": 21.58,
+    "open_meteo_wind_speed": 18.5
   },
   {
     "timestamp": "2026-10-05T23:00:00+08:00",
-    "cpc_wind_speed": 20.37,
-    "open_meteo_wind_speed": 20.0
+    "cpc_wind_speed": 21.44,
+    "open_meteo_wind_speed": 19.8
   },
   {
     "timestamp": "2026-10-06T00:00:00+08:00",
-    "cpc_wind_speed": 20.18,
-    "open_meteo_wind_speed": 20.0
+    "cpc_wind_speed": 21.29,
+    "open_meteo_wind_speed": 21.7
   },
   {
     "timestamp": "2026-10-06T01:00:00+08:00",
-    "cpc_wind_speed": 19.99,
-    "open_meteo_wind_speed": 20.4
+    "cpc_wind_speed": 21.14,
+    "open_meteo_wind_speed": 21.2
   },
   {
     "timestamp": "2026-10-06T02:00:00+08:00",
-    "cpc_wind_speed": 19.81,
-    "open_meteo_wind_speed": 20.2
+    "cpc_wind_speed": 21.0,
+    "open_meteo_wind_speed": 19.2
   },
   {
     "timestamp": "2026-10-06T03:00:00+08:00",
-    "cpc_wind_speed": 19.68,
-    "open_meteo_wind_speed": 19.2
+    "cpc_wind_speed": 20.8,
+    "open_meteo_wind_speed": 18.9
   },
   {
     "timestamp": "2026-10-06T04:00:00+08:00",
-    "cpc_wind_speed": 19.56,
-    "open_meteo_wind_speed": 18.1
+    "cpc_wind_speed": 20.6,
+    "open_meteo_wind_speed": 18.4
   },
   {
     "timestamp": "2026-10-06T05:00:00+08:00",
-    "cpc_wind_speed": 19.43,
-    "open_meteo_wind_speed": 18.2
+    "cpc_wind_speed": 20.4,
+    "open_meteo_wind_speed": 17.7
   },
   {
     "timestamp": "2026-10-06T06:00:00+08:00",
-    "cpc_wind_speed": 19.3,
-    "open_meteo_wind_speed": 18.4
+    "cpc_wind_speed": 20.21,
+    "open_meteo_wind_speed": 17.6
   },
   {
     "timestamp": "2026-10-06T07:00:00+08:00",
-    "cpc_wind_speed": 19.18,
-    "open_meteo_wind_speed": 18.2
+    "cpc_wind_speed": 20.01,
+    "open_meteo_wind_speed": 17.5
   },
   {
     "timestamp": "2026-10-06T08:00:00+08:00",
-    "cpc_wind_speed": 19.05,
-    "open_meteo_wind_speed": 18.6
+    "cpc_wind_speed": 19.81,
+    "open_meteo_wind_speed": 18.0
   },
   {
     "timestamp": "2026-10-06T09:00:00+08:00",
-    "cpc_wind_speed": 19.2,
-    "open_meteo_wind_speed": 18.7
+    "cpc_wind_speed": 19.89,
+    "open_meteo_wind_speed": 17.8
   },
   {
     "timestamp": "2026-10-06T10:00:00+08:00",
-    "cpc_wind_speed": 19.35,
-    "open_meteo_wind_speed": 18.6
+    "cpc_wind_speed": 19.97,
+    "open_meteo_wind_speed": 17.7
   },
   {
     "timestamp": "2026-10-06T11:00:00+08:00",
-    "cpc_wind_speed": 19.51,
-    "open_meteo_wind_speed": 18.5
+    "cpc_wind_speed": 20.05,
+    "open_meteo_wind_speed": 17.7
   },
   {
     "timestamp": "2026-10-06T12:00:00+08:00",
-    "cpc_wind_speed": 19.66,
-    "open_meteo_wind_speed": 18.8
+    "cpc_wind_speed": 20.12,
+    "open_meteo_wind_speed": 18.3
   },
   {
     "timestamp": "2026-10-06T13:00:00+08:00",
-    "cpc_wind_speed": 19.81,
-    "open_meteo_wind_speed": 19.1
-  },
-  {
-    "timestamp": "2026-10-06T14:00:00+08:00",
-    "cpc_wind_speed": 19.96,
-    "open_meteo_wind_speed": 19.2
-  },
-  {
-    "timestamp": "2026-10-06T15:00:00+08:00",
-    "cpc_wind_speed": 19.76,
-    "open_meteo_wind_speed": 19.4
-  },
-  {
-    "timestamp": "2026-10-06T16:00:00+08:00",
-    "cpc_wind_speed": 19.56,
-    "open_meteo_wind_speed": 19.3
-  },
-  {
-    "timestamp": "2026-10-06T17:00:00+08:00",
-    "cpc_wind_speed": 19.37,
-    "open_meteo_wind_speed": 18.6
-  },
-  {
-    "timestamp": "2026-10-06T18:00:00+08:00",
-    "cpc_wind_speed": 19.17,
-    "open_meteo_wind_speed": 18.5
-  },
-  {
-    "timestamp": "2026-10-06T19:00:00+08:00",
-    "cpc_wind_speed": 18.97,
+    "cpc_wind_speed": 20.2,
     "open_meteo_wind_speed": 18.4
   },
   {
+    "timestamp": "2026-10-06T14:00:00+08:00",
+    "cpc_wind_speed": 20.28,
+    "open_meteo_wind_speed": 18.7
+  },
+  {
+    "timestamp": "2026-10-06T15:00:00+08:00",
+    "cpc_wind_speed": 20.22,
+    "open_meteo_wind_speed": 19.2
+  },
+  {
+    "timestamp": "2026-10-06T16:00:00+08:00",
+    "cpc_wind_speed": 20.15,
+    "open_meteo_wind_speed": 19.1
+  },
+  {
+    "timestamp": "2026-10-06T17:00:00+08:00",
+    "cpc_wind_speed": 20.08,
+    "open_meteo_wind_speed": 18.7
+  },
+  {
+    "timestamp": "2026-10-06T18:00:00+08:00",
+    "cpc_wind_speed": 20.02,
+    "open_meteo_wind_speed": 18.0
+  },
+  {
+    "timestamp": "2026-10-06T19:00:00+08:00",
+    "cpc_wind_speed": 19.96,
+    "open_meteo_wind_speed": 18.2
+  },
+  {
     "timestamp": "2026-10-06T20:00:00+08:00",
-    "cpc_wind_speed": 18.77,
-    "open_meteo_wind_speed": 18.6
+    "cpc_wind_speed": 19.89,
+    "open_meteo_wind_speed": 18.2
   },
   {
     "timestamp": "2026-10-06T21:00:00+08:00",
-    "cpc_wind_speed": 18.58,
-    "open_meteo_wind_speed": 18.7
-  },
-  {
-    "timestamp": "2026-10-06T22:00:00+08:00",
-    "cpc_wind_speed": 18.4,
-    "open_meteo_wind_speed": 18.8
-  },
-  {
-    "timestamp": "2026-10-06T23:00:00+08:00",
-    "cpc_wind_speed": 18.21,
-    "open_meteo_wind_speed": 18.7
-  },
-  {
-    "timestamp": "2026-10-07T00:00:00+08:00",
-    "cpc_wind_speed": 18.02,
+    "cpc_wind_speed": 19.66,
     "open_meteo_wind_speed": 18.1
   },
   {
+    "timestamp": "2026-10-06T22:00:00+08:00",
+    "cpc_wind_speed": 19.44,
+    "open_meteo_wind_speed": 18.2
+  },
+  {
+    "timestamp": "2026-10-06T23:00:00+08:00",
+    "cpc_wind_speed": 19.21,
+    "open_meteo_wind_speed": 18.2
+  },
+  {
+    "timestamp": "2026-10-07T00:00:00+08:00",
+    "cpc_wind_speed": 18.98,
+    "open_meteo_wind_speed": 17.9
+  },
+  {
     "timestamp": "2026-10-07T01:00:00+08:00",
-    "cpc_wind_speed": 17.84,
+    "cpc_wind_speed": 18.76,
     "open_meteo_wind_speed": 17.4
   },
   {
     "timestamp": "2026-10-07T02:00:00+08:00",
-    "cpc_wind_speed": 17.65,
-    "open_meteo_wind_speed": 16.8
+    "cpc_wind_speed": 18.53,
+    "open_meteo_wind_speed": 17.0
   },
   {
     "timestamp": "2026-10-07T03:00:00+08:00",
-    "cpc_wind_speed": 17.8,
-    "open_meteo_wind_speed": 16.5
+    "cpc_wind_speed": 18.62,
+    "open_meteo_wind_speed": 16.3
   },
   {
     "timestamp": "2026-10-07T04:00:00+08:00",
-    "cpc_wind_speed": 17.94,
+    "cpc_wind_speed": 18.72,
     "open_meteo_wind_speed": 16.2
   },
   {
     "timestamp": "2026-10-07T05:00:00+08:00",
-    "cpc_wind_speed": 18.09,
-    "open_meteo_wind_speed": 16.0
+    "cpc_wind_speed": 18.81,
+    "open_meteo_wind_speed": 16.3
   },
   {
     "timestamp": "2026-10-07T06:00:00+08:00",
-    "cpc_wind_speed": 18.24,
+    "cpc_wind_speed": 18.9,
     "open_meteo_wind_speed": 16.3
   },
   {
     "timestamp": "2026-10-07T07:00:00+08:00",
-    "cpc_wind_speed": 18.38,
-    "open_meteo_wind_speed": 16.3
+    "cpc_wind_speed": 19.0,
+    "open_meteo_wind_speed": 16.2
   },
   {
     "timestamp": "2026-10-07T08:00:00+08:00",
-    "cpc_wind_speed": 18.53,
-    "open_meteo_wind_speed": 16.4
+    "cpc_wind_speed": 19.09,
+    "open_meteo_wind_speed": 15.8
   },
   {
     "timestamp": "2026-10-07T09:00:00+08:00",
-    "cpc_wind_speed": 18.42,
-    "open_meteo_wind_speed": 16.4
+    "cpc_wind_speed": 19.0,
+    "open_meteo_wind_speed": 15.9
   },
   {
     "timestamp": "2026-10-07T10:00:00+08:00",
-    "cpc_wind_speed": 18.32,
-    "open_meteo_wind_speed": 16.6
+    "cpc_wind_speed": 18.9,
+    "open_meteo_wind_speed": 15.9
   },
   {
     "timestamp": "2026-10-07T11:00:00+08:00",
-    "cpc_wind_speed": 18.22,
-    "open_meteo_wind_speed": 16.3
+    "cpc_wind_speed": 18.81,
+    "open_meteo_wind_speed": 15.9
   },
   {
     "timestamp": "2026-10-07T12:00:00+08:00",
-    "cpc_wind_speed": 18.11,
-    "open_meteo_wind_speed": 16.8
+    "cpc_wind_speed": 18.72,
+    "open_meteo_wind_speed": 16.0
   },
   {
     "timestamp": "2026-10-07T13:00:00+08:00",
-    "cpc_wind_speed": 18.0,
-    "open_meteo_wind_speed": 17.8
+    "cpc_wind_speed": 18.62,
+    "open_meteo_wind_speed": 17.1
   },
   {
     "timestamp": "2026-10-07T14:00:00+08:00",
-    "cpc_wind_speed": 17.9,
-    "open_meteo_wind_speed": 17.9
+    "cpc_wind_speed": 18.53,
+    "open_meteo_wind_speed": 18.0
   },
   {
     "timestamp": "2026-10-07T15:00:00+08:00",
-    "cpc_wind_speed": 17.89,
-    "open_meteo_wind_speed": 17.7
+    "cpc_wind_speed": 18.48,
+    "open_meteo_wind_speed": 17.8
   },
   {
     "timestamp": "2026-10-07T16:00:00+08:00",
-    "cpc_wind_speed": 17.87,
-    "open_meteo_wind_speed": 17.5
+    "cpc_wind_speed": 18.43,
+    "open_meteo_wind_speed": 16.7
   },
   {
     "timestamp": "2026-10-07T17:00:00+08:00",
-    "cpc_wind_speed": 17.86,
-    "open_meteo_wind_speed": 17.1
-  },
-  {
-    "timestamp": "2026-10-07T18:00:00+08:00",
-    "cpc_wind_speed": 17.85,
-    "open_meteo_wind_speed": 17.1
-  },
-  {
-    "timestamp": "2026-10-07T19:00:00+08:00",
-    "cpc_wind_speed": 17.83,
-    "open_meteo_wind_speed": 17.0
-  },
-  {
-    "timestamp": "2026-10-07T20:00:00+08:00",
-    "cpc_wind_speed": 17.82,
-    "open_meteo_wind_speed": 17.0
-  },
-  {
-    "timestamp": "2026-10-07T21:00:00+08:00",
-    "cpc_wind_speed": 17.33,
+    "cpc_wind_speed": 18.38,
     "open_meteo_wind_speed": 16.6
   },
   {
+    "timestamp": "2026-10-07T18:00:00+08:00",
+    "cpc_wind_speed": 18.32,
+    "open_meteo_wind_speed": 16.0
+  },
+  {
+    "timestamp": "2026-10-07T19:00:00+08:00",
+    "cpc_wind_speed": 18.27,
+    "open_meteo_wind_speed": 16.0
+  },
+  {
+    "timestamp": "2026-10-07T20:00:00+08:00",
+    "cpc_wind_speed": 18.22,
+    "open_meteo_wind_speed": 16.4
+  },
+  {
+    "timestamp": "2026-10-07T21:00:00+08:00",
+    "cpc_wind_speed": 17.52,
+    "open_meteo_wind_speed": 16.4
+  },
+  {
     "timestamp": "2026-10-07T22:00:00+08:00",
-    "cpc_wind_speed": 16.84,
+    "cpc_wind_speed": 16.81,
     "open_meteo_wind_speed": 15.7
   },
   {
     "timestamp": "2026-10-07T23:00:00+08:00",
-    "cpc_wind_speed": 16.34,
-    "open_meteo_wind_speed": 13.8
+    "cpc_wind_speed": 16.11,
+    "open_meteo_wind_speed": 14.4
   },
   {
     "timestamp": "2026-10-08T00:00:00+08:00",
-    "cpc_wind_speed": 15.85,
-    "open_meteo_wind_speed": 12.8
+    "cpc_wind_speed": 15.41,
+    "open_meteo_wind_speed": 13.7
   },
   {
     "timestamp": "2026-10-08T01:00:00+08:00",
-    "cpc_wind_speed": 15.36,
-    "open_meteo_wind_speed": 11.7
+    "cpc_wind_speed": 14.7,
+    "open_meteo_wind_speed": 12.2
   },
   {
     "timestamp": "2026-10-08T02:00:00+08:00",
-    "cpc_wind_speed": 14.87,
-    "open_meteo_wind_speed": 9.9
+    "cpc_wind_speed": 14.0,
+    "open_meteo_wind_speed": 10.7
   },
   {
     "timestamp": "2026-10-08T03:00:00+08:00",
-    "cpc_wind_speed": 14.75,
+    "cpc_wind_speed": 13.82,
     "open_meteo_wind_speed": 9.1
   },
   {
     "timestamp": "2026-10-08T04:00:00+08:00",
-    "cpc_wind_speed": 14.63,
-    "open_meteo_wind_speed": 8.9
-  },
-  {
-    "timestamp": "2026-10-08T05:00:00+08:00",
-    "cpc_wind_speed": 14.52,
-    "open_meteo_wind_speed": 9.5
-  },
-  {
-    "timestamp": "2026-10-08T06:00:00+08:00",
-    "cpc_wind_speed": 14.4,
-    "open_meteo_wind_speed": 9.8
-  },
-  {
-    "timestamp": "2026-10-08T07:00:00+08:00",
-    "cpc_wind_speed": 14.28,
-    "open_meteo_wind_speed": 9.7
-  },
-  {
-    "timestamp": "2026-10-08T08:00:00+08:00",
-    "cpc_wind_speed": 14.16,
-    "open_meteo_wind_speed": 8.9
-  },
-  {
-    "timestamp": "2026-10-08T09:00:00+08:00",
-    "cpc_wind_speed": 14.31,
+    "cpc_wind_speed": 13.63,
     "open_meteo_wind_speed": 9.0
   },
   {
+    "timestamp": "2026-10-08T05:00:00+08:00",
+    "cpc_wind_speed": 13.44,
+    "open_meteo_wind_speed": 9.0
+  },
+  {
+    "timestamp": "2026-10-08T06:00:00+08:00",
+    "cpc_wind_speed": 13.26,
+    "open_meteo_wind_speed": 8.5
+  },
+  {
+    "timestamp": "2026-10-08T07:00:00+08:00",
+    "cpc_wind_speed": 13.08,
+    "open_meteo_wind_speed": 9.0
+  },
+  {
+    "timestamp": "2026-10-08T08:00:00+08:00",
+    "cpc_wind_speed": 12.89,
+    "open_meteo_wind_speed": 9.1
+  },
+  {
+    "timestamp": "2026-10-08T09:00:00+08:00",
+    "cpc_wind_speed": 13.06,
+    "open_meteo_wind_speed": 9.1
+  },
+  {
     "timestamp": "2026-10-08T10:00:00+08:00",
-    "cpc_wind_speed": 14.46,
-    "open_meteo_wind_speed": 9.3
+    "cpc_wind_speed": 13.23,
+    "open_meteo_wind_speed": 9.1
   },
   {
     "timestamp": "2026-10-08T11:00:00+08:00",
-    "cpc_wind_speed": 14.62,
-    "open_meteo_wind_speed": 10.0
+    "cpc_wind_speed": 13.4,
+    "open_meteo_wind_speed": 10.5
   },
   {
     "timestamp": "2026-10-08T12:00:00+08:00",
-    "cpc_wind_speed": 14.77,
-    "open_meteo_wind_speed": 11.5
+    "cpc_wind_speed": 13.58,
+    "open_meteo_wind_speed": 12.3
   },
   {
     "timestamp": "2026-10-08T13:00:00+08:00",
-    "cpc_wind_speed": 14.92,
-    "open_meteo_wind_speed": 13.3
+    "cpc_wind_speed": 13.75,
+    "open_meteo_wind_speed": 13.9
   },
   {
     "timestamp": "2026-10-08T14:00:00+08:00",
-    "cpc_wind_speed": 15.07,
-    "open_meteo_wind_speed": 14.8
-  },
-  {
-    "timestamp": "2026-10-08T15:00:00+08:00",
-    "cpc_wind_speed": 15.22,
-    "open_meteo_wind_speed": 15.6
-  },
-  {
-    "timestamp": "2026-10-08T16:00:00+08:00",
-    "cpc_wind_speed": 15.38,
-    "open_meteo_wind_speed": 16.0
-  },
-  {
-    "timestamp": "2026-10-08T17:00:00+08:00",
-    "cpc_wind_speed": 15.53,
-    "open_meteo_wind_speed": 16.2
-  },
-  {
-    "timestamp": "2026-10-08T18:00:00+08:00",
-    "cpc_wind_speed": 15.68,
-    "open_meteo_wind_speed": 16.3
-  },
-  {
-    "timestamp": "2026-10-08T19:00:00+08:00",
-    "cpc_wind_speed": 15.84,
-    "open_meteo_wind_speed": 16.2
-  },
-  {
-    "timestamp": "2026-10-08T20:00:00+08:00",
-    "cpc_wind_speed": 15.99,
-    "open_meteo_wind_speed": 16.0
-  },
-  {
-    "timestamp": "2026-10-08T21:00:00+08:00",
-    "cpc_wind_speed": 15.1,
-    "open_meteo_wind_speed": 15.6
-  },
-  {
-    "timestamp": "2026-10-08T22:00:00+08:00",
-    "cpc_wind_speed": 14.2,
+    "cpc_wind_speed": 13.92,
     "open_meteo_wind_speed": 15.0
   },
   {
-    "timestamp": "2026-10-08T23:00:00+08:00",
-    "cpc_wind_speed": 13.3,
+    "timestamp": "2026-10-08T15:00:00+08:00",
+    "cpc_wind_speed": 14.04,
+    "open_meteo_wind_speed": 15.1
+  },
+  {
+    "timestamp": "2026-10-08T16:00:00+08:00",
+    "cpc_wind_speed": 14.16,
+    "open_meteo_wind_speed": 15.1
+  },
+  {
+    "timestamp": "2026-10-08T17:00:00+08:00",
+    "cpc_wind_speed": 14.28,
+    "open_meteo_wind_speed": 14.8
+  },
+  {
+    "timestamp": "2026-10-08T18:00:00+08:00",
+    "cpc_wind_speed": 14.4,
+    "open_meteo_wind_speed": 14.7
+  },
+  {
+    "timestamp": "2026-10-08T19:00:00+08:00",
+    "cpc_wind_speed": 14.52,
     "open_meteo_wind_speed": 14.4
   },
   {
+    "timestamp": "2026-10-08T20:00:00+08:00",
+    "cpc_wind_speed": 14.64,
+    "open_meteo_wind_speed": 14.2
+  },
+  {
+    "timestamp": "2026-10-08T21:00:00+08:00",
+    "cpc_wind_speed": 13.89,
+    "open_meteo_wind_speed": 14.1
+  },
+  {
+    "timestamp": "2026-10-08T22:00:00+08:00",
+    "cpc_wind_speed": 13.14,
+    "open_meteo_wind_speed": 14.0
+  },
+  {
+    "timestamp": "2026-10-08T23:00:00+08:00",
+    "cpc_wind_speed": 12.4,
+    "open_meteo_wind_speed": 13.8
+  },
+  {
     "timestamp": "2026-10-09T00:00:00+08:00",
-    "cpc_wind_speed": 12.41,
-    "open_meteo_wind_speed": 13.7
+    "cpc_wind_speed": 11.65,
+    "open_meteo_wind_speed": 13.3
   },
   {
     "timestamp": "2026-10-09T01:00:00+08:00",
-    "cpc_wind_speed": 11.51,
-    "open_meteo_wind_speed": 12.9
+    "cpc_wind_speed": 10.9,
+    "open_meteo_wind_speed": 12.6
   },
   {
     "timestamp": "2026-10-09T02:00:00+08:00",
-    "cpc_wind_speed": 10.62,
-    "open_meteo_wind_speed": 12.1
+    "cpc_wind_speed": 10.15,
+    "open_meteo_wind_speed": 11.9
   },
   {
     "timestamp": "2026-10-09T03:00:00+08:00",
-    "cpc_wind_speed": 10.55,
+    "cpc_wind_speed": 10.15,
     "open_meteo_wind_speed": 11.1
   },
   {
     "timestamp": "2026-10-09T04:00:00+08:00",
-    "cpc_wind_speed": 10.49,
-    "open_meteo_wind_speed": 10.0
+    "cpc_wind_speed": 10.16,
+    "open_meteo_wind_speed": 10.3
   },
   {
     "timestamp": "2026-10-09T05:00:00+08:00",
-    "cpc_wind_speed": 10.42,
-    "open_meteo_wind_speed": 9.3
+    "cpc_wind_speed": 10.16,
+    "open_meteo_wind_speed": 9.6
   },
   {
     "timestamp": "2026-10-09T06:00:00+08:00",
-    "cpc_wind_speed": 10.35,
+    "cpc_wind_speed": 10.16,
     "open_meteo_wind_speed": 9.0
   },
   {
     "timestamp": "2026-10-09T07:00:00+08:00",
-    "cpc_wind_speed": 10.29,
-    "open_meteo_wind_speed": 9.0
+    "cpc_wind_speed": 10.17,
+    "open_meteo_wind_speed": 8.6
   },
   {
     "timestamp": "2026-10-09T08:00:00+08:00",
-    "cpc_wind_speed": 10.22,
-    "open_meteo_wind_speed": 9.3
+    "cpc_wind_speed": 10.17,
+    "open_meteo_wind_speed": 8.6
   },
   {
     "timestamp": "2026-10-09T09:00:00+08:00",
-    "cpc_wind_speed": 10.88,
-    "open_meteo_wind_speed": 10.2
-  },
-  {
-    "timestamp": "2026-10-09T10:00:00+08:00",
-    "cpc_wind_speed": 11.53,
-    "open_meteo_wind_speed": 11.5
-  },
-  {
-    "timestamp": "2026-10-09T11:00:00+08:00",
-    "cpc_wind_speed": 12.19,
-    "open_meteo_wind_speed": 12.6
-  },
-  {
-    "timestamp": "2026-10-09T12:00:00+08:00",
-    "cpc_wind_speed": 12.85,
-    "open_meteo_wind_speed": 13.5
-  },
-  {
-    "timestamp": "2026-10-09T13:00:00+08:00",
-    "cpc_wind_speed": 13.5,
-    "open_meteo_wind_speed": 14.3
-  },
-  {
-    "timestamp": "2026-10-09T14:00:00+08:00",
-    "cpc_wind_speed": 14.16,
-    "open_meteo_wind_speed": 14.9
-  },
-  {
-    "timestamp": "2026-10-09T15:00:00+08:00",
-    "cpc_wind_speed": 14.32,
-    "open_meteo_wind_speed": 15.3
-  },
-  {
-    "timestamp": "2026-10-09T16:00:00+08:00",
-    "cpc_wind_speed": 14.49,
-    "open_meteo_wind_speed": 15.5
-  },
-  {
-    "timestamp": "2026-10-09T17:00:00+08:00",
-    "cpc_wind_speed": 14.66,
-    "open_meteo_wind_speed": 15.6
-  },
-  {
-    "timestamp": "2026-10-09T18:00:00+08:00",
-    "cpc_wind_speed": 14.82,
-    "open_meteo_wind_speed": 15.6
-  },
-  {
-    "timestamp": "2026-10-09T19:00:00+08:00",
-    "cpc_wind_speed": 14.98,
-    "open_meteo_wind_speed": 15.5
-  },
-  {
-    "timestamp": "2026-10-09T20:00:00+08:00",
-    "cpc_wind_speed": 15.15,
-    "open_meteo_wind_speed": 15.3
-  },
-  {
-    "timestamp": "2026-10-09T21:00:00+08:00",
-    "cpc_wind_speed": 14.55,
-    "open_meteo_wind_speed": 14.8
-  },
-  {
-    "timestamp": "2026-10-09T22:00:00+08:00",
-    "cpc_wind_speed": 13.94,
-    "open_meteo_wind_speed": 14.2
-  },
-  {
-    "timestamp": "2026-10-09T23:00:00+08:00",
-    "cpc_wind_speed": 13.34,
-    "open_meteo_wind_speed": 13.5
-  },
-  {
-    "timestamp": "2026-10-10T00:00:00+08:00",
-    "cpc_wind_speed": 12.74,
-    "open_meteo_wind_speed": 12.8
-  },
-  {
-    "timestamp": "2026-10-10T01:00:00+08:00",
-    "cpc_wind_speed": 12.13,
-    "open_meteo_wind_speed": 12.0
-  },
-  {
-    "timestamp": "2026-10-10T02:00:00+08:00",
-    "cpc_wind_speed": 11.53,
-    "open_meteo_wind_speed": 11.3
-  },
-  {
-    "timestamp": "2026-10-10T03:00:00+08:00",
-    "cpc_wind_speed": 11.74,
-    "open_meteo_wind_speed": 10.6
-  },
-  {
-    "timestamp": "2026-10-10T04:00:00+08:00",
-    "cpc_wind_speed": 11.95,
-    "open_meteo_wind_speed": 9.8
-  },
-  {
-    "timestamp": "2026-10-10T05:00:00+08:00",
-    "cpc_wind_speed": 12.16,
-    "open_meteo_wind_speed": 9.2
-  },
-  {
-    "timestamp": "2026-10-10T06:00:00+08:00",
-    "cpc_wind_speed": 12.38,
-    "open_meteo_wind_speed": 8.5
-  },
-  {
-    "timestamp": "2026-10-10T07:00:00+08:00",
-    "cpc_wind_speed": 12.59,
-    "open_meteo_wind_speed": 7.9
-  },
-  {
-    "timestamp": "2026-10-10T08:00:00+08:00",
-    "cpc_wind_speed": 12.8,
-    "open_meteo_wind_speed": 7.9
-  },
-  {
-    "timestamp": "2026-10-10T09:00:00+08:00",
-    "cpc_wind_speed": 13.32,
+    "cpc_wind_speed": 10.79,
     "open_meteo_wind_speed": 9.1
   },
   {
-    "timestamp": "2026-10-10T10:00:00+08:00",
-    "cpc_wind_speed": 13.85,
-    "open_meteo_wind_speed": 11.0
+    "timestamp": "2026-10-09T10:00:00+08:00",
+    "cpc_wind_speed": 11.41,
+    "open_meteo_wind_speed": 10.0
   },
   {
-    "timestamp": "2026-10-10T11:00:00+08:00",
-    "cpc_wind_speed": 14.38,
-    "open_meteo_wind_speed": 12.6
+    "timestamp": "2026-10-09T11:00:00+08:00",
+    "cpc_wind_speed": 12.02,
+    "open_meteo_wind_speed": 11.2
   },
   {
-    "timestamp": "2026-10-10T12:00:00+08:00",
-    "cpc_wind_speed": 14.9,
-    "open_meteo_wind_speed": 13.7
+    "timestamp": "2026-10-09T12:00:00+08:00",
+    "cpc_wind_speed": 12.64,
+    "open_meteo_wind_speed": 12.9
   },
   {
-    "timestamp": "2026-10-10T13:00:00+08:00",
-    "cpc_wind_speed": 15.42,
-    "open_meteo_wind_speed": 14.5
+    "timestamp": "2026-10-09T13:00:00+08:00",
+    "cpc_wind_speed": 13.26,
+    "open_meteo_wind_speed": 14.8
   },
   {
-    "timestamp": "2026-10-10T14:00:00+08:00",
-    "cpc_wind_speed": 15.95,
-    "open_meteo_wind_speed": 15.0
-  },
-  {
-    "timestamp": "2026-10-10T15:00:00+08:00",
-    "cpc_wind_speed": 16.16,
-    "open_meteo_wind_speed": 17.8
-  },
-  {
-    "timestamp": "2026-10-10T16:00:00+08:00",
-    "cpc_wind_speed": 16.36,
-    "open_meteo_wind_speed": 18.1
-  },
-  {
-    "timestamp": "2026-10-10T17:00:00+08:00",
-    "cpc_wind_speed": 16.56,
-    "open_meteo_wind_speed": 18.0
-  },
-  {
-    "timestamp": "2026-10-10T18:00:00+08:00",
-    "cpc_wind_speed": 16.77,
-    "open_meteo_wind_speed": 17.8
-  },
-  {
-    "timestamp": "2026-10-10T19:00:00+08:00",
-    "cpc_wind_speed": 16.98,
-    "open_meteo_wind_speed": 17.5
-  },
-  {
-    "timestamp": "2026-10-10T20:00:00+08:00",
-    "cpc_wind_speed": 17.18,
-    "open_meteo_wind_speed": 17.3
-  },
-  {
-    "timestamp": "2026-10-10T21:00:00+08:00",
-    "cpc_wind_speed": 16.61,
-    "open_meteo_wind_speed": 17.2
-  },
-  {
-    "timestamp": "2026-10-10T22:00:00+08:00",
-    "cpc_wind_speed": 16.04,
-    "open_meteo_wind_speed": 17.0
-  },
-  {
-    "timestamp": "2026-10-10T23:00:00+08:00",
-    "cpc_wind_speed": 15.47,
-    "open_meteo_wind_speed": 16.8
-  },
-  {
-    "timestamp": "2026-10-11T00:00:00+08:00",
-    "cpc_wind_speed": 14.9,
-    "open_meteo_wind_speed": 16.5
-  },
-  {
-    "timestamp": "2026-10-11T01:00:00+08:00",
-    "cpc_wind_speed": 14.33,
+    "timestamp": "2026-10-09T14:00:00+08:00",
+    "cpc_wind_speed": 13.88,
     "open_meteo_wind_speed": 16.2
   },
   {
+    "timestamp": "2026-10-09T15:00:00+08:00",
+    "cpc_wind_speed": 14.24,
+    "open_meteo_wind_speed": 16.6
+  },
+  {
+    "timestamp": "2026-10-09T16:00:00+08:00",
+    "cpc_wind_speed": 14.59,
+    "open_meteo_wind_speed": 16.4
+  },
+  {
+    "timestamp": "2026-10-09T17:00:00+08:00",
+    "cpc_wind_speed": 14.95,
+    "open_meteo_wind_speed": 16.1
+  },
+  {
+    "timestamp": "2026-10-09T18:00:00+08:00",
+    "cpc_wind_speed": 15.31,
+    "open_meteo_wind_speed": 16.0
+  },
+  {
+    "timestamp": "2026-10-09T19:00:00+08:00",
+    "cpc_wind_speed": 15.66,
+    "open_meteo_wind_speed": 15.8
+  },
+  {
+    "timestamp": "2026-10-09T20:00:00+08:00",
+    "cpc_wind_speed": 16.02,
+    "open_meteo_wind_speed": 15.5
+  },
+  {
+    "timestamp": "2026-10-09T21:00:00+08:00",
+    "cpc_wind_speed": 15.48,
+    "open_meteo_wind_speed": 15.1
+  },
+  {
+    "timestamp": "2026-10-09T22:00:00+08:00",
+    "cpc_wind_speed": 14.95,
+    "open_meteo_wind_speed": 14.5
+  },
+  {
+    "timestamp": "2026-10-09T23:00:00+08:00",
+    "cpc_wind_speed": 14.41,
+    "open_meteo_wind_speed": 14.0
+  },
+  {
+    "timestamp": "2026-10-10T00:00:00+08:00",
+    "cpc_wind_speed": 13.87,
+    "open_meteo_wind_speed": 13.6
+  },
+  {
+    "timestamp": "2026-10-10T01:00:00+08:00",
+    "cpc_wind_speed": 13.34,
+    "open_meteo_wind_speed": 13.3
+  },
+  {
+    "timestamp": "2026-10-10T02:00:00+08:00",
+    "cpc_wind_speed": 12.8,
+    "open_meteo_wind_speed": 12.9
+  },
+  {
+    "timestamp": "2026-10-10T03:00:00+08:00",
+    "cpc_wind_speed": 13.01,
+    "open_meteo_wind_speed": 12.2
+  },
+  {
+    "timestamp": "2026-10-10T04:00:00+08:00",
+    "cpc_wind_speed": 13.23,
+    "open_meteo_wind_speed": 11.4
+  },
+  {
+    "timestamp": "2026-10-10T05:00:00+08:00",
+    "cpc_wind_speed": 13.44,
+    "open_meteo_wind_speed": 10.6
+  },
+  {
+    "timestamp": "2026-10-10T06:00:00+08:00",
+    "cpc_wind_speed": 13.65,
+    "open_meteo_wind_speed": 9.9
+  },
+  {
+    "timestamp": "2026-10-10T07:00:00+08:00",
+    "cpc_wind_speed": 13.87,
+    "open_meteo_wind_speed": 9.3
+  },
+  {
+    "timestamp": "2026-10-10T08:00:00+08:00",
+    "cpc_wind_speed": 14.08,
+    "open_meteo_wind_speed": 9.0
+  },
+  {
+    "timestamp": "2026-10-10T09:00:00+08:00",
+    "cpc_wind_speed": 14.07,
+    "open_meteo_wind_speed": 9.3
+  },
+  {
+    "timestamp": "2026-10-10T10:00:00+08:00",
+    "cpc_wind_speed": 14.05,
+    "open_meteo_wind_speed": 9.9
+  },
+  {
+    "timestamp": "2026-10-10T11:00:00+08:00",
+    "cpc_wind_speed": 14.04,
+    "open_meteo_wind_speed": 10.5
+  },
+  {
+    "timestamp": "2026-10-10T12:00:00+08:00",
+    "cpc_wind_speed": 14.03,
+    "open_meteo_wind_speed": 11.1
+  },
+  {
+    "timestamp": "2026-10-10T13:00:00+08:00",
+    "cpc_wind_speed": 14.01,
+    "open_meteo_wind_speed": 11.6
+  },
+  {
+    "timestamp": "2026-10-10T14:00:00+08:00",
+    "cpc_wind_speed": 14.0,
+    "open_meteo_wind_speed": 12.0
+  },
+  {
+    "timestamp": "2026-10-10T15:00:00+08:00",
+    "cpc_wind_speed": 14.32,
+    "open_meteo_wind_speed": 12.1
+  },
+  {
+    "timestamp": "2026-10-10T16:00:00+08:00",
+    "cpc_wind_speed": 14.64,
+    "open_meteo_wind_speed": 12.0
+  },
+  {
+    "timestamp": "2026-10-10T17:00:00+08:00",
+    "cpc_wind_speed": 14.96,
+    "open_meteo_wind_speed": 11.9
+  },
+  {
+    "timestamp": "2026-10-10T18:00:00+08:00",
+    "cpc_wind_speed": 15.27,
+    "open_meteo_wind_speed": 11.9
+  },
+  {
+    "timestamp": "2026-10-10T19:00:00+08:00",
+    "cpc_wind_speed": 15.59,
+    "open_meteo_wind_speed": 11.9
+  },
+  {
+    "timestamp": "2026-10-10T20:00:00+08:00",
+    "cpc_wind_speed": 15.91,
+    "open_meteo_wind_speed": 11.8
+  },
+  {
+    "timestamp": "2026-10-10T21:00:00+08:00",
+    "cpc_wind_speed": 15.62,
+    "open_meteo_wind_speed": 11.7
+  },
+  {
+    "timestamp": "2026-10-10T22:00:00+08:00",
+    "cpc_wind_speed": 15.33,
+    "open_meteo_wind_speed": 11.5
+  },
+  {
+    "timestamp": "2026-10-10T23:00:00+08:00",
+    "cpc_wind_speed": 15.04,
+    "open_meteo_wind_speed": 11.3
+  },
+  {
+    "timestamp": "2026-10-11T00:00:00+08:00",
+    "cpc_wind_speed": 14.74,
+    "open_meteo_wind_speed": 11.2
+  },
+  {
+    "timestamp": "2026-10-11T01:00:00+08:00",
+    "cpc_wind_speed": 14.45,
+    "open_meteo_wind_speed": 11.1
+  },
+  {
     "timestamp": "2026-10-11T02:00:00+08:00",
-    "cpc_wind_speed": 13.76,
-    "open_meteo_wind_speed": 15.7
+    "cpc_wind_speed": 14.16,
+    "open_meteo_wind_speed": 11.1
   },
   {
     "timestamp": "2026-10-11T03:00:00+08:00",
-    "cpc_wind_speed": 13.73,
-    "open_meteo_wind_speed": 15.0
+    "cpc_wind_speed": 14.17,
+    "open_meteo_wind_speed": 12.7
   },
   {
     "timestamp": "2026-10-11T04:00:00+08:00",
-    "cpc_wind_speed": 13.71,
-    "open_meteo_wind_speed": 14.2
+    "cpc_wind_speed": 14.19,
+    "open_meteo_wind_speed": 12.1
   },
   {
     "timestamp": "2026-10-11T05:00:00+08:00",
-    "cpc_wind_speed": 13.68,
-    "open_meteo_wind_speed": 13.2
+    "cpc_wind_speed": 14.2,
+    "open_meteo_wind_speed": 11.4
   },
   {
     "timestamp": "2026-10-11T06:00:00+08:00",
-    "cpc_wind_speed": 13.65,
-    "open_meteo_wind_speed": 12.3
+    "cpc_wind_speed": 14.21,
+    "open_meteo_wind_speed": 10.8
   },
   {
     "timestamp": "2026-10-11T07:00:00+08:00",
-    "cpc_wind_speed": 13.63,
-    "open_meteo_wind_speed": 11.6
+    "cpc_wind_speed": 14.23,
+    "open_meteo_wind_speed": 10.4
   },
   {
     "timestamp": "2026-10-11T08:00:00+08:00",
-    "cpc_wind_speed": 13.6,
-    "open_meteo_wind_speed": 11.2
+    "cpc_wind_speed": 14.24,
+    "open_meteo_wind_speed": 10.3
   },
   {
     "timestamp": "2026-10-11T09:00:00+08:00",
-    "cpc_wind_speed": 13.77,
-    "open_meteo_wind_speed": 11.2
+    "cpc_wind_speed": 14.31,
+    "open_meteo_wind_speed": 10.6
   },
   {
     "timestamp": "2026-10-11T10:00:00+08:00",
-    "cpc_wind_speed": 13.95,
-    "open_meteo_wind_speed": 11.6
+    "cpc_wind_speed": 14.37,
+    "open_meteo_wind_speed": 11.3
   },
   {
     "timestamp": "2026-10-11T11:00:00+08:00",
-    "cpc_wind_speed": 14.12,
+    "cpc_wind_speed": 14.44,
     "open_meteo_wind_speed": 12.2
   },
   {
     "timestamp": "2026-10-11T12:00:00+08:00",
-    "cpc_wind_speed": 14.29,
-    "open_meteo_wind_speed": 12.8
+    "cpc_wind_speed": 14.51,
+    "open_meteo_wind_speed": 13.1
   },
   {
     "timestamp": "2026-10-11T13:00:00+08:00",
-    "cpc_wind_speed": 14.47,
-    "open_meteo_wind_speed": 13.4
+    "cpc_wind_speed": 14.57,
+    "open_meteo_wind_speed": 13.9
   },
   {
     "timestamp": "2026-10-11T14:00:00+08:00",
     "cpc_wind_speed": 14.64,
-    "open_meteo_wind_speed": 13.8
+    "open_meteo_wind_speed": 14.5
   },
   {
     "timestamp": "2026-10-11T15:00:00+08:00",
-    "cpc_wind_speed": 14.36,
-    "open_meteo_wind_speed": 14.1
+    "cpc_wind_speed": 14.51,
+    "open_meteo_wind_speed": 14.9
   },
   {
     "timestamp": "2026-10-11T16:00:00+08:00",
-    "cpc_wind_speed": 14.08,
-    "open_meteo_wind_speed": 14.4
+    "cpc_wind_speed": 14.37,
+    "open_meteo_wind_speed": 15.3
   },
   {
     "timestamp": "2026-10-11T17:00:00+08:00",
-    "cpc_wind_speed": 13.8,
-    "open_meteo_wind_speed": 14.6
+    "cpc_wind_speed": 14.24,
+    "open_meteo_wind_speed": 15.6
   },
   {
     "timestamp": "2026-10-11T18:00:00+08:00",
-    "cpc_wind_speed": 13.53,
-    "open_meteo_wind_speed": 14.7
+    "cpc_wind_speed": 14.11,
+    "open_meteo_wind_speed": 15.8
   },
   {
     "timestamp": "2026-10-11T19:00:00+08:00",
-    "cpc_wind_speed": 13.25,
-    "open_meteo_wind_speed": 14.7
+    "cpc_wind_speed": 13.97,
+    "open_meteo_wind_speed": 15.8
   },
   {
     "timestamp": "2026-10-11T20:00:00+08:00",
-    "cpc_wind_speed": 12.97,
-    "open_meteo_wind_speed": 14.5
+    "cpc_wind_speed": 13.84,
+    "open_meteo_wind_speed": 15.7
+  },
+  {
+    "timestamp": "2026-10-11T21:00:00+08:00",
+    "cpc_wind_speed": 12.75,
+    "open_meteo_wind_speed": 15.4
+  },
+  {
+    "timestamp": "2026-10-11T22:00:00+08:00",
+    "cpc_wind_speed": 11.65,
+    "open_meteo_wind_speed": 15.0
+  },
+  {
+    "timestamp": "2026-10-11T23:00:00+08:00",
+    "cpc_wind_speed": 10.56,
+    "open_meteo_wind_speed": 14.4
+  },
+  {
+    "timestamp": "2026-10-12T00:00:00+08:00",
+    "cpc_wind_speed": 9.47,
+    "open_meteo_wind_speed": 13.7
+  },
+  {
+    "timestamp": "2026-10-12T01:00:00+08:00",
+    "cpc_wind_speed": 8.37,
+    "open_meteo_wind_speed": 12.9
+  },
+  {
+    "timestamp": "2026-10-12T02:00:00+08:00",
+    "cpc_wind_speed": 7.28,
+    "open_meteo_wind_speed": 11.9
+  },
+  {
+    "timestamp": "2026-10-12T03:00:00+08:00",
+    "cpc_wind_speed": 6.7,
+    "open_meteo_wind_speed": 10.6
+  },
+  {
+    "timestamp": "2026-10-12T04:00:00+08:00",
+    "cpc_wind_speed": 6.11,
+    "open_meteo_wind_speed": 8.8
+  },
+  {
+    "timestamp": "2026-10-12T05:00:00+08:00",
+    "cpc_wind_speed": 5.53,
+    "open_meteo_wind_speed": 6.9
+  },
+  {
+    "timestamp": "2026-10-12T06:00:00+08:00",
+    "cpc_wind_speed": 4.95,
+    "open_meteo_wind_speed": 5.2
+  },
+  {
+    "timestamp": "2026-10-12T07:00:00+08:00",
+    "cpc_wind_speed": 4.36,
+    "open_meteo_wind_speed": 3.9
+  },
+  {
+    "timestamp": "2026-10-12T08:00:00+08:00",
+    "cpc_wind_speed": 3.78,
+    "open_meteo_wind_speed": 3.3
+  },
+  {
+    "timestamp": "2026-10-12T09:00:00+08:00",
+    "cpc_wind_speed": 4.33,
+    "open_meteo_wind_speed": 3.7
+  },
+  {
+    "timestamp": "2026-10-12T10:00:00+08:00",
+    "cpc_wind_speed": 4.88,
+    "open_meteo_wind_speed": 4.9
+  },
+  {
+    "timestamp": "2026-10-12T11:00:00+08:00",
+    "cpc_wind_speed": 5.43,
+    "open_meteo_wind_speed": 6.5
+  },
+  {
+    "timestamp": "2026-10-12T12:00:00+08:00",
+    "cpc_wind_speed": 5.98,
+    "open_meteo_wind_speed": 8.2
+  },
+  {
+    "timestamp": "2026-10-12T13:00:00+08:00",
+    "cpc_wind_speed": 6.53,
+    "open_meteo_wind_speed": 9.8
+  },
+  {
+    "timestamp": "2026-10-12T14:00:00+08:00",
+    "cpc_wind_speed": 7.08,
+    "open_meteo_wind_speed": 10.8
+  },
+  {
+    "timestamp": "2026-10-12T15:00:00+08:00",
+    "cpc_wind_speed": 6.83,
+    "open_meteo_wind_speed": 11.3
+  },
+  {
+    "timestamp": "2026-10-12T16:00:00+08:00",
+    "cpc_wind_speed": 6.58,
+    "open_meteo_wind_speed": 11.6
+  },
+  {
+    "timestamp": "2026-10-12T17:00:00+08:00",
+    "cpc_wind_speed": 6.32,
+    "open_meteo_wind_speed": 11.7
+  },
+  {
+    "timestamp": "2026-10-12T18:00:00+08:00",
+    "cpc_wind_speed": 6.07,
+    "open_meteo_wind_speed": 11.7
+  },
+  {
+    "timestamp": "2026-10-12T19:00:00+08:00",
+    "cpc_wind_speed": 5.82,
+    "open_meteo_wind_speed": 11.6
+  },
+  {
+    "timestamp": "2026-10-12T20:00:00+08:00",
+    "cpc_wind_speed": 5.57,
+    "open_meteo_wind_speed": 11.4
   }
 ]
