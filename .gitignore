@@ -29,6 +29,7 @@ diagnostics/
 
 # Google Apps Script
 gs_*.js
+!gs_test.js
 
 # Antigravity CLI preferences
 GEMINI.md
