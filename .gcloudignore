@@ -1,0 +1,13 @@
+.git
+.gitignore
+service_account.json
+config.json
+temp/
+lib/
+tessdata/
+test_monitor/
+.firebase/
+.firebaserc
+firebase.json
+gs_test.js
+deploy_hosting.ps1

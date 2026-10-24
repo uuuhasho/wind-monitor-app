@@ -38,11 +38,14 @@ def download_forecast_attachment(target_date=None, save_dir=None):
     
     # Try searching for a local file first as a cache/fallback
     local_filename = f"{target_date}中油.doc"
-    # Also support other variations in workspace
-    for filename in os.listdir(save_dir):
-        if target_date in filename and filename.endswith(".doc"):
-            print(f"Found existing local file matching date: {filename}")
-            return os.path.join(save_dir, filename)
+    # Also support other variations in workspace and 空軍原始檔
+    search_dirs = [save_dir, os.path.join(save_dir, "空軍原始檔")]
+    for sdir in search_dirs:
+        if os.path.exists(sdir):
+            for filename in os.listdir(sdir):
+                if target_date in filename and filename.endswith(".doc"):
+                    print(f"Found existing local file matching date: {filename} in {sdir}")
+                    return os.path.join(sdir, filename)
 
     print("Connecting to Gmail IMAP...")
     mail = None
@@ -59,27 +62,41 @@ def download_forecast_attachment(target_date=None, save_dir=None):
             raise Exception("IMAP search failed")
             
         message_ids = messages[0].split()
-        print(f"Found {len(message_ids)} emails from {target_sender}. Scanning for subject containing '{subject_pattern}'...")
+        # Scan only the newest 15 emails (weather forecast is always sent recently)
+        scan_list = list(reversed(message_ids))[:15]
+        print(f"Found {len(message_ids)} emails from {target_sender}. Fast-scanning top {len(scan_list)} recent emails for subject '{subject_pattern}'...")
         
-        # Scan from newest to oldest
-        for msg_id in reversed(message_ids):
-            status, msg_data = mail.fetch(msg_id, "(RFC822)")
-            if status != "OK":
+        for msg_id in scan_list:
+            # 1. Fetch only Subject header (ultra fast, takes <0.1s without downloading attachments)
+            status, header_data = mail.fetch(msg_id, "(BODY.PEEK[HEADER.FIELDS (SUBJECT)])")
+            if status != "OK" or not header_data:
                 continue
                 
-            raw_email = msg_data[0][1]
-            msg = email.message_from_bytes(raw_email)
+            raw_header = header_data[0][1]
+            hdr_msg = email.message_from_bytes(raw_header)
+            raw_subj = hdr_msg.get("Subject", "")
             
-            # Decode subject
-            subject, encoding = email.header.decode_header(msg["Subject"])[0]
-            if isinstance(subject, bytes):
-                subject = subject.decode(encoding or "utf-8", errors="ignore")
+            # Decode subject cleanly
+            decoded_fragments = email.header.decode_header(raw_subj)
+            parts = []
+            for frag, enc in decoded_fragments:
+                if isinstance(frag, bytes):
+                    parts.append(frag.decode(enc or "utf-8", errors="ignore"))
+                else:
+                    parts.append(str(frag))
+            subject = "".join(parts)
             
             # Check if subject matches (contains the MMDD date)
-            # Match any variation containing target_date (e.g. "0530", "中油0530", "預報0530")
             clean_subject = re.sub(r"\s+", "", subject)
             if target_date in clean_subject:
-                print(f"Match found! Subject: {subject}")
+                print(f"Match found in header! Subject: {subject}. Fetching full email...")
+                
+                # 2. Only fetch full RFC822 for the matched email
+                status, msg_data = mail.fetch(msg_id, "(RFC822)")
+                if status != "OK":
+                    continue
+                raw_email = msg_data[0][1]
+                msg = email.message_from_bytes(raw_email)
                 
                 # Extract attachments
                 for part in msg.walk():
@@ -91,9 +108,14 @@ def download_forecast_attachment(target_date=None, save_dir=None):
                     filename = part.get_filename()
                     if filename:
                         # Decode filename
-                        decoded_filename, encoding = email.header.decode_header(filename)[0]
-                        if isinstance(decoded_filename, bytes):
-                            decoded_filename = decoded_filename.decode(encoding or "utf-8", errors="ignore")
+                        fn_frags = email.header.decode_header(filename)
+                        fn_parts = []
+                        for frag, enc in fn_frags:
+                            if isinstance(frag, bytes):
+                                fn_parts.append(frag.decode(enc or "utf-8", errors="ignore"))
+                            else:
+                                fn_parts.append(str(frag))
+                        decoded_filename = "".join(fn_parts)
                         
                         if decoded_filename.endswith(".doc") or decoded_filename.endswith(".docx"):
                             # Force name to be target_date + 中油.doc
@@ -104,7 +126,7 @@ def download_forecast_attachment(target_date=None, save_dir=None):
                             print(f"Downloaded attachment saved to: {filepath}")
                             return filepath
         
-        print(f"No email matching subject '{subject_pattern}' found.")
+        print(f"No email matching subject '{subject_pattern}' found in top {len(scan_list)} recent emails.")
         
     except Exception as e:
         print(f"IMAP receiving error: {e}")

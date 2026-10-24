@@ -2,11 +2,30 @@ import os
 import zipfile
 import shutil
 
+def get_libreoffice_cmd():
+    """Finds the LibreOffice executable across Linux and Windows systems."""
+    for name in ["soffice.com", "soffice.exe", "soffice", "libreoffice"]:
+        cmd = shutil.which(name)
+        if cmd:
+            return cmd
+    if os.name == "nt":
+        candidates = [
+            r"C:\Program Files\LibreOffice\program\soffice.com",
+            r"C:\Program Files\LibreOffice\program\soffice.exe",
+            r"C:\Program Files (x86)\LibreOffice\program\soffice.com",
+            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+    return "libreoffice"
+
+
 def convert_doc_to_docx(doc_path, docx_path):
     """
     Converts a binary .doc file to a .docx file using Word COM automation.
-    If Word is not available (e.g., in non-Windows / GitHub Actions environments),
-    falls back to LibreOffice headless conversion command.
+    If Word is not available (e.g., in non-Windows / GitHub Actions environments,
+    or Windows systems without Microsoft Office), falls back to LibreOffice headless.
     """
     abs_doc = os.path.abspath(doc_path)
     abs_docx = os.path.abspath(docx_path)
@@ -38,17 +57,16 @@ def convert_doc_to_docx(doc_path, docx_path):
         
         import subprocess
         try:
-            # GitHub Actions Linux 容器內通常預裝了 libreoffice 命令
-            # 轉換命令格式：libreoffice --headless --convert-to docx <doc> --outdir <dir>
             outdir = os.path.dirname(abs_docx)
-            cmd = ["libreoffice", "--headless", "--convert-to", "docx", abs_doc, "--outdir", outdir]
+            lo_bin = get_libreoffice_cmd()
+            cmd = [lo_bin, "--headless", "--convert-to", "docx", abs_doc, "--outdir", outdir]
             
             print(f"Executing command: {' '.join(cmd)}")
             subprocess.run(cmd, check=True)
             
-            # LibreOffice 會產生與 doc 同名但後綴為 docx 的檔案，將其移到預期的 docx_path
-            expected_output = abs_doc.replace(".doc", ".docx")
-            if os.path.exists(expected_output) and expected_output != abs_docx:
+            # LibreOffice produces a .docx file in outdir with the same base name
+            expected_output = os.path.join(outdir, os.path.splitext(os.path.basename(abs_doc))[0] + ".docx")
+            if os.path.exists(expected_output) and os.path.abspath(expected_output) != abs_docx:
                 shutil.move(expected_output, abs_docx)
                 
             if os.path.exists(abs_docx):
