@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0f19">
     <title>🚢 臺中 LNG 船監控系統 - 互動式簡報</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        // 強制登出任何可能殘留的 Service Worker，避免快取造成內容沒有更新
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                    console.log('Orphan Service Worker unregistered successfully.');
+                }
+            });
+        }
+    </script>
     <style>
         :root {
             --slate-900: #0b0f19;
@@ -145,7 +157,41 @@
         }
 
         /* --- Slide 1: Cover --- */
+        #slide-1 {
+            background: radial-gradient(circle at 10% 20%, #111827 0%, #080c16 90%);
+            border-radius: 20px;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #slide-1::after {
+            content: "";
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            height: 250px;
+            background-image: url('/presentation/lng_carrier_isolated.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.55;
+            filter: brightness(1.2) contrast(1.2);
+            -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: 1;
+        }
+
         .cover-content {
+            position: relative;
+            z-index: 2;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -188,6 +234,24 @@
         }
 
         /* --- Slide 2: Intro & Challenges --- */
+        #slide-2::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('/presentation/slide2_bg.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #slide-2 > * {
+            position: relative;
+            z-index: 1;
+        }
+
         .intro-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -196,26 +260,53 @@
         }
 
         .intro-card {
-            background-color: var(--slate-800);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 30px;
             display: flex;
             flex-direction: column;
             gap: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .intro-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .intro-card.challenge-card {
+            border-top: 4px solid var(--rose-500);
+            box-shadow: 0 10px 30px rgba(244, 63, 94, 0.15);
+        }
+
+        .intro-card.solution-card {
+            border-top: 4px solid var(--emerald-500);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15);
+        }
+
+        .intro-card.challenge-card:hover {
+            box-shadow: 0 15px 40px rgba(244, 63, 94, 0.3);
+            border-color: rgba(244, 63, 94, 0.5);
+        }
+
+        .intro-card.solution-card:hover {
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);
+            border-color: rgba(16, 185, 129, 0.5);
         }
 
         .card-header {
-            font-size: 1.3rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .card-header.challenge { color: var(--rose-500); }
-        .card-header.solution { color: var(--emerald-500); }
+        .card-header.challenge { color: var(--rose-400); }
+        .card-header.solution { color: var(--emerald-400); }
 
         .list-item {
             display: flex;
@@ -637,7 +728,6 @@
             line-height: 1.45;
         }
 
-        /* Footer Controls */
         .deck-footer {
             display: flex;
             justify-content: space-between;
@@ -645,6 +735,11 @@
             border-top: 1px solid rgba(255,255,255,0.05);
             padding-top: 20px;
             z-index: 10;
+            pointer-events: none;
+        }
+
+        .deck-footer > * {
+            pointer-events: auto;
         }
 
         .slide-counter {
@@ -772,17 +867,19 @@
                 width: 100%;
                 max-width: 100%;
                 height: auto;
+                min-height: 70vh; /* 🌟 確保手機版投影片有足夠的最小高度 */
                 max-height: none;
                 opacity: 1;
                 pointer-events: auto;
                 transform: none;
-                display: none;
+                display: none !important;
                 transition: none;
                 justify-content: flex-start;
+                padding-bottom: 30px;
             }
 
             .slide.active {
-                display: flex;
+                display: flex !important;
             }
 
             .slide h2 {
@@ -792,6 +889,22 @@
             }
 
             /* Cover Slide */
+            #slide-1 {
+                justify-content: center; /* 🌟 讓封面文字在手機版也能垂直置中 */
+            }
+
+            #slide-1::after {
+                width: 90%;
+                height: 180px;
+                bottom: 20px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                background-size: contain;
+                background-position: center;
+                opacity: 0.7;
+            }
+
             .cover-content h1 {
                 font-size: 2.0rem;
                 line-height: 1.3;
@@ -860,7 +973,14 @@
             .download-banner {
                 margin-top: 20px;
                 padding: 12px 16px;
-                gap: 10px;
+                gap: 15px;
+                flex-direction: column !important;
+                align-items: center;
+                text-align: center;
+            }
+            .download-banner > div:first-child {
+                flex-direction: column;
+                text-align: center;
             }
 
             .download-banner p {
@@ -896,7 +1016,10 @@
 
         <!-- Header -->
         <div class="deck-header">
-            <div class="system-title">🚢 臺中 LNG 船監控系統 <span></span></div>
+            <div class="system-title">
+                <img src="/pwa-192x192.png" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle; margin-right: 6px;">
+                臺中 LNG 船監控系統 <span></span>
+            </div>
             <div style="font-size: 0.8rem; color: #64748b;"> ◀ / ▶ 切換</div>
         </div>
 
@@ -914,45 +1037,45 @@
 
             <!-- Slide 2: Introduction & Problems -->
             <div class="slide" id="slide-2">
-                <h2>系統簡介 & <span>痛點解決</span></h2>
+                <h2>開發目的</h2>
                 <div class="intro-grid">
                     <!-- Challenges -->
-                    <div class="intro-card">
+                    <div class="intro-card challenge-card">
                         <div class="card-header challenge">
-                            ⚠️ 核心挑戰
+                            ⚠️ 痛點與挑戰
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">1</div>
                             <div class="list-content">
-                                <h4>限制風速極為嚴格</h4>
-                                <p>LNG 船進港限制（180K為 12.0 m/s，其他為 15 m/s），風速是台中港判定LNG船進港的關鍵。</p>
+                                <h4>嚴格進港風速</h4>
+                                <p>LNG 船進港限制（180K為 12.0 m/s，其他為 15 m/s）。</p>
                             </div>
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">2</div>
                             <div class="list-content">
                                 <h4>人工查詢誤差</h4>
-                                <p>過往依靠人工頻繁查詢網站，容易造成誤判或「搶進延遲」。</p>
+                                <p>過往依靠人工頻繁查詢網站，容易造成誤判或「延遲搶進」。</p>
                             </div>
                         </div>
                     </div>
                     <!-- Solutions -->
-                    <div class="intro-card">
+                    <div class="intro-card solution-card">
                         <div class="card-header solution">
                             💡 解決方案
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">✓</div>
                             <div class="list-content">
-                                <h4>即時風速</h4>
-                                <p>自動顯示台中港「北堤綠燈塔」風速計資料，避免人工查詢漏失。</p>
+                                <h4>即時訊息</h4>
+                                <p>自動顯示臺中港「北堤綠燈塔」風速、天氣預測及船期。</p>
                             </div>
                         </div>
                         <div class="list-item">
                             <div class="list-bullet">✓</div>
                             <div class="list-content">
                                 <h4>智慧判定</h4>
-                                <p>結合即時風速、進港速限，立即判斷進港狀況且訊息一致。</p>
+                                <p>結合即時風速、進港速限，判斷進港狀況且確保訊息一致。</p>
                             </div>
                         </div>
                     </div>
@@ -969,7 +1092,7 @@
                             <h3 style="margin-top: 0; color: #000000; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 4px;">🚢臺中LNG船監控</h3>
                             
                             <div style="display: flex; justify-content: center; align-items: baseline; margin: 10px 0; color: #000000;">
-                                <span class="sim-wind-val" id="appWind" style="font-size: 2.5rem; font-weight: bold;">8.4</span>
+                                <span class="sim-wind-val" id="appWind" style="font-size: 2.5rem; font-weight: bold; cursor: pointer;" onclick="selectSimState('forecast_modal', 'c-forecast')" title="點擊開啟風速預測">8.4</span>
                                 <span class="sim-wind-unit" style="font-size: 1rem; margin-left: 4px; color: #555;">m/s</span>
                             </div>
                             <div class="sim-time-str" id="appTime" style="font-size: 0.8rem; color: #888; margin-bottom: 12px;">最後更新: 10:20</div>
@@ -985,7 +1108,7 @@
                             <!-- Schedule Section -->
                             <div class="sim-schedule-section" style="margin-top: 10px; background: #fff; border-radius: 8px; border: 1px solid #ddd; padding: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px;">
-                                    <h4 style="margin: 0; font-size: 0.85rem; color: #333;">船期表</h4>
+                                    <h4 style="margin: 0; font-size: 0.85rem; color: #333; cursor: pointer;" onclick="selectSimState('schedule_adjust_modal', 'c-adjust')" title="點擊調整船期">船期表</h4>
                                     <!-- 鈴鐺音效按鈕：點選卡片2時顯示，預設關閉 -->
                                     <span id="simSoundToggle" onclick="toggleSimSound()" style="display: none; cursor: pointer; font-size: 1.1em; user-select: none; transition: transform 0.2s;" title="提醒音效">🔕</span>
                                     <!-- Settings Gear Icon -->
@@ -997,13 +1120,120 @@
                                 <div style="max-height: 100px; overflow-y: auto;">
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
                                         <thead>
-                                            <tr style="color: #666; border-bottom: 1px solid #eee;"><th style="padding: 4px 2px; font-weight: normal; text-align: center;">日期</th><th style="padding: 4px 2px; font-weight: normal; text-align: center;">船名</th><th style="padding: 4px 2px; font-weight: normal; text-align: center;">限速</th></tr>
+                                            <tr style="color: #333; border-bottom: 1px solid #eee; font-weight: bold;">
+                                                <th style="padding: 4px 2px; text-align: center; width: 30%;">日期</th>
+                                                <th style="padding: 4px 2px; text-align: center; width: 45%;">船名</th>
+                                                <th style="padding: 4px 2px; text-align: center; width: 25%;">速限</th>
+                                            </tr>
                                         </thead>
                                         <tbody id="appScheduleBody">
-                                            <tr id="row-cobia"><td style="padding: 4px 2px; text-align: center;">5/22</td><td style="padding: 4px 2px; text-align: center;">Cobia</td><td style="padding: 4px 2px; text-align: center;">12</td></tr>
-                                            <tr><td style="padding: 4px 2px; text-align: center;">5/23</td><td style="padding: 4px 2px; text-align: center;">LNG Pioneer</td><td style="padding: 4px 2px; text-align: center;">15</td></tr>
+                                            <tr id="row-cobia">
+                                                <td style="padding: 4px 2px; text-align: center; line-height: 1.2; vertical-align: middle;">
+                                                    5/22
+                                                </td>
+                                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle;">Cobia</td>
+                                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle;">12</td>
+                                            </tr>
+                                            <tr id="row-pioneer">
+                                                <td style="padding: 4px 2px; text-align: center; line-height: 1.2;">
+                                                    5/23
+                                                    <br>
+                                                    <span style="background-color: #ff8c00; color: white; padding: 1px 5px; border-radius: 12px; font-size: 0.6rem; font-weight: bold; display: inline-block; margin-top: 2px; line-height: 1; transform: scale(0.95);">W12</span>
+                                                </td>
+                                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle;">LNG Pioneer</td>
+                                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle;">15</td>
+                                            </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+
+                            <!-- Weather Forecast Modal inside simulator -->
+                            <div class="sim-modal" id="appForecastModal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 12px; justify-content: center; align-items: center; z-index: 15;">
+                                <div class="sim-modal-content" style="background: #0d1117; padding: 10px; border-radius: 8px; width: 90%; text-align: center; color: #f0f6fc; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid rgba(56, 139, 253, 0.25);">
+                                    <h4 style="margin: 0 0 6px 0; font-size: 0.8rem; font-weight: bold; color: #fff; display: flex; align-items: center; justify-content: center; gap: 4px;">📈 天氣預測儀表板</h4>
+                                    <select id="simShipForecastSelect" style="width: 100%; padding: 3px; border-radius: 4px; background: #161b22; color: #f0f6fc; font-size: 0.75rem; border: 1px solid #30363d; margin-bottom: 6px;" onchange="updateForecastTooltip(this.value)">
+                                        <option value="cobia">5/22 W12 Cobia (12 m/s)</option>
+                                        <option value="pioneer">5/23 W12 LNG Pioneer (15 m/s)</option>
+                                    </select>
+
+                                    <!-- Chart Container with overlaid Tooltip (可否進港訊息框) -->
+                                    <div style="background: rgba(22, 27, 34, 0.6); border: 1px solid #30363d; border-radius: 6px; padding: 6px; height: 110px; position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; margin-bottom: 6px; text-align: left;">
+                                        
+                                        <!-- Tooltip Box overlaid directly on the chart -->
+                                        <div id="simForecastTooltip" style="position: absolute; right: 6px; bottom: 6px; background: rgba(13, 17, 23, 0.95); border: 1px solid rgba(56, 139, 253, 0.45); border-radius: 6px; padding: 4px 6px; font-size: 0.58rem; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; width: 105px; line-height: 1.2;">
+                                            <div style="font-weight: bold; color: #58a6ff; margin-bottom: 2px; border-bottom: 1px solid rgba(240,246,252,0.1); padding-bottom: 2px;">5/22 05:00</div>
+                                            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px;">
+                                                <span style="color:#fff;">Cobia</span>
+                                                <span style="color: #2ea44f;">(可進港)</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                                                <span>空軍:</span>
+                                                <span style="color: #fff; font-weight: 500;">8.40m/s</span>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                                                <span>ECMWF:</span>
+                                                <span style="color: #fff; font-weight: 500;">9.20m/s</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Simple SVG chart -->
+                                        <svg viewBox="0 0 100 40" style="width: 100%; height: 85px; margin-top: 2px;">
+                                            <!-- Grid lines -->
+                                            <line x1="0" y1="30" x2="100" y2="30" stroke="#30363d" stroke-dasharray="2,2" />
+                                            <line x1="0" y1="15" x2="100" y2="15" stroke="#ff7b72" stroke-width="1.2" stroke-dasharray="2,2" /> <!-- Limit line -->
+                                            <!-- Forecast Line -->
+                                            <path d="M 0 35 Q 25 10, 50 28 T 100 8" fill="none" stroke="#58a6ff" stroke-width="1.2" />
+                                            <path d="M 0 32 Q 25 5, 50 22 T 100 4" fill="none" stroke="#ff7b72" stroke-width="1.2" stroke-dasharray="2,1" />
+                                            <!-- Indicator dots -->
+                                            <circle cx="50" cy="28" r="1.2" fill="#58a6ff" />
+                                            <circle cx="50" cy="22" r="1.2" fill="#ff7b72" />
+                                        </svg>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.52rem; color: #8b949e; z-index: 2;">
+                                            <span>04:00 (POB)</span>
+                                            <span>17:00</span>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 6px; font-size: 0.6rem; color: #8b949e;">ECMWF與空軍預測風速曲線</div>
+                                    <button class="sim-btn" style="background:#30363d; color:#fff; padding: 4px; font-size: 0.75rem; width: 100%; margin-top: 6px; border: none; border-radius: 4px; cursor: pointer;" onclick="setSimState('main_screen')">關閉</button>
+                                </div>
+                            </div>
+
+                            <!-- Schedule Adjust Modal inside simulator -->
+                            <div class="sim-modal" id="appScheduleAdjustModal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 12px; justify-content: center; align-items: center; z-index: 15;">
+                                <div class="sim-modal-content" style="background: #fff; padding: 10px; border-radius: 8px; width: 92%; text-align: center; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                    <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; font-weight: bold; color: var(--text-blue); display: flex; align-items: center; justify-content: center; gap: 4px;">📅 船期調度調整</h4>
+                                    <div style="max-height: 120px; overflow-y: auto; margin-bottom: 6px;">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 0.65rem; text-align: left;">
+                                            <thead>
+                                                <tr style="background: #f0f4f8; color: #555;">
+                                                    <th style="padding: 2px;">日期</th>
+                                                    <th style="padding: 2px;">碼頭</th>
+                                                    <th style="padding: 2px;">船名</th>
+                                                    <th style="padding: 2px;">限速</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><input type="text" value="5/22" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="W12" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="Cobia" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="12" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><input type="text" value="5/23" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="W12" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="LNG Pioneer" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                    <td><input type="text" value="15" style="width: 100%; padding: 2px; font-size: 0.65rem; box-sizing: border-box;"></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div style="display: flex; gap: 4px;">
+                                        <button class="sim-btn" style="background:#28a745; color: #fff; flex:1; padding:4px; font-size: 0.7rem; border: none; border-radius: 4px; margin:0;" onclick="alert('已新增空白列')">＋ 新增</button>
+                                        <button class="sim-btn" style="background:var(--app-primary); color: #fff; flex:1; padding:4px; font-size: 0.7rem; border: none; border-radius: 4px; margin:0;" onclick="setSimState('main_screen')">儲存</button>
+                                    </div>
+                                    <button class="sim-btn" style="background:#eee; color:#333; padding: 3px; font-size: 0.7rem; width: 100%; margin-top: 4px; border: none; border-radius: 4px;" onclick="setSimState('main_screen')">取消</button>
                                 </div>
                             </div>
 
@@ -1020,10 +1250,32 @@
                                         <label style="font-size: 0.7rem; font-weight: bold; color: #444; display: block; margin-bottom: 1px;">限制風速 (m/s)</label>
                                         <input type="number" id="appLimitSpeed" placeholder="例如: 12.0" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem;">
                                     </div>
+                                    
+                                    <!-- Terminal select field -->
+                                    <div class="sim-field" id="appTerminalField" style="text-align: left; margin-bottom: 6px;">
+                                        <label style="font-size: 0.7rem; font-weight: bold; color: #444; display: block; margin-bottom: 1px;">停靠碼頭</label>
+                                        <select id="appTerminal" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; height: 26px;">
+                                            <option value=""></option>
+                                            <option value="W12">W12</option>
+                                        </select>
+                                    </div>
+
                                     <!-- POB field -->
                                     <div class="sim-field" id="appPobField" style="display: none; text-align: left; margin-bottom: 6px; border-top: 1px dashed #ccc; padding-top: 4px;">
                                         <label style="font-size: 0.7rem; font-weight: bold; color: var(--app-primary); display: block; margin-bottom: 1px;">🕒 (非必要)手動輸入 POB 時間</label>
                                         <input type="text" id="appPobTimeInput" placeholder="如14:56" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; text-align: center;">
+                                    </div>
+
+                                    <!-- No entry reason field -->
+                                    <div class="sim-field" id="appReasonField" style="display: none; text-align: left; margin-bottom: 6px;">
+                                        <label style="font-size: 0.7rem; font-weight: bold; color: #444; display: block; margin-bottom: 1px;">無法進港原因</label>
+                                        <select id="appNoEntryReason" style="width: 100%; padding: 4px 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; height: 26px;">
+                                            <option value=""></option>
+                                            <option value="風速超標">風速超標</option>
+                                            <option value="強烈季風">強烈季風</option>
+                                            <option value="颱風影響">颱風影響</option>
+                                            <option value="其他">其他</option>
+                                        </select>
                                     </div>
 
                                     <button class="sim-btn start" id="appStartBtn" style="padding: 6px; font-size: 0.8rem; width: 100%; border-radius: 4px; border: none; font-weight: bold; color: #fff; cursor: pointer;" onclick="setSimState('password_modal')">▶ 開始監控</button>
@@ -1054,36 +1306,50 @@
                             <div class="detail-item" id="c-wind" onclick="selectSimState('standby', 'c-wind')">
                                 <div class="num">1</div>
                                 <div>
-                                    <h4>即時風速與最後更新</h4>
-                                    <p>顯示台中港北堤綠燈塔之即時風力與更新時間。</p>
+                                    <h4>即時風速</h4>
+                                    <p>顯示北堤綠燈塔之即時風力與更新時間。點擊數字可開啟「天氣預測儀表板」。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-status" onclick="selectSimState('monitoring', 'c-status')">
                                 <div class="num">2</div>
                                 <div>
-                                    <h4>動態判定狀態框 &amp; 🔔 音效提醒</h4>
-                                    <p>顯示可進港（綠色呼吸燈）與無法進港（紅色）狀態。<br>監控中可點擊船期表旁的 🔕 鈴鐺開啟音效，進港條件符合時會響起提示音，再按一次即可靜音。</p>
+                                    <h4>進港判定狀態 &amp; 🔔 音效提醒</h4>
+                                    <p>判斷可進港（綠色）與無法進港（紅色）狀態。<br>可ON / OFF船期表旁的鈴鐺音效。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-forecast" onclick="selectSimState('forecast_modal', 'c-forecast')">
+                                <div class="num">3</div>
+                                <div>
+                                    <h4>天氣預測儀表板</h4>
+                                    <p>提供空軍及歐洲模式陣風預報。</p>
+                                </div>
+                            </div>
+                            <div class="detail-item" id="c-adjust" onclick="selectSimState('schedule_adjust_modal', 'c-adjust')">
+                                <div class="num">4</div>
+                                <div>
+                                    <h4>船期調度功能</h4>
+                                    <p>點擊船期表標題，可調整船期資料。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-btn" onclick="selectSimState('menu_modal', 'c-btn')">
-                                <div class="num">3</div>
+                                <div class="num">5</div>
                                 <div>
-                                    <h4>手動設定視窗 (app介面可操作)</h4>
-                                    <p>點擊 齒輪 圖示，開啟手動設定視窗，可輸入船名與速限，或 POB 時間及 開始/結束 操作按鈕。</p>
+                                    <h4>手動設定</h4>
+                                    <p>點擊齒輪圖示，可輸入船名與速限，進港 POB 時間或無法進港原因。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-pob" onclick="selectSimState('password_modal', 'c-pob')">
-                                <div class="num">4</div>
+                                <div class="num">6</div>
                                 <div>
-                                    <h4>安全密碼驗證視窗 (Modal)</h4>
-                                    <p>手動操作時，需輸入密碼才允許送出。</p>
+                                    <h4>密碼驗證</h4>
+                                    <p>手動操作時，需輸入密碼。</p>
                                 </div>
                             </div>
                             <div class="detail-item" id="c-pob-records" onclick="selectSimState('pob_record', 'c-pob-records')">
-                                <div class="num">5</div>
+                                <div class="num">7</div>
                                 <div>
-                                    <h4>當日 POB 記錄板 (POB 訊息)</h4>
-                                    <p>當日監控結束後，綠色區塊顯示船隻的 POB 時間與進港風速。</p>
+                                    <h4>當日 POB 訊息</h4>
+                                    <p>顯示當日船的進港狀態，綠色代表進港 / 紅色代表無法進港。</p>
                                 </div>
                             </div>
                         </div>
@@ -1092,6 +1358,8 @@
                         <div class="sim-toggle-bar">
                             <button class="sim-toggle-btn active" id="btn-state-standby" onclick="selectSimState('standby', 'c-wind')">平常 APP 畫面</button>
                             <button class="sim-toggle-btn" id="btn-state-monitoring" onclick="selectSimState('monitoring', 'c-status')">監控狀態</button>
+                            <button class="sim-toggle-btn" id="btn-state-forecast" onclick="selectSimState('forecast_modal', 'c-forecast')">氣象預報圖表</button>
+                            <button class="sim-toggle-btn" id="btn-state-adjust" onclick="selectSimState('schedule_adjust_modal', 'c-adjust')">船期調度調整</button>
                             <button class="sim-toggle-btn" id="btn-state-menu" onclick="selectSimState('menu_modal', 'c-btn')">開啟手動設定</button>
                             <button class="sim-toggle-btn" id="btn-state-password" onclick="selectSimState('password_modal', 'c-pob')">驗證密碼</button>
                             <button class="sim-toggle-btn" id="btn-state-pob" onclick="selectSimState('pob_record', 'c-pob-records')">顯示 POB 訊息</button>
@@ -1131,11 +1399,20 @@
                 </div>
 
                 <!-- Download Banner -->
-                <div class="download-banner">
-                    <span class="thumbs-up-icon">👍</span>
-                    <p>
-                        下載請點選 <a href="https://uuuhasho.github.io/wind-monitor-app/" target="_blank">https://uuuhasho.github.io/wind-monitor-app/</a>，並加到主畫面或安裝
-                    </p>
+                <div class="download-banner" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="thumbs-up-icon">👍</span>
+                        <div>
+                            <p style="font-size: 1.05rem; font-weight: bold; margin-bottom: 4px; color: #fff;">立即體驗</p>
+                            <p>
+                                手機掃描右側 QR Code，或前往 <a href="https://newlngship.web.app/" target="_blank" style="color: var(--sky-400); text-decoration: none; font-weight: bold;">https://newlngship.web.app/</a><br>
+                                <span style="font-size: 0.8rem; color: #94a3b8;">💡 建議使用瀏覽器開啟，並透過選單「加到主畫面」以獲得完整 App 體驗</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="qr-code" style="background: #fff; padding: 6px; border-radius: 8px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <img src="/presentation/qrcode.png" alt="App QR Code" style="width: 70px; height: 70px; display: block;">
+                    </div>
                 </div>
             </div>
         </div>
@@ -1236,6 +1513,8 @@
             // Hide all overlays first
             document.getElementById('appManualModal').style.display = 'none';
             document.getElementById('appPwdModal').style.display = 'none';
+            document.getElementById('appForecastModal').style.display = 'none';
+            document.getElementById('appScheduleAdjustModal').style.display = 'none';
             
             // Get references
             const appWind = document.getElementById('appWind');
@@ -1248,14 +1527,19 @@
             const appStartBtn = document.getElementById('appStartBtn');
             const appResetBtn = document.getElementById('appResetBtn');
             const rowCobia = document.getElementById('row-cobia');
+            const rowPioneer = document.getElementById('row-pioneer');
 
             // Reset table row highlights by default (only monitoring highlights it)
             if (rowCobia) {
                 rowCobia.className = "";
                 rowCobia.style.cssText = "";
+                rowCobia.style.display = ""; // Reset display
             }
-
-            // --- Hotspots Show/Hide Logic (Cancelled) ---
+            if (rowPioneer) {
+                rowPioneer.className = "";
+                rowPioneer.style.cssText = "";
+                rowPioneer.style.display = ""; // Reset display
+            }
 
             if (state === 'standby' || state === 'main_screen') {
                 isMonitoring = false;
@@ -1343,6 +1627,9 @@
                 // Show manual modal overlay
                 document.getElementById('appManualModal').style.display = 'flex';
                 
+                const appTerminalField = document.getElementById('appTerminalField');
+                const appReasonField = document.getElementById('appReasonField');
+
                 if (isMonitoring) {
                     appShipName.value = "Cobia";
                     appShipName.disabled = true;
@@ -1350,6 +1637,13 @@
                     appLimitSpeed.disabled = true;
                     appPobField.style.display = "block";
                     document.getElementById('appPobTimeInput').value = "14:56";
+                    
+                    if (appTerminalField) appTerminalField.style.display = "none";
+                    if (appReasonField) {
+                        appReasonField.style.display = "block";
+                        document.getElementById('appNoEntryReason').value = ""; // Default select empty
+                    }
+
                     appStartBtn.style.display = "none";
                     appResetBtn.style.display = "block";
                 } else {
@@ -1358,6 +1652,13 @@
                     appLimitSpeed.value = "";
                     appLimitSpeed.disabled = false;
                     appPobField.style.display = "none";
+                    
+                    if (appTerminalField) {
+                        appTerminalField.style.display = "block";
+                        document.getElementById('appTerminal').value = "W12"; // Default to W12
+                    }
+                    if (appReasonField) appReasonField.style.display = "none";
+
                     appStartBtn.style.display = "block";
                     appResetBtn.style.display = "none";
                 }
@@ -1369,6 +1670,16 @@
                 // Keep manual modal open in background of password modal
                 document.getElementById('appManualModal').style.display = 'flex';
                 document.getElementById('appPwdModal').style.display = 'flex';
+            }
+            else if (state === 'forecast_modal') {
+                simState = 'forecast_modal';
+                document.getElementById('btn-state-forecast').classList.add('active');
+                document.getElementById('appForecastModal').style.display = 'flex';
+            }
+            else if (state === 'schedule_adjust_modal') {
+                simState = 'schedule_adjust_modal';
+                document.getElementById('btn-state-adjust').classList.add('active');
+                document.getElementById('appScheduleAdjustModal').style.display = 'flex';
             }
         }
 
@@ -1394,6 +1705,44 @@
                 selectSimState('standby', 'c-wind');
             } else {
                 selectSimState('monitoring', 'c-status');
+            }
+        }
+
+        function updateForecastTooltip(val) {
+            const tooltip = document.getElementById('simForecastTooltip');
+            if (!tooltip) return;
+            if (val === 'cobia') {
+                tooltip.innerHTML = `
+                    <div style="font-weight: bold; color: #58a6ff; margin-bottom: 2px;">5/22 05:00</div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px;">
+                        <span>Cobia</span>
+                        <span style="color: #28a745;">(可進港)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                        <span>空軍預測:</span>
+                        <span style="color: #f0f6fc;">8.40 m/s</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                        <span>ECMWF陣風:</span>
+                        <span style="color: #f0f6fc;">9.20 m/s</span>
+                    </div>
+                `;
+            } else {
+                tooltip.innerHTML = `
+                    <div style="font-weight: bold; color: #58a6ff; margin-bottom: 2px;">5/23 05:00</div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px;">
+                        <span>LNG Pioneer</span>
+                        <span style="color: #28a745;">(可進港)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                        <span>空軍預測:</span>
+                        <span style="color: #f0f6fc;">10.50 m/s</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #8b949e;">
+                        <span>ECMWF陣風:</span>
+                        <span style="color: #f0f6fc;">11.20 m/s</span>
+                    </div>
+                `;
             }
         }
     </script>
