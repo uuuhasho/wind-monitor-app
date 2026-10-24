@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026-09-27 雲端氣象預測未執行根因分析與全面修復報告</title>
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --border-card: #e2e8f0;
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --primary-light: #e0f2fe;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --success: #16a34a;
+            --success-light: #dcfce7;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --code-bg: #f1f5f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0369a1;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .meta-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .badge-danger {
+            background-color: var(--danger-light);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .badge-success {
+            background-color: var(--success-light);
+            color: #14532d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-primary {
+            background-color: var(--primary-light);
+            color: #075985;
+            border: 1px solid #bae6fd;
+        }
+
+        .badge-warning {
+            background-color: var(--warning-light);
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-box {
+            position: relative;
+            padding-left: 28px;
+            margin: 16px 0;
+        }
+
+        .timeline-box::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            bottom: 4px;
+            width: 2px;
+            background-color: #cbd5e1;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -28px;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 3px solid var(--primary);
+        }
+
+        .timeline-dot.danger {
+            border-color: var(--danger);
+        }
+
+        .timeline-dot.success {
+            border-color: var(--success);
+        }
+
+        .timeline-time {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 2px;
+        }
+
+        .timeline-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .timeline-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .alert-box {
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 16px 0;
+            border-left: 4px solid;
+        }
+
+        .alert-danger {
+            background-color: #fef2f2;
+            border-color: var(--danger);
+            color: #7f1d1d;
+        }
+
+        .alert-success {
+            background-color: #f0fdf4;
+            border-color: var(--success);
+            color: #14532d;
+        }
+
+        .alert-info {
+            background-color: #f0f9ff;
+            border-color: var(--primary);
+            color: #0c4a6e;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            color: #1e293b;
+            margin: 12px 0;
+        }
+
+        .diff-del {
+            color: #b91c1c;
+            background-color: #fee2e2;
+            display: block;
+            padding: 1px 4px;
+        }
+
+        .diff-add {
+            color: #15803d;
+            background-color: #dcfce7;
+            display: block;
+            padding: 1px 4px;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 12px 0;
+        }
+
+        .table-custom th, .table-custom td {
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .table-custom th {
+            background-color: #f8fafc;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .table-custom tr:nth-child(even) {
+            background-color: #fcfcfd;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔍 雲端氣象預測未執行根因分析與全面修復報告</h1>
+        <p style="color: var(--text-secondary); font-size: 15px;">
+            針對 2026-09-27 今日 APP 未出現最新風力預測分析結果之詳細排查紀錄、核心故障因果推導與雲端修復部署。
+        </p>
+        <div class="meta-badges">
+            <span class="badge badge-danger">根因：IMAP 全量下載引發 504 逾時進而形成記憶體死鎖</span>
+            <span class="badge badge-success">狀態：已修復並部署最新 Revision</span>
+            <span class="badge badge-primary">現行版本：forecast-api-test-00057-4tc</span>
+            <span class="badge badge-warning">資料更新：193 筆最新資料已發布上線</span>
+        </div>
+    </div>
+
+    <!-- 1. 錯誤現象與症狀 -->
+    <div class="card">
+        <h2>📌 1. 錯誤現象 (Symptom)</h2>
+        <ul style="padding-left: 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+            <li><strong>前台呈現</strong>：使用者開啟 APP 時，天氣預測圖表停留於 09-25 舊紀錄，未見 09-27 新預報。</li>
+            <li><strong>Cloud Scheduler 狀態</strong>：每 15 分鐘觸發的排程 <code>forecast-trigger-test</code> 自 12:45 起持續報錯，狀態碼為 <code>RESOURCE_EXHAUSTED (Code 8)</code>。</li>
+            <li><strong>Cloud Run 服務日誌</strong>：後端直接拒絕所有常規更新請求，並回傳：
+                <pre>HTTP 429 {"status": "ignored", "msg": "Pipeline is already running"}</pre>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 2. 事件關鍵時間軸 -->
+    <div class="card">
+        <h2>⏱️ 2. 事件關鍵時間軸 (Causal Timeline)</h2>
+        <div class="timeline-box">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-time">12:15 (04:15 UTC)</div>
+                <div class="timeline-title">第一輪掃描 — 耗時 114 秒</div>
+                <div class="timeline-desc">Cloud Scheduler 啟動更新，因空軍尚未發信，程式逐一輪詢並全量下載 252 封歷史郵件（含所有 .doc 附件），勉強在 114 秒結束並回報無信件。</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot danger"></div>
+                <div class="timeline-time">12:30 (04:30 UTC)</div>
+                <div class="timeline-title">第二輪掃描 — 突破 300 秒觸發 HTTP 504 閘道超時</div>
+                <div class="timeline-desc">因為網路波動與龐大資料傳輸，下載時間超過 Cloud Run 的 300 秒（5 分鐘）Timeout，前端 Proxy 返回 <code>HTTP 504 Gateway Timeout</code>。</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot danger"></div>
+                <div class="timeline-time">12:35 關鍵致命點</div>
+                <div class="timeline-title">容器 CPU 凍結，導致記憶體鎖死 (Zombie Lock)</div>
+                <div class="timeline-desc">超時中斷後，Cloud Run 立即將容器 CPU 限流凍結，後台線程被阻斷在網路等待中，無法執行到 <code>finally: is_pipeline_running = False</code>。標誌位被永久死鎖為 <code>True</code>！</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot success"></div>
+                <div class="timeline-time">13:36:46</div>
+                <div class="timeline-title">空軍氣象郵件真正送達 Gmail</div>
+                <div class="timeline-desc">主旨 <code>0927中油</code> 的預報正式進入 Gmail 收件匣。</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot danger"></div>
+                <div class="timeline-time">13:45 ~ 17:45 (長達 4 小時)</div>
+                <div class="timeline-title">所有排程全數被 429 拒絕，無法讀取新郵件</div>
+                <div class="timeline-desc">每一次 Scheduler 發起請求，<code>app.py</code> 判斷 <code>is_pipeline_running == True</code>，於 2 毫秒內拒絕請求並回傳 429，導致即使信件已到，系統仍毫無動作。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 雙重根因剖析 -->
+    <div class="card">
+        <h2>🔬 3. 雙重根因剖析 (Root Cause)</h2>
+        <div class="alert-box alert-danger">
+            <strong>根因一：IMAP 搜尋機制粗暴，無節制下載歷史郵件</strong><br>
+            原 <code>src/email_receiver.py</code> 使用 <code>mail.fetch(msg_id, "(RFC822)")</code> 遍歷寄件者全部 252 封信。在郵件未到時，會下載數十 MB 的歷史附件，耗時 2~5 分鐘，必定撞毀在 Cloud Run 300 秒逾時牆上。
+        </div>
+        <div class="alert-box alert-danger">
+            <strong>根因二：執行防重入鎖缺乏 TTL 逾時自毀機制</strong><br>
+            <code>is_pipeline_running</code> 為純記憶體布林變數。在異常超時被雲端限流終止時，無法觸發清理回調。由於沒有逾時自動過期機制，導致整座容器陷入死結，直到手動注入 force 參數前無法自癒。
+        </div>
+    </div>
+
+    <!-- 4. 永久修復方案與代碼對比 -->
+    <div class="card">
+        <h2>🛠️ 4. 永久防護修復措施 (Fixes & Diffs)</h2>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">已針對上述兩個根因實施永久性優化：</p>
+        
+        <h3 style="font-size: 15px; color: var(--primary-dark); margin: 16px 0 8px 0;">(1) IMAP 輕量標頭預檢 + 深度截斷 (src/email_receiver.py)</h3>
+        <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px;">
+            <li><strong>深度截斷</strong>：氣象預報必定為當日或近期寄出，強制限制只搜尋最新 <strong>15 封</strong> 郵件。</li>
+            <li><strong>標頭預檢</strong>：使用 <code>BODY.PEEK[HEADER.FIELDS (SUBJECT)]</code> 只讀取主旨（幾十 bytes），完全不下載大型附件。確認匹配才下載單一郵件。</li>
+            <li><strong>效果</strong>：郵件未到時的巡檢耗時從 <strong>>300 秒 驟降至 1.8 秒</strong>！</li>
+        </ul>
+        <pre><span class="diff-del">- for msg_id in reversed(message_ids):</span>
+<span class="diff-del">-     status, msg_data = mail.fetch(msg_id, "(RFC822)")  # 全量下載整個信件與 .doc 附件</span>
+<span class="diff-add">+ scan_list = list(reversed(message_ids))[:15]            # 截斷只查最新 15 封</span>
+<span class="diff-add">+ for msg_id in scan_list:</span>
+<span class="diff-add">+     status, header_data = mail.fetch(msg_id, "(BODY.PEEK[HEADER.FIELDS (SUBJECT)])") # 極速標頭預檢</span>
+<span class="diff-add">+     # 命中目標主旨後，才針對該封執行完整 (RFC822) 下載</span></pre>
+
+        <h3 style="font-size: 15px; color: var(--primary-dark); margin: 20px 0 8px 0;">(2) 防重入鎖 300 秒 TTL 自動熔斷機制 (app.py)</h3>
+        <ul style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px;">
+            <li>紀錄每次啟動的 <code>pipeline_start_time</code>。</li>
+            <li>若鎖定狀態超過 300 秒（5 分鐘），判定為異常殘留並<strong>自動強制釋放鎖定</strong>，系統具備自動修復能力。</li>
+        </ul>
+        <pre><span class="diff-add">+ # 逾時死鎖防護：若上次執行超過 300 秒（5 分鐘），判定為異常殘留並強制重置</span>
+<span class="diff-add">+ if is_pipeline_running and (time.time() - pipeline_start_time > 300):</span>
+<span class="diff-add">+     print("[Warning] Pipeline lock expired (>300s). Auto-resetting lock.")</span>
+<span class="diff-add">+     is_pipeline_running = False</span></pre>
+    </div>
+
+    <!-- 5. 驗證與現行狀況 -->
+    <div class="card">
+        <h2>✅ 5. 驗證結果與即時上線確認</h2>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>測試項目</th>
+                    <th>測試指標</th>
+                    <th>測試結果</th>
+                    <th>備註</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>未寄信時掃描效能</strong></td>
+                    <td>巡檢耗時 &lt; 10 秒</td>
+                    <td><span class="badge badge-success">6.56 秒完成</span></td>
+                    <td>徹底杜絕 504 閘道超時</td>
+                </tr>
+                <tr>
+                    <td><strong>Cloud Run 乾淨部署</strong></td>
+                    <td>無中文路徑構建成功</td>
+                    <td><span class="badge badge-success">Revision 00057 上線</span></td>
+                    <td>Artifact Registry 儲存量維持在 500MB 免費內</td>
+                </tr>
+                <tr>
+                    <td><strong>線上端到端執行</strong></td>
+                    <td>觸發 /update_forecast</td>
+                    <td><span class="badge badge-success">13.14 秒 (HTTP 200)</span></td>
+                    <td>冷啟動 + 下載 + OCR + 融合 13 秒搞定</td>
+                </tr>
+                <tr>
+                    <td><strong>Firebase 資料更新</strong></td>
+                    <td>寫入 193 筆最新數據</td>
+                    <td><span class="badge badge-success">更新完成 (12Z26SEP)</span></td>
+                    <td>涵蓋 2026-09-26 20:00 至 2026-10-04 20:00</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="alert-box alert-success" style="margin-top: 16px;">
+            🎉 <strong>即時狀態已完全恢復</strong>：目前 APP 與 Firebase Realtime Database 均已同步最新的風力預測分析，未來空軍延遲寄信時也不再會發生鎖死問題！
+        </div>
+    </div>
+
+    <div class="footer">
+        © 2026 奶昔 APP 後端技術團隊 | 自動化氣象預測監控系統
+    </div>
+</div>
+</body>
+</html>

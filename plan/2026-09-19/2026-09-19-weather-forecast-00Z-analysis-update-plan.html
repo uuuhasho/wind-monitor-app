@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天氣預報 00Z 解析修復與雙重 OCR 機制實施計畫</title>
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-bg: #eff6ff;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --code-bg: #f1f5f9;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 30px 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+        .meta {
+            font-size: 14px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-blue { background-color: var(--primary-bg); color: var(--primary); }
+        .badge-green { background-color: var(--success-bg); color: var(--success); }
+        .badge-amber { background-color: var(--warning-bg); color: var(--warning); }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            color: var(--text-primary);
+        }
+        h3 {
+            font-size: 15px;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        ul, ol {
+            padding-left: 20px;
+            margin-top: 6px;
+            margin-bottom: 12px;
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        .highlight-box {
+            border-left: 4px solid var(--primary);
+            background-color: var(--primary-bg);
+            padding: 14px 18px;
+            border-radius: 4px 8px 8px 4px;
+            margin: 14px 0;
+        }
+        .warning-box {
+            border-left: 4px solid var(--warning);
+            background-color: var(--warning-bg);
+            padding: 14px 18px;
+            border-radius: 4px 8px 8px 4px;
+            margin: 14px 0;
+        }
+        code {
+            font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #b91c1c;
+        }
+        pre code {
+            display: block;
+            padding: 14px;
+            overflow-x: auto;
+            color: #0f172a;
+            border: 1px solid var(--border-color);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--bg-page);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🛠️ 天氣預報 00Z 解析修復與雙重 OCR 機制實施計畫</h1>
+        <div class="meta">
+            <span>📅 日期：2026-09-19</span>
+            <span class="badge badge-blue">CV2 + Dual OCR</span>
+            <span class="badge badge-green">Production Alignment</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>一、問題核心背景 (Background & Symptom)</h2>
+        <p>參考 <code>C:\Users\hilla\Desktop\空軍及open-meteo陣風比對\docs\2026-09-19-00Z預報時間解析錯誤原因分析.md</code>：</p>
+        <div class="warning-box">
+            <strong>錯誤現象：</strong>當空軍發布起算時間為 <strong>00Z</strong>（例如 <code>00Z18SEP</code>，時長 5.5 天/23 點）的預報時，舊版解析器因 Windows 環境缺乏 Tesseract CLI 執行檔導致 OCR 拋出異常，進而觸發舊有 Fallback 邏輯：
+            <code>initial_dt = (target_dt - timedelta(days=1)).replace(hour=12)</code>，將起始時間強制鎖死為 <strong>12Z17SEP</strong>。
+        </div>
+        <p>這導致：</p>
+        <ul>
+            <li>時間軸提早了 12 小時（由正確的 18日 08:00 偏移為 17日 20:00）。</li>
+            <li>Open-Meteo 陣風融合時序列與空軍數值全面錯位，影響船期防颱與進港決策精準度。</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>二、修改模組與對照規劃 (Scope of Changes)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>檔案模組</th>
+                    <th>原有缺陷</th>
+                    <th>修改方案 (對齊空軍陣風比對修復)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>src/cv2_parser.py</code></td>
+                    <td>依賴系統 <code>tesseract.exe</code>，Fallback 死鎖 12Z，無底部時間軸雙重校驗</td>
+                    <td>
+                        1. 引入 <code>TesseractCAPI</code> 直接封裝 <code>tesseract50.dll</code>，具備本機免安裝 standalone OCR 能力。<br>
+                        2. 聚焦右上角 <code>Initial Field</code> ROI 截圖與正則辨識。<br>
+                        3. 新增底部時間軸 <code>(00|06|12|18)</code> 雙重 OCR 與動態 Fallback。<br>
+                        4. 支援依據底部時間標籤真實數量直接校驗 23 點 (5.5天) 或 33 點 (8天)。
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>src/doc_parser.py</code></td>
+                    <td>Windows 無 Word COM 時直接呼叫 <code>libreoffice</code>，但系統可能未加入 PATH</td>
+                    <td>
+                        引入 <code>get_libreoffice_cmd()</code> 自動偵測 <code>C:\Program Files\LibreOffice</code> 路徑，提高容錯。
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>lib/</code>, <code>tessdata/</code></td>
+                    <td>專案內未備置本機 C-API DLL 與字庫</td>
+                    <td>
+                        複製 <code>tesseract50.dll</code>, <code>leptonica-1.82.0.dll</code>, <code>eng.traineddata</code> 至本專案，並於 <code>.gitignore</code> 與 <code>.gcloudignore</code> 排除。
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>三、執行步驟與驗證指標 (Implementation & Verification)</h2>
+        <ol>
+            <li><strong>庫與資源就位：</strong>複製本機 DLL 與 tessdata，更新 <code>.gitignore</code>。</li>
+            <li><strong>更新 <code>src/cv2_parser.py</code>：</strong>導入 <code>TesseractCAPI</code>、右上角 ROI 專屬辨識、底部時間軸 OCR 及動態天數投票。</li>
+            <li><strong>更新 <code>src/doc_parser.py</code>：</strong>加入 <code>get_libreoffice_cmd()</code>。</li>
+            <li><strong>實體驗證：</strong>使用 <code>0918中油_raw.png</code> 執行 <code>parse_chart_with_cv2</code>，驗證起始時間為 <code>00Z18SEP</code>，點數 23，第一筆 CST 時間為 <code>2026-09-18T08:00:00+08:00</code>。</li>
+            <li><strong>異質模型交叉審查 (A/B Review)：</strong>調用 Gemini 3.1 Pro 進行代碼獨立審查。</li>
+            <li><strong>文件輸出：</strong>自動生成 <code>./docs/2026-09-19-00Z預報時間解析錯誤原因分析.md</code> 並同步 <code>notes.md</code>。</li>
+        </ol>
+    </div>
+</div>
+</body>
+</html>

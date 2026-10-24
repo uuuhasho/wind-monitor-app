@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="technical">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="奶昔 APP 船期列雙擊顯示位置按鈕的互動、網站跳轉與驗收計畫。">
+  <title>船期列雙擊「位置」功能規劃</title>
+  <style>
+    :root{color-scheme:light;--ink:#18283a;--muted:#536579;--paper:#f4f7fa;--surface:#fff;--line:#d8e1eb;--accent:#245f91;--accent-strong:#19466d;--accent-soft:#e8f1f8;--success:#286746;--success-soft:#e8f4eb;--warning:#805400;--warning-soft:#fff3d7;--danger:#973d37;--danger-soft:#fbecea;--shadow:0 8px 24px rgba(26,42,48,.07);--radius:14px;--content-width:1050px;--gutter:clamp(16px,4vw,36px)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--paper);font:16px/1.65 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif}a{color:var(--accent-strong);text-underline-offset:3px;overflow-wrap:anywhere}:focus-visible{outline:3px solid #bd7415;outline-offset:3px}.shell{width:min(var(--content-width),calc(100% - 2 * var(--gutter)));margin-inline:auto}.masthead{padding:clamp(32px,7vw,68px) 0 32px;border-bottom:1px solid var(--line);background:var(--surface)}.eyebrow,.kicker{margin:0 0 9px;color:var(--accent-strong);font-size:.78rem;font-weight:800;letter-spacing:.08em}h1,h2,h3{line-height:1.22;text-wrap:balance}h1{max-width:850px;margin:0 0 13px;font-size:clamp(2rem,5vw,3.35rem)}h2{margin:0 0 12px;font-size:clamp(1.4rem,3vw,2rem)}h3{margin:0 0 7px;font-size:1.08rem}p{margin:0 0 12px}p:last-child{margin-bottom:0}.lede{max-width:70ch;color:var(--muted);font-size:1.08rem}.meta{margin-top:15px;color:var(--muted);font-size:.9rem}.quick{margin-top:21px;padding:16px 19px;background:var(--accent-soft);border-inline-start:5px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0}.quick h2{font-size:1.12rem}.quick ul{margin:0;padding-inline-start:1.2rem}.quick li+li{margin-top:4px}.toc{position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line);background:rgba(244,247,250,.96)}.toc-inner{display:flex;gap:8px;overflow-x:auto;padding-block:8px}.toc a{flex:0 0 auto;min-height:40px;display:inline-flex;align-items:center;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none}.toc a:hover{background:var(--accent-soft)}main{padding-block:26px 60px}section{min-width:0;margin-bottom:35px;scroll-margin-top:65px}.intro{max-width:72ch;margin-bottom:15px;color:var(--muted)}.panel,.step{min-width:0;padding:17px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.callout{padding:14px 16px;border-inline-start:5px solid var(--accent);border-radius:0 10px 10px 0;background:var(--accent-soft)}.callout.warning{border-color:var(--warning);background:var(--warning-soft)}.callout.success{border-color:var(--success);background:var(--success-soft)}.steps{display:grid;gap:10px}.step{display:grid;grid-template-columns:38px minmax(0,1fr);gap:11px}.num{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;color:white;background:var(--accent-strong);font-weight:800}.flow{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:17px 0}.node{padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:700;text-align:center}.arrow{color:var(--accent-strong);font-weight:900}.mock{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.mock-head,.mock-row{display:grid;grid-template-columns:.75fr 1.5fr .8fr .8fr;align-items:center;gap:8px;padding:11px 13px}.mock-head{background:var(--accent-soft);font-size:.86rem;font-weight:800}.mock-row{border-top:1px solid var(--line)}.mock-row.active{background:#f6fbf7}.position{justify-self:end;padding:7px 12px;border:0;border-radius:8px;color:#fff;background:#168447;font-weight:800}.hidden-label{color:var(--muted);font-size:.87rem}.table-wrap{max-width:100%;overflow:auto}table{width:100%;border-collapse:collapse;background:var(--surface)}th,td{padding:10px 12px;border:1px solid var(--line);text-align:start;vertical-align:top}th{background:var(--accent-soft)}details{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}summary{min-height:44px;padding:10px 14px;cursor:pointer;font-weight:750}details> :not(summary){margin-inline:14px}details>:last-child{margin-bottom:14px}.sources{display:grid;gap:8px}footer{padding-top:20px;border-top:1px solid var(--line);color:var(--muted)}@media(max-width:680px){.grid{grid-template-columns:1fr}.mock-head,.mock-row{grid-template-columns:.7fr 1.25fr .6fr .75fr;gap:5px;padding:9px 8px;font-size:.85rem}.position{padding:7px 8px}th,td{padding:8px}}@media(max-width:400px){body{font-size:15px}.shell{width:calc(100% - 26px)}.mock-head,.mock-row{grid-template-columns:.65fr 1.15fr .52fr .72fr;font-size:.78rem}.hidden-label{font-size:.73rem}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}@media print{body{color:#111;background:#fff}.toc{display:none}.shell{width:100%}.masthead{padding:18px 0;background:#fff}main{padding-block:18px}.panel,.step{box-shadow:none;break-inside:avoid}a{color:inherit}a[href^="http"]::after{content:" (" attr(href) ")";font-size:.8em;overflow-wrap:anywhere}details>*{display:block!important}}
+  </style>
+  <style>
+    .mock-head,.mock-row{grid-template-columns:.75fr 2fr .8fr}
+    .ship-name-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+    @media(max-width:680px){.mock-head,.mock-row{grid-template-columns:.7fr 1.6fr .6fr}}
+    @media(max-width:400px){.mock-head,.mock-row{grid-template-columns:.65fr 1.45fr .52fr}}
+  </style>
+</head>
+<body>
+  <header class="masthead"><div class="shell">
+    <p class="eyebrow">功能規劃｜奶昔 APP 測試版</p>
+    <h1>雙擊船期列，按「位置」後才複製並開啟網站</h1>
+    <p class="lede">保留人工查船流程，只在使用者明確點下綠色「位置」按鈕時複製船名並跳轉。MarineTraffic 為主要入口；VesselFinder 為備用搜尋。</p>
+    <p class="meta"><time datetime="2026-09-28">2026-09-28</time> · 規劃稿，尚未修改程式</p>
+    <div class="quick"><h2>30 秒看懂</h2><ul>
+      <li>在目標船列快速雙擊，船名右側顯示綠底白字「位置」。</li>
+      <li>只有按「位置」才複製該列船名並開站；雙擊本身不複製、不跳轉。</li>
+      <li>先開 MarineTraffic；若船名搜尋網址不能可靠直達，人工貼上已複製的船名。</li>
+      <li>VesselFinder 可用帶船名的搜尋結果頁作備援，仍由使用者確認正確船舶。</li>
+      <li>範圍限 APP 測試版前端，不新增 API、資料保存、瀏覽器自動化或容器映像。</li>
+    </ul></div>
+  </div></header>
+  <nav class="toc" aria-label="章節導覽"><div class="shell toc-inner"><a href="#flow">操作流程</a><a href="#behavior">互動規則</a><a href="#sites">網站策略</a><a href="#scope">範圍與風險</a><a href="#test">驗收</a></div></nav>
+  <main class="shell" id="main">
+    <section id="flow"><p class="kicker">01 · 使用者體驗</p><h2>預期操作流程</h2>
+      <div class="flow" aria-label="操作流程：船列雙擊，船名右側顯示位置按鈕，使用者按下後複製船名並開啟網站"><span class="node">雙擊目標船列</span><span class="arrow" aria-hidden="true">→</span><span class="node">船名右側顯示「位置」</span><span class="arrow" aria-hidden="true">→</span><span class="node">使用者按按鈕</span><span class="arrow" aria-hidden="true">→</span><span class="node">複製船名並開站</span></div>
+      <div class="mock" role="img" aria-label="示意：被雙擊的船列在船名右側顯示綠底白字位置按鈕"><div class="mock-head"><span>日期</span><span>船名</span><span>速限</span></div><div class="mock-row"><span>10/08</span><span>ALAMEDA</span><span>—</span></div><div class="mock-row active"><span>10/12</span><span class="ship-name-cell"><strong>SERI ALAM</strong><button class="position" type="button" tabindex="-1">位置</button></span><span>—</span></div></div>
+      <p class="intro">表格目前由 `public/index.html` 的 `renderScheduleTable()` 產生，船名放在 `data-shipname`。位置按鈕緊接船名右側，不新增獨立操作欄；手機窄畫面可讓船名與按鈕換行，避免擠壓日期與速限欄。</p>
+    </section>
+    <section id="behavior"><p class="kicker">02 · 行為規格</p><h2>按鈕出現與點擊的規則</h2>
+      <div class="steps">
+        <article class="step"><span class="num">1</span><div><h3>雙擊／快速點兩下只顯示按鈕</h3><p>手機用兩次點擊偵測；桌面可用相同兩次點擊行為。第一次點擊不做複製、不跳轉。建議只保留一列按鈕；點另一列時切換到該列。</p></div></article>
+        <article class="step"><span class="num">2</span><div><h3>明確按「位置」才執行副作用</h3><p>從該列讀取原始船名、去除前後空白，呼叫剪貼簿寫入；確認成功後，在同一分頁開啟 MarineTraffic。按鈕事件不得再觸發列的雙擊偵測。</p></div></article>
+        <article class="step"><span class="num">3</span><div><h3>剪貼簿被拒絕時不要假裝成功</h3><p>若瀏覽器拒絕複製，留在 APP 顯示「複製失敗，點此重試」或可手動複製的船名；重試成功才跳轉。剪貼簿 API 需 HTTPS，並受瀏覽器權限與使用者操作情境影響。</p></div></article>
+      </div>
+      <div class="callout warning" style="margin-top:13px"><strong>鍵盤替代操作：</strong>提供可聚焦的船列與按鈕；鍵盤使用者可先聚焦目標列並按 Enter 顯示按鈕，再以 Enter 啟動「位置」。</div>
+    </section>
+    <section id="sites"><p class="kicker">03 · 網站跳轉</p><h2>MarineTraffic 主用，VesselFinder 備用</h2>
+      <div class="grid">
+        <article class="panel"><h3>MarineTraffic｜主用</h3><p>官方說明確認可在 Live Map 搜尋列輸入船名、IMO 或 MMSI，並從結果點選船舶；目前尚未確認一個穩定、官方文件支持的船名直達搜尋 URL。</p><p><strong>第一版：</strong>複製成功後開啟 MarineTraffic Live Map／搜尋入口，使用者人工貼上船名、確認結果。</p></article>
+        <article class="panel"><h3>VesselFinder｜備用</h3><p>已驗證帶 `?name=` 參數的 vessels 頁會顯示船名搜尋結果。船名可能重複，仍需人工辨認目標。</p><p><strong>備用連結：</strong><code>https://www.vesselfinder.com/vessels?name={URL-encoded ship name}</code></p></article>
+      </div>
+      <details><summary>MarineTraffic 自動帶入搜尋的驗證邊界</summary><p>可先人工探索網站正常搜尋所產生的公開網址，並測試登入、手機瀏覽器及重新整理後是否穩定；若確認網址格式穩定，再列為直達搜尋候選。此計畫不會透過程式填寫對方網站的輸入框、不讀取其頁面資料，也不使用隱藏自動操作。</p></details>
+    </section>
+    <section id="scope"><p class="kicker">04 · 範圍與界線</p><h2>這次功能做什麼、不做什麼</h2>
+      <div class="grid">
+        <div class="callout success"><strong>納入</strong><p>測試版 PWA 船列雙擊顯示按鈕、按鈕點擊才複製、開啟外站、複製失敗提示、手機與桌面驗收。</p></div>
+        <div class="callout"><strong>不納入</strong><p>自動登入／自動輸入或提交搜尋、解析網頁座標、AIS API、位置資料儲存／地圖、正式版同步，以及任何 Cloud Run／Artifact Registry 變更。</p></div>
+      </div>
+      <p style="margin-top:13px">預計主要檔案：`奶昔APP/public/index.html`（Firebase Hosting 實際發布來源）。實作前先確認是否另有原始 HTML 需同步；本階段不改動其他版本或部署。</p>
+    </section>
+    <section id="test"><p class="kicker">05 · 驗收條件</p><h2>完成的判定方式</h2>
+      <div class="table-wrap"><table><caption>主要驗收項目</caption><thead><tr><th>情境</th><th>預期結果</th></tr></thead><tbody>
+        <tr><td>單擊船列</td><td>不複製、不跳轉、不顯示錯誤按鈕。</td></tr><tr><td>雙擊一列</td><td>只在該列船名右側顯示綠底白字「位置」。</td></tr><tr><td>雙擊另一列</td><td>按鈕移到新列，不殘留在前一列。</td></tr><tr><td>點「位置」</td><td>剪貼簿內容為該列船名；成功後同分頁開啟主用網站。</td></tr><tr><td>複製被拒絕</td><td>留在 APP，顯示明確錯誤與重試／手動複製方法。</td></tr><tr><td>手機 PWA、窄螢幕</td><td>可穩定雙擊；按鈕可觸控，船名旁按鈕不遮擋其他欄位、不誤觸垂直捲動。</td></tr><tr><td>一般船期功能</td><td>表格載入、船名、現有列操作與即時更新維持正常。</td></tr>
+      </tbody></table></div>
+      <p class="intro" style="margin-top:12px">先在測試版實機驗收，再決定是否同步到其他環境；本計畫本身不授權部署。</p>
+    </section>
+    <section><p class="kicker">下一步</p><div class="callout"><strong>請先確認兩個小決策</strong><p>雙擊後是否只顯示單一「位置」按鈕（以主用 MarineTraffic 為預設），以及複製失敗時是否採「留在 APP，提供重試／手動複製」。確認後再開始修改測試版前端。</p></div></section>
+  </main>
+  <footer class="shell"><h2 style="font-size:1.1rem">參考來源</h2><div class="sources">
+    <a href="https://support.marinetraffic.com/en/articles/9552755-search-for-vessels">MarineTraffic 官方：Search for Vessels</a>
+    <a href="https://www.vesselfinder.com/vessels?name=COBIA%20LNG">VesselFinder 搜尋頁實測：COBIA LNG</a>
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API">MDN：Clipboard API 與安全限制</a>
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText">MDN：Clipboard.writeText()</a>
+  </div><p style="margin-top:12px">來源只支持文件明確描述的能力；沒有把外站搜尋欄自動填入視為已驗證功能。</p></footer>
+</body>
+</html>
