@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Actions 確認與取消 /test 節點評估</title>
+<style>
+:root{--bg:#FFF9F5;--card:#fff;--ink:#1A202C;--body:#4A5568;--mut:#718096;--bd:#2D3748;--peach:#FFD8D0;--sky:#D6EEFF;--mint:#D4F4E2;--amber:#FEF3C7;--lav:#E6E6FA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--body);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.7;padding:28px 16px}
+.wrap{max-width:940px;margin:0 auto}
+.hero{background:linear-gradient(135deg,var(--sky),var(--lav));border:3px solid var(--bd);border-radius:20px;box-shadow:6px 6px 0 var(--bd);padding:24px 28px;margin-bottom:24px}
+.badge{display:inline-block;background:#fff;border:2px solid var(--bd);border-radius:99px;box-shadow:2px 2px 0 var(--bd);padding:1px 14px;font-weight:700;font-size:13px;color:var(--ink)}
+h1{margin:10px 0 4px;font-size:28px;color:var(--ink)}
+.date-subtitle{display:block;margin-top:8px;font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:2.5px solid var(--bd);border-radius:16px;box-shadow:4px 4px 0 var(--bd);padding:20px 22px;margin-bottom:22px}
+.hd{display:flex;align-items:center;gap:12px;border-bottom:2px dashed #CBD5E1;padding-bottom:10px;margin-bottom:12px}
+.ic{width:38px;height:38px;border:2px solid var(--bd);border-radius:12px;box-shadow:2px 2px 0 var(--bd);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink)}
+h2{margin:0;font-size:19px;color:var(--ink)}
+.verdict{background:var(--mint);border:2px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:10px 14px;margin:0 0 12px;color:var(--ink);font-weight:700}
+.verdict.warn{background:var(--amber)}
+table{width:100%;border-collapse:separate;border-spacing:0;border:2px solid var(--bd);border-radius:10px;overflow:hidden;font-size:14px}
+th{background:#F8FAFC;color:var(--ink);text-align:left;padding:9px 12px;border-bottom:2px solid var(--bd)}
+td{padding:8px 12px;border-bottom:1px solid #E2E8F0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+code{background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:0 6px;font-family:Consolas,monospace;font-size:13px;color:var(--ink)}
+.pill{display:inline-block;border:2px solid var(--bd);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;color:var(--ink)}
+.p-g{background:var(--mint)}.p-y{background:var(--amber)}.p-r{background:var(--peach)}
+ol,ul{margin:6px 0;padding-left:22px}
+.next{background:#FFE14D;border:3px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:12px 16px;color:var(--ink);font-weight:700}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.opt{border:2px solid var(--bd);border-radius:14px;box-shadow:3px 3px 0 var(--bd);padding:12px 14px;background:#FFFBF7}
+.opt h3{margin:0 0 4px;font-size:16px;color:var(--ink)}
+button{font:inherit;font-size:13px;margin-top:6px;padding:5px 12px;border:2px solid var(--bd);border-radius:8px;background:var(--sky);cursor:pointer;box-shadow:2px 2px 0 var(--bd)}
+.footer{border-top:2px solid var(--bd);margin-top:26px;padding-top:10px;font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="badge">討論整理</span>
+  <h1>GitHub Actions 確認 + 取消 /test 節點評估</h1>
+  <span class="date-subtitle">報告日期：2026-10-25　｜　只讀取檔案，沒有修改任何程式碼</span>
+</header>
+
+<div class="next">Next（2 分鐘）：到 GitHub repo → Actions → 左側「CPC Wind Forecast Pipeline」→ 右上 ⋯ → Disable workflow。這是可還原的，不改任何檔案。</div>
+<br>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--mint)">1</div><h2>APP 風力預測有用到 GitHub Actions 嗎？</h2></div>
+  <p class="verdict">結論：APP 執行時沒有用到。可以停用。</p>
+  <table>
+    <thead><tr><th style="width:30%">檢查項目</th><th>結果</th><th style="width:14%">狀態</th></tr></thead>
+    <tbody>
+      <tr><td>前端讀預測資料的位置</td><td><code>index.html</code> 讀 Firebase <code>test/forecast_data</code>、<code>test/forecast_metadata</code>，不讀 GitHub</td><td><span class="pill p-g">無依賴</span></td></tr>
+      <tr><td>誰寫入 Firebase</td><td>Cloud Run <code>/update_forecast</code> → <code>run_pipeline</code> → <code>data_fusion.py</code> 上傳 Firebase</td><td><span class="pill p-g">已覆蓋</span></td></tr>
+      <tr><td>workflow 是否還在排程</td><td><code>update_forecast.yml</code> 仍有 <code>cron: 15 7 * * *</code>（每天 15:15）</td><td><span class="pill p-y">仍會跑</span></td></tr>
+      <tr><td>GitHub 上是否已停用</td><td>使用者已確認目前為 Disabled 狀態</td><td><span class="pill p-g">已確認停用</span></td></tr>
+    </tbody>
+  </table>
+  <div class="verdict warn" style="margin-top:14px">兩個小地方要知道：</div>
+  <ol>
+    <li><b>可能重複寫入同一節點。</b><code>data_fusion.py</code> 的 <code>FIREBASE_RTDB_PREFIX</code> 預設為 <code>/test</code>。workflow 沒設這個變數，所以每天 15:15 會再寫一次 <code>test/forecast_data</code>，和 Cloud Run 寫的是同一處。</li>
+    <li><b>唯一殘留依賴：</b><code>gs_test.js:1398</code> 的 <code>fixLastRowJson()</code> 會抓 <code>uuuhasho.github.io/wind-monitor-app/data.json</code>。這是手動執行的修補函式，沒有被觸發器呼叫，不影響每日運作。停用 Actions 後，那份 <code>data.json</code> 會停止更新。</li>
+  </ol>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--sky)">2</div><h2>取消 Firebase /test 節點：改碼麻不麻煩？</h2></div>
+  <p class="verdict">結論：改碼不麻煩，約 1～2 小時。麻煩的是資料搬遷與環境隔離。</p>
+  <table>
+    <thead><tr><th style="width:24%">範圍</th><th>要改的地方</th><th style="width:14%">難度</th></tr></thead>
+    <tbody>
+      <tr><td>前端</td><td><code>index.html</code>、<code>public/index.html</code>、<code>index_test.html</code> 各有 6 處寫死 <code>'test/…'</code>（daily_records、editing_lock、active_status、schedule_list、forecast_data、forecast_metadata）。另外 <code>test_monitor/index_test.html</code> 有 4 處。</td><td><span class="pill p-g">簡單</span></td></tr>
+      <tr><td>GAS</td><td>路徑都由 <code>FIREBASE_URL</code> 屬性組成，本體不用改。但 <code>gs_test.js</code> 第 87–89、99、895、1464 行會<b>強制把 URL 改回 /test</b>，這些防護要拿掉。</td><td><span class="pill p-y">中等</span></td></tr>
+      <tr><td>Python / Cloud Run</td><td><code>data_fusion.py:224</code> 預設 <code>/test</code>，改成空字串。Cloud Run 的 <code>FIREBASE_URL</code> 環境變數也要拿掉 <code>/test</code> 後綴。</td><td><span class="pill p-g">簡單</span></td></tr>
+      <tr><td>自動測試</td><td><code>run_auto_test.py</code> 有 7 處 <code>{DB_URL}test/…</code></td><td><span class="pill p-g">簡單</span></td></tr>
+      <tr><td>規範文件</td><td><code>AGENTS.md</code> 規定測試版必須帶 <code>/test</code>，需同步改寫</td><td><span class="pill p-g">簡單</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="verdict warn" style="margin-top:14px">真正的風險（不在程式碼）：</div>
+  <ol>
+    <li><b>根節點現有資料。</b>根目錄（<code>/daily_records</code> 等）現在有沒有內容、有沒有舊版正式 APP 在讀，我沒有驗證。</li>
+    <li><b>資料搬遷。</b><code>test/*</code> 要先複製到根目錄，才能切換。</li>
+    <li><b>失去測試隔離。</b>之後所有測試都會直接寫入正式資料。GAS 的 <code>onCalendarOrSheetChange</code> 等觸發器、<code>run_auto_test.py</code> 的寫入、「引水人班表」的 Demo 都會受影響。</li>
+    <li><b>Firebase 規則。</b>需確認 <code>.read/.write</code> 規則覆蓋根節點各路徑。</li>
+  </ol>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--peach)">3</div><h2>切換方式選項</h2></div>
+  <div class="grid">
+    <div class="opt"><h3>A　一次硬切</h3>直接刪掉所有 <code>test/</code> 字串，資料複製到根目錄後上線。<br><small>程式最乾淨，但出問題沒有退路。</small><br><button onclick="navigator.clipboard.writeText('A');this.textContent='已複製 A'">選 A</button></div>
+    <div class="opt"><h3>B　前綴變數（推薦）</h3>前端、GAS、Python 都改成讀一個 <code>PREFIX</code> 設定值。先設為 <code>test/</code> 驗證，確認後改成空字串。<br><small>改碼量相同，可隨時切回，程式不再散落寫死字串。</small><br><button onclick="navigator.clipboard.writeText('B');this.textContent='已複製 B'">選 B</button></div>
+    <div class="opt"><h3>C　保留 /test 當開發沙盒</h3>正式資料走根節點，開發與 Demo 仍用 <code>/test</code>。<br><small>等於不取消，只是把正式版指到根目錄。隔離最好。</small><br><button onclick="navigator.clipboard.writeText('C');this.textContent='已複製 C'">選 C</button></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--amber)">4</div><h2>進度與下一步</h2></div>
+  <ol>
+    <li>已完成：確認 APP 預測不依賴 GitHub Actions（見第 1 節）</li>
+    <li>已完成：盤點 /test 相關程式位置（見第 2 節）</li>
+    <li>待你回答：根節點現在有沒有資料或舊版 APP 在讀？（一句話即可）</li>
+    <li>待你選擇：A、B 或 C</li>
+  </ol>
+</section>
+
+<div class="footer">奶昔APP　•　2026-10-25 討論整理</div>
+</div>
+</body>
+</html>

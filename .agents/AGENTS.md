@@ -30,6 +30,5 @@
 ## 領域知識與限制 (Domain Knowledge)
 * **LNG 船夜航限制**：LNG 船禁止夜航，因此船舶進港 (POB) 時間只會落在 **04:00 ~ 17:00** 之間。在進行系統排程、時間推算或邏輯防呆時，應將此物理限制考慮在內。
 
-
-
-
+## 回覆與文件呈現風格
+* 回覆問題或輸出文件，盡量套用 `i-have-adhd` + `show-me` 風格（詳見全域 `GLOBAL_RULES.md` 的「Response & Output Style」）；專案報告仍須為淺色 HTML 並存放於 `./plan/YYYY-MM-DD/`。

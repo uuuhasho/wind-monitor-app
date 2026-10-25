@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-10-25 今日重點整理</title>
+<style>
+:root{--bg:#FFF9F5;--card:#fff;--ink:#1A202C;--body:#4A5568;--mut:#718096;--bd:#2D3748;--peach:#FFD8D0;--sky:#D6EEFF;--mint:#D4F4E2;--amber:#FEF3C7;--lav:#E6E6FA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--body);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.7;padding:28px 16px}
+.wrap{max-width:940px;margin:0 auto}
+.hero{background:linear-gradient(135deg,var(--mint),var(--sky));border:3px solid var(--bd);border-radius:20px;box-shadow:6px 6px 0 var(--bd);padding:24px 28px;margin-bottom:24px}
+.badge{display:inline-block;background:#fff;border:2px solid var(--bd);border-radius:99px;box-shadow:2px 2px 0 var(--bd);padding:1px 14px;font-weight:700;font-size:13px;color:var(--ink)}
+h1{margin:10px 0 4px;font-size:28px;color:var(--ink)}
+.date-subtitle{display:block;margin-top:8px;font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:2.5px solid var(--bd);border-radius:16px;box-shadow:4px 4px 0 var(--bd);padding:20px 22px;margin-bottom:22px}
+.hd{display:flex;align-items:center;gap:12px;border-bottom:2px dashed #CBD5E1;padding-bottom:10px;margin-bottom:12px}
+.ic{width:38px;height:38px;border:2px solid var(--bd);border-radius:12px;box-shadow:2px 2px 0 var(--bd);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink)}
+h2{margin:0;font-size:19px;color:var(--ink)}
+table{width:100%;border-collapse:separate;border-spacing:0;border:2px solid var(--bd);border-radius:10px;overflow:hidden;font-size:14px}
+th{background:#F8FAFC;color:var(--ink);text-align:left;padding:9px 12px;border-bottom:2px solid var(--bd)}
+td{padding:8px 12px;border-bottom:1px solid #E2E8F0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+code{background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:0 6px;font-family:Consolas,monospace;font-size:13px;color:var(--ink)}
+.pill{display:inline-block;border:2px solid var(--bd);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;color:var(--ink)}
+.g{background:var(--mint)}.y{background:var(--amber)}.r{background:var(--peach)}
+.callout{background:var(--amber);border:2px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:10px 14px;margin:12px 0;color:var(--ink)}
+.next{background:#FFE14D;border:3px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:12px 16px;color:var(--ink);font-weight:700}
+ul,ol{margin:6px 0;padding-left:22px}
+.footer{border-top:2px solid var(--bd);margin-top:26px;padding-top:10px;font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="badge">今日重點</span>
+  <h1>2026-10-25 工作整理</h1>
+  <span class="date-subtitle">報告日期：2026-10-25</span>
+</header>
+
+<div class="next">Next：開啟 <code>2026-10-25-預計架構修改.html</code> 看建議修改清單，下次討論時把同資料夾的 <code>.md</code> 丟給 AI agent。</div>
+<br>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--mint)">1</div><h2>已完成</h2></div>
+  <table>
+    <thead><tr><th style="width:28%">項目</th><th>結果</th><th style="width:12%">狀態</th></tr></thead>
+    <tbody>
+      <tr><td>確認風力預測是否用到 GitHub Actions</td><td>APP 執行時不依賴。前端讀 Firebase <code>test/forecast_data</code>，由 Cloud Run 寫入。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>停用 GitHub Actions 排程</td><td>你已在網頁 Disable。我另外把 <code>update_forecast.yml</code> 的 <code>schedule:</code>／<code>cron: '15 7 * * *'</code> 註解，保留 <code>workflow_dispatch</code> 與 <code>repository_dispatch</code>。</td><td><span class="pill g">已 push</span></td></tr>
+      <tr><td>Git 提交</td><td>commit <code>dcf2931</code> 已推到 <code>origin/main</code>，只動這一個檔案。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>寫入記憶規則</td><td><code>GLOBAL_RULES.md</code> 新增「Response &amp; Output Style」；專案 <code>AGENTS.md</code> 加一句指向它。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>驗證 AGENTS.md 中文</td><td>以 UTF-8 解碼，無亂碼字元、無 BOM。順便修掉我追加內容造成的多餘 <code>\r\r\n</code>。終端機看到的亂碼是 Windows 主控台字碼頁，不是檔案問題。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>專案架構盤點</td><td>已輸出 <code>預計架構修改</code> 的 HTML 與 MD。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>清理 Worktree 殘留</td><td>解除 Windows 檔案唯讀屬性後執行 <code>git worktree prune -v</code>，成功清除 <code>.git/worktrees/wt_main</code>。</td><td><span class="pill g">完成</span></td></tr>
+      <tr><td>本地變更提交</td><td>提交至 <code>demo/pilot-schedule</code>（Commit <code>9d105a8</code>），含 <code>AGENTS.md</code>、4 份 <code>plan/2026-10-25/</code> 文件，並確認刪除 <code>notification_option_C.mp3</code> 與 <code>正式版/index.html</code>。工作區狀態恢復 clean。</td><td><span class="pill g">完成</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--sky)">2</div><h2>今天定下的決定</h2></div>
+  <ol>
+    <li><b>引水人班表自動分析</b>：改 18:00 抓信；同日兩封信全部處理，月份取自工作表標題，同月以最後一封為準；用 Gmail 標籤做冪等。</li>
+    <li><b>解析位置</b>：推薦混合式。GAS 時間觸發器負責搜信和取附件，POST 給 Cloud Run <code>/parse_schedule</code>，由 <code>openpyxl</code> 解析並寫 Firebase。這案尚待你確認。</li>
+    <li><b>GitHub Actions</b>：不再排程，只保留手動備援。</li>
+    <li><b>Firebase <code>/test</code></b>：維持現狀，這次不動。</li>
+  </ol>
+</section>
+
+<section class="card" style="border: 3px solid #E11D48; box-shadow: 6px 6px 0 var(--bd);">
+  <div class="hd" style="border-bottom: 2px dashed #FDA4AF;">
+    <div class="ic" style="background:#FFE4E6; border-color:#E11D48; color:#BE123C;">🔥</div>
+    <h2>待辦與未解事項</h2>
+    <span class="badge" style="background:#FFE4E6; border-color:#E11D48; color:#BE123C; margin-left:auto;">下次開工優先看這裡</span>
+  </div>
+  <table>
+    <thead>
+      <tr style="background:#FFF1F2;">
+        <th style="width:14%">狀態分類</th>
+        <th>待辦內容</th>
+        <th style="width:20%">負責與權責</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background:#FFF5F5;">
+        <td style="vertical-align:middle;"><span class="pill" style="background:#E11D48; color:#fff; border:2px solid var(--bd); box-shadow:1px 1px 0 var(--bd);">⚠️ 待你決定</span></td>
+        <td>
+          <div style="font-weight:800; font-size:15px; color:#9F1239; margin-bottom:4px;">1. 引水人班表解析架構確認</div>
+          <div style="color:var(--body); font-size:13px; line-height:1.6;">
+            是否採推薦的「GAS 觸發搜信 + POST 附件至 Cloud Run <code>/parse_schedule</code> 用 <code>openpyxl</code> 解析」混合式方案？（解決 Scheduler 配額與 GAS 解析 Excel 難題）。
+          </div>
+        </td>
+        <td style="vertical-align:middle;"><span class="badge" style="background:#FFE4E6; border-color:#E11D48; color:#9F1239; font-weight:800;">你決定 (主架構)</span></td>
+      </tr>
+      <tr style="background:#FFFDF0;">
+        <td style="vertical-align:middle;"><span class="pill" style="background:#F59E0B; color:#fff; border:2px solid var(--bd); box-shadow:1px 1px 0 var(--bd);">📋 待討論</span></td>
+        <td>
+          <div style="font-weight:800; font-size:15px; color:#92400E; margin-bottom:4px;">2. 預計架構修改清單與優先級排定</div>
+          <div style="color:var(--body); font-size:13px; line-height:1.6;">
+            下次啟動時，先開啟 <code>2026-10-25-預計架構修改.html</code>，重點逐項確認 P0 三項（明文密碼與端點硬編碼、狀態更新前綴不一致、重複檔案整理）。
+          </div>
+        </td>
+        <td style="vertical-align:middle;"><span class="badge" style="background:#FEF3C7; border-color:#F59E0B; color:#92400E; font-weight:800;">你與 AI 共同討論</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout" style="background:var(--mint); margin-top:14px;">✅ <strong>雙重停用確認完畢</strong>：GitHub 上該 workflow 目前已確認為 <strong>Disabled</strong> 狀態，加上本機代碼中的 <code>schedule:</code> 區塊已註解並推至 main，排程觸發已完全停用。</div>
+</section>
+
+<div class="footer">奶昔APP　•　2026-10-25 今日重點整理</div>
+</div>
+</body>
+</html>
