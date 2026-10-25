@@ -1,9 +1,10 @@
 name: CPC Wind Forecast Pipeline
 
 on:
-  schedule:
-    # 台灣時間每日 15:15（即 UTC 07:15）自動觸發，避免 GitHub Actions 整點擁塞與信件延遲
-    - cron: '15 7 * * *'
+  # [Disabled 2026-10-25] Forecast pipeline now runs on Cloud Run /update_forecast (Cloud Scheduler).
+  # schedule:
+  #  # 台灣時間每日 15:15（即 UTC 07:15）自動觸發，避免 GitHub Actions 整點擁塞與信件延遲
+  #  - cron: '15 7 * * *'
   workflow_dispatch:
     # 允許手動觸發
   repository_dispatch:
