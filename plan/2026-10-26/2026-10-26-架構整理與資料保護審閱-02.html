@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="claymorphism"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="奶昔 APP GPT-6.1-Sol 複核、實際修正驗證及部署回復準備。"><title>奶昔 APP｜複核與部署準備</title><style>
+    :root {
+      color-scheme: light;
+      --ink: #1A202C;
+      --muted: #4A5568;
+      --paper: #FFF9F5;
+      --surface: #FFFFFF;
+      --line: #2D3748;
+      --accent: #D6EEFF;
+      --accent-strong: #1A202C;
+      --accent-soft: #D6EEFF;
+      --success: #175D38;
+      --success-soft: #D4F4E2;
+      --warning: #6B4A00;
+      --warning-soft: #FEF3C7;
+      --danger: #8B2E2A;
+      --danger-soft: #FFD8D0;
+      --peach: #FFD8D0;
+      --sky: #D6EEFF;
+      --mint: #D4F4E2;
+      --amber: #FEF3C7;
+      --lavender: #E6E6FA;
+      --shadow-hero: 6px 6px 0 #2D3748;
+      --shadow-card: 4px 4px 0 #2D3748;
+      --shadow-small: 2px 2px 0 #2D3748;
+      --radius: 16px;
+      --content-width: 1120px;
+      --gutter: clamp(16px, 4vw, 36px);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; color: var(--ink); background: var(--paper);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    a { color: var(--accent-strong); text-underline-offset: 3px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid #bd7415; outline-offset: 3px; }
+    .skip-link { position: absolute; left: 12px; top: -100px; z-index: 20; padding: 9px 12px; color: #fff; background: #172b36; border-radius: 8px; }
+    .skip-link:focus { top: 12px; }
+    .shell { width: min(var(--content-width), calc(100% - 2 * var(--gutter))); margin-inline: auto; }
+    .masthead { padding: clamp(32px, 7vw, 72px) 0 36px; }
+    .masthead > .shell { padding: clamp(24px, 5vw, 48px); border: 3px solid var(--line); border-radius: 20px; background: linear-gradient(120deg, var(--sky) 0 62%, #fff 62%); box-shadow: var(--shadow-hero); }
+    .hero-panel { padding: clamp(24px, 5vw, 48px); border: 3px solid var(--line); border-radius: 20px; background: linear-gradient(120deg, var(--sky) 0 62%, #fff 62%); box-shadow: var(--shadow-hero); }
+    .eyebrow, .section-kicker { margin: 0 0 10px; color: var(--accent-strong); font-size: .78rem; font-weight: 800; letter-spacing: .08em; }
+    h1, h2, h3 { line-height: 1.22; text-wrap: balance; }
+    h1 { max-width: 880px; margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3.6rem); }
+    h2 { margin: 0 0 14px; font-size: clamp(1.45rem, 3vw, 2.2rem); }
+    h3 { margin: 0 0 8px; font-size: 1.12rem; }
+    p { margin: 0 0 14px; }
+    p:last-child { margin-bottom: 0; }
+    .lede { max-width: 72ch; color: var(--muted); font-size: 1.08rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 18px; color: var(--muted); font-size: .9rem; }
+    .quick-read { margin-top: 22px; padding: 18px 20px; background: var(--mint); border: 2.5px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-card); }
+    .quick-read h2 { margin-bottom: 8px; font-size: 1.15rem; }
+    .quick-read ul { margin: 0; padding-inline-start: 1.25rem; }
+    .quick-read li + li { margin-top: 5px; }
+    .toc { position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); }
+    .toc-inner { display: flex; gap: 8px; overflow-x: auto; padding-block: 9px; scrollbar-width: thin; }
+    .toc a { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 7px 10px; border: 1.5px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); text-decoration: none; box-shadow: var(--shadow-small); }
+    .toc a:hover { background: var(--sky); }
+    main { padding-block: 28px 64px; }
+    section { min-width: 0; margin-bottom: 40px; scroll-margin-top: 72px; }
+    .section-intro { max-width: 72ch; margin-bottom: 18px; color: var(--muted); }
+    .panel, .step, .source { min-width: 0; padding: 18px; border: 2.5px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+    .grid-2, .grid-3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .callout { padding: 16px 18px; border: 2px solid var(--line); border-radius: 12px; background: var(--sky); box-shadow: 3px 3px 0 var(--line); }
+    .callout.success { background: var(--success-soft); }
+    .callout.warning { background: var(--warning-soft); }
+    .callout.danger { background: var(--danger-soft); }
+    .steps { display: grid; gap: 12px; }
+    .step { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; }
+    .step-number { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--peach); box-shadow: var(--shadow-small); font-weight: 800; }
+    .table-wrap, .code-wrap, .diagram-scroll { max-width: 100%; overflow: auto; overscroll-behavior-inline: contain; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; background: var(--surface); }
+    caption { padding: 10px; color: var(--muted); text-align: start; }
+    th, td { padding: 11px 13px; border: 1px solid #CBD5E1; text-align: start; vertical-align: top; }
+    th { background: var(--sky); color: var(--ink); }
+    pre { max-width: 100%; overflow: auto; padding: 16px; border-radius: 10px; color: #f5f7fa; background: #202b35; font: .9rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; tab-size: 2; }
+    :not(pre) > code { padding: 2px 5px; border-radius: 4px; background: var(--accent-soft); overflow-wrap: anywhere; }
+    figure { min-width: 0; margin: 0; }
+    .diagram { max-width: 100%; height: auto; }
+    figcaption, .note { margin-top: 8px; color: var(--muted); font-size: .9rem; }
+    details { margin-top: 12px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-small); }
+    summary { min-height: 44px; padding: 10px 14px; cursor: pointer; font-weight: 750; }
+    details > :not(summary) { margin-inline: 14px; }
+    details > :last-child { margin-bottom: 14px; }
+    .sources { display: grid; gap: 10px; }
+    footer { padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); }
+    @media (max-width: 760px) {
+      .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+      .step { grid-template-columns: 34px minmax(0, 1fr); gap: 10px; padding: 14px; }
+      th, td { padding: 9px 10px; }
+    }
+    @media (max-width: 420px) {
+      body { font-size: 16px; }
+      .shell { width: calc(100% - 28px); }
+      .masthead { padding-top: 30px; }
+      .masthead > .shell { padding: 20px; background: linear-gradient(155deg, var(--sky) 0 48%, #fff 48%); }
+      .panel { padding: 14px; }
+      .quick-read { padding: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print {
+      body { color: #111; background: #fff; }
+      .toc, .skip-link { display: none !important; }
+      .shell { width: 100%; }
+      .masthead { padding: 18px 0; }
+      .masthead > .shell { background: #fff; box-shadow: none; }
+      main { padding-block: 18px; }
+      .panel, .step, .source { box-shadow: none; break-inside: avoid; }
+      a { color: inherit; }
+      a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .8em; overflow-wrap: anywhere; }
+      details > * { display: block !important; }
+    }
+
+code {overflow-wrap:anywhere} td {vertical-align:top} summary {min-height:44px;padding-block:8px;cursor:pointer} .badge {display:inline-block;padding:4px 10px;border:2px solid var(--line);border-radius:99px;background:var(--mint)}
+</style></head><body>
+<a class="skip-link" href="#main">跳到主要內容</a>
+<header class="masthead"><div class="shell"><p class="eyebrow">2026-10-26 · 第 02 版 · GPT-6.1-Sol 複核</p><h1>配置核對完成<br>待審閱部署範圍</h1><p class="lede">三批提交已完成規範與需求審查；找到的問題已修正並補驗證。線上版本已唯讀核對；使用者已確認四個觸發器及兩端操作密碼一致。日曆初始化已於本機修正，尚未部署或執行正式資料驗收。</p><div class="quick-read"><h2>先看這三點</h2><ul><li>Python 31 項、GAS 21 個情境通過；第二輪審查沒有新增可重現阻擋。</li><li>目前線上 GAS 仍是 v79 舊邏輯；Cloud Run 回復基準是 00057-4tc。</li><li>第 1–3 項已完成，剩 8 項；下一步審閱維護、備份、三端部署與正式驗收的範圍。</li></ul></div></div></header>
+<nav class="toc" aria-label="文件目錄"><div class="shell toc-inner"><a href="#standards">規範審查</a><a href="#spec">需求審查</a><a href="#validation">驗證</a><a href="#online">線上基準</a><a href="#release">部署與回復</a></div></nav>
+<main id="main" class="shell" tabindex="-1">
+<section id="standards"><h2>1. 規範審查：5 組問題已修正</h2><p class="section-intro">基準為 5233f9d，審查 3dc5f0c、105bc07、fef4700。採平行獨立審查，實作由 coder 處理，再由主代理與複核代理檢查結果。以下保留規範與需求兩個面向。</p><div class="table-wrap" tabindex="0" role="region" aria-label="規範審查發現與修正"><table><thead><tr><th>分組／嚴重度</th><th>觸發條件與影響</th><th>已完成修正與證據</th></tr></thead><tbody><tr><td>S1 高｜POB 執行緒</td><td>移除舊鎖時漏掉 threading 匯入；符合條件的 LINE 訊息會 NameError。</td><td>恢復匯入；實際載入 app 模組，測訊息篩選與執行緒啟動。backend/app.py:4；tests/test_pob_handler.py</td></tr><tr><td>S2 高｜未設定密碼</td><td>Cloud Run 強制更新缺 APP_PASSWORD 時曾接受請求；GAS 缺 OP_PASSWORD 時也曾使用內建預設值。</td><td>兩端均在缺少設定時拒絕操作；Cloud Run 回 503、錯誤密碼回 403；GAS 回 status:error。不得進入資料寫入。</td></tr><tr><td>S3 中｜POB 委託邊界</td><td>POB 委託曾使用硬編碼操作密碼；HTTP 200 的 GAS 業務錯誤會被誤報成功。缺少時間也可能變成無 POB 的 reset。</td><td>密碼改用 APP_PASSWORD；不記錄本文或請求細節。時間限制為合法 04:00–17:00（含兩端），並要求 GAS JSON status:success。backend/app.py；backend/src/config.py</td></tr><tr><td>S4 中｜雲端專案</td><td>gcloud 依本機 active project 部署，可能指向其他專案。</td><td>部署命令固定 --project newlngship、forecast-api-test、asia-southeast1；mock 驗證完整命令。deploy/deploy_cloud_run.py</td></tr><tr><td>S5 中｜Windows 入口</td><td>實測 Python subprocess 使用裸名稱 gcloud 發生 FileNotFoundError / WinError 2。</td><td>以 shutil.which 解析 gcloud.cmd；缺 CLI 時於暫存前中止。已用解析後路徑成功讀取 SDK 581.0.0 版本。</td></tr></tbody></table></div><p class="note">依據：使用者 AGENTS.md、.agents/AGENTS.md 的機密規範、Windows 部署及 LNG 夜航限制。位置以本機目前原始碼為準。此面向最高原始嚴重度：高。</p></section>
+<section id="spec"><h2>2. 需求審查：2 組問題已修正</h2><div class="table-wrap" tabindex="0" role="region" aria-label="需求審查發現與修正"><table><thead><tr><th>分組／嚴重度</th><th>對照原需求與問題</th><th>已完成修正與驗證</th></tr></thead><tbody><tr><td>R1 高｜改期與歸檔重試</td><td>需求：必要寫入成功才刪來源；失敗可重試且不重複歸檔。來源新增 wind_logs 後 ETag 刪除失敗，舊指紋會使目標被誤判衝突；部分寫入失敗也可能重複追加。</td><td>以排除 wind_logs 的業務快照識別歸檔；先記 pending receipt，再寫目標與試算表。只有 logs 改變時更新同一列；flush 成功、目標驗證通過後才 ETag 刪來源。completed receipt 也重驗目標。</td></tr><tr><td>R2 中｜無效卡片</td><td>需求：失敗卡片保留並回報失敗。缺船名或無法解析卡片曾被略過，整批仍停止監控並回報成功。</td><td>列入 failures，保留卡片、回報 archive incomplete；不得在這個失敗分支重設監控。tests/test_gas_archive.js</td></tr></tbody></table></div><div class="callout"><strong>保留資料的界線：</strong>若歸檔中途只有風速紀錄新增，可自動更新同一列並重試。POB、船名、碼頭、限制風速或其他業務內容改變時，保留來源與既有目標、回報衝突，需人工調和；不自動刪除或覆寫新業務資料。</div><p class="note">此面向最高原始嚴重度：高。已知舊格式 receipt 若無法確認對應關係，採保留來源處理。</p></section>
+<section id="validation"><h2>3. 已執行的驗證</h2><div class="table-wrap" tabindex="0" role="region" aria-label="實際驗證範圍"><table><thead><tr><th>項目</th><th>結果</th><th>涵蓋與界線</th></tr></thead><tbody><tr><td>Python 隔離驗收</td><td>31 項通過</td><td>RTDB CAS／持有者／逾時、舊預報保留、新舊融合輸出、台灣跨年、實際模組載入、POB 時間與錯誤回覆、部署命令和缺 CLI。外部服務與設定均為模擬。</td></tr><tr><td>GAS 隔離驗收</td><td>21 個情境通過</td><td>逐卡失敗、改期、receipt 失敗、更新 logs 後重試、POB／設定衝突、目標被替換、flush 失敗、無效卡片、舊 ID 相容性、缺操作密碼、換班。</td></tr><tr><td>GAS 觸發器初始化</td><td>4 個隔離情境通過</td><td>建立完整四項、重跑不重複、只補日曆項目、保留其他日曆與不相關觸發器。既有 21 個歸檔情境與 Node 語法檢查亦通過。本輪未改 Python，不重跑前次 31 項結果。</td></tr><tr><td>語法與差異</td><td>通過</td><td>Python compileall、node --check、git diff --check。沒有新增套件。</td></tr><tr><td>實際 Cloud Run 暫存</td><td>通過</td><td>runtime/review-stage 共 13 個允許檔案；未帶 config.json、service_account.json、env.json 或本機歷史樣本。正式英文路徑尚未覆寫。</td></tr><tr><td>Hosting／前端</td><td>沿用上一批通過結果</td><td>本輪沒有修改 frontend、Hosting 建置器或資源；之前已完成實際 build 與模擬預報、船期、POB、監控、手動歸檔。沒有重複宣稱本輪重跑。</td></tr><tr><td>本離線文件</td><td>內容與靜態結構核對；依使用者指示略過瀏覽器檢查</td><td>核對提交、測試數量、來源雜湊、線上版本、部署與回復步驟；檢查內嵌資源、章節連結及 JSON 摘要。未執行本版文件的瀏覽器排版或鍵盤驗收。</td></tr></tbody></table></div><details><summary>提交與可重跑的隔離命令</summary><p>後端與部署修正：<code>6784562</code>。GAS 歸檔修正：<code>de01412</code>；日曆觸發器修正：<code>66e6078</code>。既有 10/25 文件刪除與未追蹤筆記保留於提交之外。</p><pre tabindex="0" aria-label="隔離驗證命令">&amp; 'C:\Users\hilla\AppData\Local\Python\pythoncore-3.14-64\python.exe' -m unittest discover -s tests -q
+node tests/test_gas_archive.js
+node tests/test_gas_triggers.js
+node --check gas/monitor.js</pre><p>測試中的失敗日誌是預期注入的 500／412、試算表錯誤與衝突；以命令退出碼與斷言結果判定通過。</p></details><div class="callout"><strong>未驗證：</strong>正式 LINE → Gemini → GAS → RTDB／試算表端對端、容器內 OCR／LibreOffice、真實資料量下 RTDB 根節點 CAS 延遲，以及部署後驗收。隔離測試不能替代這些結果。</div></section>
+<section id="online"><h2>4. 已取得的線上回復基準</h2><p>查詢日期 2026-10-26；GAS 來源雜湊時間 2026-10-26T07:13:04.511Z。所有查詢均為唯讀，未執行 GAS 函式或讀取機密值。</p><div class="table-wrap" tabindex="0" role="region" aria-label="線上唯讀基準"><table><thead><tr><th>服務</th><th>實際觀察</th><th>部署與回復用途</th></tr></thead><tbody><tr><td>Cloud Run</td><td>forecast-api-test-00057-4tc，100% 流量；300 秒 timeout、concurrency 80、最多 20 個執行個體。</td><td>專案 newlngship／區域 asia-southeast1。回復固定指向此 revision，不使用含糊的 latest。</td></tr><tr><td>Cloud Scheduler</td><td>forecast-trigger-test：ENABLED；*/15 12-17 * * *；Asia/Taipei；attempt deadline 180 秒。</td><td>切換前暫停；確認舊請求結束後才換版，最後才恢復排程。GitHub Actions 保持手動無預報工作。</td></tr><tr><td>GAS Web App／HEAD</td><td>既有 deployment ...EWF3 使用 v79；HEAD、v79 與 Git 起點在 CRLF→LF 正規化後一致。</td><td>線上仍無 archive_receipts／LockService／if-match 保護，且仍有 fixLastRowJson。必須同時更新 HEAD 與同一 Web App deployment。</td></tr><tr><td>Firebase Hosting live</td><td>版本 1fcc026f59f9da67；release 1784294986819000；2026-07-17T13:29:46.819Z；18 檔。</td><td>目前 release 類型為 ROLLBACK；回復時依此版本識別，不以日期最新推測。</td></tr><tr><td>機密與觸發器</td><td>已看到 APP_PASSWORD 環境變數名稱及既有 Secret Manager 參照；未讀取值。使用者已確認四個觸發器，並確認兩端操作密碼已設定且相同；未讀取或記錄密碼值。</td><td>來源是使用者提供的實際清單；維護時仍須使用可管理這四個觸發器的帳號。setupSystemTriggers 現在僅補缺，不會刪除既有觸發器。</td></tr></tbody></table></div><h3>使用者確認的四個觸發器</h3><div class="table-wrap" tabindex="0" role="region" aria-label="GAS 實際觸發器"><table><thead><tr><th>函式</th><th>時程／事件（Asia/Taipei）</th></tr></thead><tbody><tr><td>checkDailySchedule</td><td>每天 04:00–05:00</td></tr><tr><td>onCalendarOrSheetChange</td><td>指定日曆活動新增、變更或刪除</td></tr><tr><td>archiveAndClearFirebase</td><td>每天 23:00–00:00</td></tr><tr><td>executeMonitor</td><td>每分鐘一次</td></tr></tbody></table></div><p>日曆 ID：<code>89f17p8et94udnavnaqgihrgvg@group.calendar.google.com</code>。</p><div class="callout"><strong>初始化補齊規則：</strong>只檢查目前執行帳號可列出的觸發器。依函式與來源判斷是否缺少，日曆另比對 ID；現有三個時間觸發器保留原設定。GAS Trigger 物件無法讀出既有精確時分與間隔，因此本函式不校正既有時程，也不刪除其他帳號或其他用途的觸發器。只有執行初始化才會建立缺少項目；本輪沒有線上執行。</div><details><summary>GAS 來源差異與完整 SHA-256</summary><p>線上 HEAD 與 v79 都有 appsscript.json、gs_test.js、index_test.html、test_splice.js。本機推送清單僅保留 monitor.js 與 appsscript.json；舊網頁與實驗碼的退役須包含在部署審閱範圍。</p><p>先將 CRLF 正規化為 LF，比較整個 gs_test.js。線上 HEAD、v79 與 Git 起點一致，差異並非遺漏了一份較新業務邏輯。遠端來源只在記憶體計算摘要，沒有落地保存。</p><pre tabindex="0" aria-label="GAS 完整雜湊">線上 HEAD / v79 / 5233f9d（LF）
+6b327fec9a7fb6e14f3b9f59cc96073322c2724dc5b96e737a70cdd9baf0965f
+本機 66e6078 gas/monitor.js（LF）
+2c3f401985222b3c4e34a06d77b7aa62e6beae1d8d0dec7093e13a6f1a18034c</pre><p>機器可讀摘要另存 gas-online-comparison.json、deployment-baseline.json。本頁已內含判讀所需結果，離線閱讀不需載入旁檔。</p></details></section>
+<section id="release"><h2>5. 部署順序與回復方式</h2><p><span class="badge">方案已具體化 · 尚未授權部署</span></p><ol start="4"><li><strong>審閱並確認範圍。</strong>確認後續維護、備份、同一 GAS 專案部署、Cloud Run、Hosting 與正式資料驗收。第 1–3 項已完成；此處是第 4 項，尚未取得雲端寫入授權。</li><li><strong>維護窗口與排空工作。</strong>暫停 forecast-trigger-test 及四個 GAS 觸發器的寫入來源，安排手動操作與 LINE POB 暫停。記錄原有時程／帳號並確認舊工作已結束；舊程式不遵守新工作鎖。</li><li><strong>備份與回復準備。</strong>在凍結後備份 RTDB／試算表，記錄可恢復位置。保留 Cloud Run 00057-4tc、GAS v79 與 Hosting 1fcc026f59f9da67；不清除舊映像。</li><li><strong>更新同一 GAS 專案。</strong>審閱舊遠端四檔退役與本機兩個來源檔，從 gas/ 推送，更新既有 Web App deployment 並記錄新版本。HEAD 與 Web App 必須同步；維護窗口中不執行 setupSystemTriggers，以免提前恢復排程。</li><li><strong>部署 Cloud Run。</strong>以實際 Python 執行 deploy/deploy_cloud_run.py --deploy，使用英文暫存路徑，目標固定 newlngship／forecast-api-test／asia-southeast1，沿用既有機密配置。工作區外暫存須具備授權。</li><li><strong>部署 Hosting。</strong>以 build_hosting.py 成功重建完整 public，再執行 firebase deploy --project newlngship --only hosting。保留先前 release 與本機建置回復版本。</li><li><strong>正式環境驗收。</strong>先檢查健康端點、版本及靜態資源，再於維護窗口執行預報、船期、POB、換班與每日歸檔的真實資料驗收；失敗時維持凍結，依回復表處理。</li><li><strong>恢復並收尾。</strong>驗收通過後恢復原四個 GAS 觸發器及 Scheduler，核對日曆 ID／時程、記錄發布版本與實際結果。初始化只補缺；重建缺少時間觸發器可能在原時段內重新選擇執行分鐘。</li></ol>
+<div class="table-wrap" tabindex="0" role="region" aria-label="回復對象與限制"><table><thead><tr><th>服務</th><th>具體回復對象</th><th>操作與資料限制</th></tr></thead><tbody><tr><td>Cloud Run</td><td>forecast-api-test-00057-4tc</td><td>先暫停 Scheduler／手動更新，排空新舊工作，再將 100% 流量指回舊 revision。保留容器映像。舊版本不遵守新 RTDB 工作鎖。</td></tr><tr><td>GAS Web App</td><td>既有 deployment ...EWF3，version 79</td><td>clasp deploy -i &lt;既有 deployment ID&gt; -V 79；只回復 Web App。觸發器仍執行 HEAD，必須另外從隔離回復目錄恢復 v79 的完整 4 檔 HEAD。不得覆寫目前本機 gas/ 唯一來源。</td></tr><tr><td>Hosting</td><td>live version 1fcc026f59f9da67</td><td>於 Hosting 發布紀錄選擇此版本回復；本機 .public-previous-* 只回復建置輸出，不會回復雲端 release。</td></tr><tr><td>RTDB／試算表</td><td>部署前分別建立的資料備份</td><td>程式回復不會撤銷已完成的歸檔或刪卡。若新程式已寫 receipt／試算表，舊 GAS 不認識 receipt；先比對來源、目標、archive_id，再決定恢復，避免重複歸檔。</td></tr></tbody></table></div><details><summary>授權後才執行的回復命令</summary><pre tabindex="0" aria-label="Cloud Run 回復命令">gcloud run services update-traffic forecast-api-test --project=newlngship --region=asia-southeast1 --to-revisions=forecast-api-test-00057-4tc=100</pre><pre tabindex="0" aria-label="GAS Web App 回復命令">clasp deploy -i AKfycbzlLKwqWEWqibSIUYMUYAHamsvT5oxSdVmlSprD6LhaDpCuyUkbXfrjuLB_TequEWF3 -V 79</pre><p>第二個命令只回復 Web App，不能當成 HEAD／觸發器已回復。需在隔離目錄取回 v79 完整來源，再審閱恢復 HEAD；資料對帳未完成前不恢復每日歸檔。</p></details>
+<div class="callout"><strong>下一步：</strong>審閱並確認以下第 4–11 項的雲端操作範圍，才進入維護窗口。四個觸發器與兩端操作密碼配置均已由使用者確認。</div></section>
+</main><footer class="shell"><p>證據：本機 Git 5233f9d..fef4700 與修正 6784562／de01412／66e6078、使用者提供的觸發器清單與密碼配置確認、tests/、gcloud 指定欄位查詢、Firebase CLI Hosting channel 清單、clasp 3.4.1 部署與版本清單、GAS 記憶體雜湊比對。API 參考：https://developers.google.com/apps-script/reference/script/trigger 。來源腳本只輸出名稱／摘要，不保存遠端原始碼或機密。</p><p>事實為表格中的實際觀察與測試結果；部署順序與回復方式是待授權建議；觸發器清單與密碼配置一致性由使用者確認，並非代理直接讀取機密比對；正式端對端尚未驗收。</p><p>規範面向 5 組、需求面向 2 組已修正；兩面向原始最高嚴重度均為高。此結論不代表雲端已上線或正式資料已驗收。</p></footer></body></html>

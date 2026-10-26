@@ -42,12 +42,12 @@
   },
   "localWorkingTree": {
     "file": "gas/monitor.js",
-    "commit": "de01412",
-    "capturedAtUtc": "2026-10-26T07:20:58.526667+00:00",
-    "bytes": 65511,
-    "sha256": "71d4ccfaa514dd4141ab105b1006734511f5b2e0b45c4e0f0352b85bc5d5f1c2",
-    "normalizedSha256": "6237e7e070389bf4da72a1dc709b95647f0505f40662a76cbcbe31f720940739",
-    "note": "Final local source after archive review fixes; remote snapshot queriedAtUtc is separate."
+    "commit": "66e6078",
+    "capturedAtUtc": "2026-10-26T08:18:47.137323+00:00",
+    "bytes": 66240,
+    "sha256": "0fb9c227f0cf321f349c17f487c907108c21f13705ad60980518bf66ecb1ea1a",
+    "normalizedSha256": "2c3f401985222b3c4e34a06d77b7aa62e6beae1d8d0dec7093e13a6f1a18034c",
+    "note": "Includes archive review fixes and safe calendar trigger setup. Remote source snapshot time remains queriedAtUtc."
   },
   "remoteHead": {
     "files": [

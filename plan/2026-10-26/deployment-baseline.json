@@ -66,8 +66,15 @@
         "intervalMinutes": 1
       }
     ],
-    "triggerMaintenanceNote": "Preserve all four triggers, including the calendar event trigger. setupSystemTriggers deletes all visible project triggers and recreates only the three time-driven triggers; do not run it during deployment. Confirm the maintenance account can manage all installed triggers before the maintenance window.",
+    "triggerMaintenanceNote": "Preserve all four triggers, including the calendar event trigger. The local setupSystemTriggers implementation now creates only missing triggers for the executing account; it preserves existing schedules and unrelated triggers. It has not been deployed or executed remotely. Confirm the maintenance account can manage all installed triggers before the maintenance window.",
     "scriptPropertyPasswordValueRead": false
+  },
+  "operationPasswordConfiguration": {
+    "confirmedBy": "user",
+    "confirmedDate": "2026-10-26",
+    "configuredInBothServices": true,
+    "cloudRunAppPasswordMatchesGasOpPassword": true,
+    "valuesReadByAgent": false
   },
   "cloudWritesPerformed": false,
   "sourceCommands": [
