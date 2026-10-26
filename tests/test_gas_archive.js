@@ -22,11 +22,12 @@ function createSheet(name) {
   };
 }
 
-function createHarness({records, schedule = [], failDeleteOnce = false, failMoveOnce = false, fetchHook, sheetHook, lockBusy = false}) {
+function createHarness({records, schedule = [], failDeleteOnce = false, failMoveOnce = false, fetchHook, sheetHook, flushHook, lockBusy = false, opPassword = "test"}) {
   const db = {daily_records: records, forecast_data: [{timestamp: "2026-10-26T08:00:00+08:00", cpc_wind_speed: 5, open_meteo_wind_speed: 7}]};
   const props = new Map([
-    ["FIREBASE_URL", "https://example.test/test"], ["SPREADSHEET_ID", "sheet"], ["OP_PASSWORD", "test"],
+    ["FIREBASE_URL", "https://example.test/test"], ["SPREADSHEET_ID", "sheet"],
   ]);
+  if (opPassword !== null) props.set("OP_PASSWORD", opPassword);
   const sheets = new Map();
   const calls = [];
   let deleteFailed = failDeleteOnce;
@@ -57,7 +58,10 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
       computeDigest: (_algorithm, value) => [...crypto.createHash("sha256").update(value).digest()],
       sleep: () => {},
     },
-    SpreadsheetApp: {flush: () => {}, openById: () => ({
+    ContentService: {MimeType: {JSON: "application/json"}, createTextOutput: text => ({
+      text, setMimeType() { return this; },
+    })},
+    SpreadsheetApp: {flush: () => { if (flushHook) flushHook(); }, openById: () => ({
       getSheetByName: name => sheets.get(name) || null,
       insertSheet: name => { const sheet = createSheet(name); if (sheetHook) sheetHook(sheet); sheets.set(name, sheet); return sheet; },
     })},
@@ -122,6 +126,139 @@ function normalCard() {
 }
 
 {
+  let changed = false;
+  const card = {config: {ship_name: "B", limit_speed: 12}, pob_info: {no_entry_reason: "wind"}, wind_logs: {"上午 09:50": 3}};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_b: card}},
+    schedule: [{ship_name: "B", d: "10/27"}],
+    fetchHook({path, method, db}) {
+      if (method === "DELETE" && path === "daily_records/2026-10-26/ship_b" && !changed) {
+        changed = true;
+        db.daily_records["2026-10-26"].ship_b.wind_logs["上午 10:00"] = 6;
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  test.context.archiveAndClearFirebase("2026-10-26");
+  assert.equal(test.db.daily_records["2026-10-26"].ship_b, undefined, "wind-log retry deletes the retained source");
+  assert.equal(Object.keys(test.db.daily_records["2026-10-27"]).length, 1, "wind-log retry does not create another target");
+  const rows = test.sheets.get("歸檔總表").rows;
+  assert.equal(rows.length, 2, "wind-log retry keeps one archive row");
+  assert.equal(rows[1][9], JSON.stringify({"09:50": 3, "10:00": 6}), "wind-log retry refreshes the archive row");
+}
+
+{
+  let deleteFailed = false;
+  const card = {config: {ship_name: "B", limit_speed: 12}, pob_info: {no_entry_reason: "wind"}};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_b: card}}, schedule: [{ship_name: "B", d: "10/27"}],
+    fetchHook({path, method, response}) {
+      if (method === "DELETE" && path === "daily_records/2026-10-26/ship_b" && !deleteFailed) {
+        deleteFailed = true;
+        return response(500, {});
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  test.db.daily_records["2026-10-27"]["2026-10-27_B"] = normalCard();
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.daily_records["2026-10-26"].ship_b, "missing or replaced migration target retains the source");
+}
+
+{
+  let failFlush = false;
+  const test = createHarness({
+    records: {"2026-10-26": {ship_a: normalCard()}},
+    failDeleteOnce: true,
+    flushHook() { if (failFlush) throw new Error("sheet flush failed"); },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  failFlush = true;
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.daily_records["2026-10-26"].ship_a, "failed archive-row flush retains the source");
+}
+
+{
+  const card = normalCard();
+  const test = createHarness({records: {"2026-10-26": {ship_a: card}}, failDeleteOnce: true});
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  const oldId = test.context.archiveId("2026-10-26", "ship_a", test.context.archiveFingerprint(card));
+  test.sheets.get("歸檔總表").rows[1][12] = oldId;
+  test.db.archive_receipts["2026-10-26"].ship_a = {
+    archive_id: oldId, source_fingerprint: test.context.archiveFingerprint(card), completed_at: "legacy",
+  };
+  test.context.archiveAndClearFirebase("2026-10-26");
+  assert.equal(test.db.daily_records["2026-10-26"].ship_a, undefined, "unchanged legacy receipt can finish its retained delete");
+}
+
+{
+  let changed = false;
+  const card = {config: {ship_name: "B", limit_speed: 12}, pob_info: {no_entry_reason: "wind"}};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_b: card}},
+    schedule: [{ship_name: "B", d: "10/27"}],
+    fetchHook({path, method, db}) {
+      if (method === "DELETE" && path === "daily_records/2026-10-26/ship_b" && !changed) {
+        changed = true;
+        db.daily_records["2026-10-26"].ship_b.config.limit_speed = 13.8;
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.daily_records["2026-10-26"].ship_b, "changed configuration retains the source");
+  assert.equal(test.db.daily_records["2026-10-27"]["2026-10-27_B"].config.limit_speed, 12, "changed configuration does not overwrite the target");
+}
+
+{
+  let changed = false;
+  const card = {config: {ship_name: "B", limit_speed: 12}, pob_info: {no_entry_reason: "wind"}};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_b: card}},
+    schedule: [{ship_name: "B", d: "10/27"}],
+    fetchHook({path, method, db}) {
+      if (method === "DELETE" && path === "daily_records/2026-10-26/ship_b" && !changed) {
+        changed = true;
+        db.daily_records["2026-10-26"].ship_b.pob_info.pob_time = "11:00";
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.equal(test.db.daily_records["2026-10-26"].ship_b.pob_info.pob_time, "11:00", "new POB retains the source for manual reconciliation");
+  assert.ok(test.db.daily_records["2026-10-27"]["2026-10-27_B"], "new POB does not delete the existing target");
+}
+
+{
+  let receiptWrites = 0;
+  const card = {config: {ship_name: "B", limit_speed: 12}, pob_info: {no_entry_reason: "wind"}};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_b: card}},
+    schedule: [{ship_name: "B", d: "10/27"}],
+    fetchHook({path, method, db, response}) {
+      if (method === "PUT" && path.startsWith("archive_receipts/")) {
+        receiptWrites += 1;
+        if (receiptWrites === 2) {
+          db.daily_records["2026-10-26"].ship_b.pob_info.pob_time = "11:00";
+          return response(500, {});
+        }
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.daily_records["2026-10-26"].ship_b, "pending receipt with new POB retains the source");
+  assert.ok(test.db.daily_records["2026-10-27"]["2026-10-27_B"], "pending receipt with new POB retains the target");
+}
+
+{
+  const test = createHarness({records: {"2026-10-26": {invalid: {config: {}, pob_info: {}}}}});
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.daily_records["2026-10-26"].invalid, "missing ship name retains the source");
+  assert.equal(test.db.active_status, undefined, "invalid source does not reset monitoring");
+}
+
+{
   let failed = false;
   const test = createHarness({records: {"2026-10-26": {ship_a: normalCard(), ship_b: {...normalCard(), config: {ship_name: "B", limit_speed: 12}}}},
     sheetHook(sheet) {
@@ -142,18 +279,22 @@ function normalCard() {
 }
 
 {
-  let failed = false;
+  let receiptWrites = 0;
   const test = createHarness({records: {"2026-10-26": {ship_a: normalCard()}},
-    fetchHook({path, method, response}) {
-      if (method === "PUT" && path.startsWith("archive_receipts/") && !failed) {
-        failed = true; return response(500, {});
+    fetchHook({path, method, db, response}) {
+      if (method === "PUT" && path.startsWith("archive_receipts/")) {
+        receiptWrites += 1;
+        if (receiptWrites === 2) {
+          db.daily_records["2026-10-26"].ship_a.pob_info.pob_time = "11:00";
+          return response(500, {});
+        }
       }
     },
   });
   assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
-  test.context.archiveAndClearFirebase("2026-10-26");
-  assert.equal(test.sheets.get("歸檔總表").rows.length, 2);
-  assert.equal(test.sheets.get("160K").rows.length, 2, "classification append survives receipt failure without duplicate");
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.equal(test.sheets.get("歸檔總表").rows.length, 2, "pending archive receipt blocks a duplicate row");
+  assert.ok(test.db.daily_records["2026-10-26"].ship_a, "business change after receipt failure retains the source");
 }
 
 {
@@ -251,4 +392,11 @@ function normalCard() {
   assert.equal(selected[0], "PRIORITY", "handoff gives W12 priority");
 }
 
-console.log("GAS archive and operations: 12 scenarios passed");
+{
+  const test = createHarness({records: {}, opPassword: null});
+  const result = test.context.doGet({parameter: {action: "set_mode", pwd: "synthetic"}});
+  assert.equal(JSON.parse(result.text).status, "error", "missing operation password rejects writes");
+  assert.equal(test.calls.length, 0, "missing operation password does not call Firebase");
+}
+
+console.log("GAS archive and operations: 21 scenarios passed");

@@ -99,7 +99,6 @@ function ensureTestEnvironment() {
       "FIREBASE_URL": "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test",
       "FIREBASE_SECRET": "", 
       "SPREADSHEET_ID": "1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po",
-      "OP_PASSWORD": "1234",
       "TARGET_URL": "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3",
       "STATION_NAME": "北堤綠燈塔",
       "SHIP_SCHEDULE_API_URL": "https://script.google.com/macros/s/AKfycbz55eDn5hQaRsYqGu0VPSQbvlTgVY6WPEc0hKe9OMeLNtzNhxtzwJbN_IAgk46-B7rh/exec?mode=api&port=%E5%8F%B0%E4%B8%AD"
@@ -470,7 +469,13 @@ function archiveFingerprint(card) {
   return bytes.map(byte => (byte & 255).toString(16).padStart(2, "0")).join("");
 }
 
-function archiveId(dateStr, cardKey, sourceFingerprint) { return `${dateStr}:${cardKey}:${sourceFingerprint}`; }
+function archiveSnapshotFingerprint(card) {
+  const snapshot = Object.assign({}, card);
+  delete snapshot.wind_logs;
+  return archiveFingerprint(snapshot);
+}
+
+function archiveId(dateStr, cardKey, snapshotFingerprint) { return `${dateStr}:${cardKey}:${snapshotFingerprint}`; }
 
 function responseEtag(response) {
   const headers = response.getAllHeaders ? response.getAllHeaders() : {};
@@ -478,14 +483,44 @@ function responseEtag(response) {
 }
 
 function archiveSheetHasId(sheet, id, idColumn = 13) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return false;
-  return sheet.getRange(2, idColumn, lastRow - 1, 1).getValues().some(row => row[0] === id);
+  return archiveSheetRowById(sheet, id, idColumn) !== null;
 }
 
 function appendArchiveRowOnce(sheet, id, row, idColumn = 13) {
   if (!archiveSheetHasId(sheet, id, idColumn)) sheet.appendRow(row.concat([id]));
   SpreadsheetApp.flush();
+}
+
+function archiveSheetRowById(sheet, id, idColumn = 13) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  const index = sheet.getRange(2, idColumn, lastRow - 1, 1).getValues().findIndex(row => row[0] === id);
+  return index < 0 ? null : index + 2;
+}
+
+function upsertArchiveRow(sheet, id, row) {
+  const existingRow = archiveSheetRowById(sheet, id);
+  if (existingRow) sheet.getRange(existingRow, 10).setValue(row[9]);
+  else sheet.appendRow(row.concat([id]));
+  SpreadsheetApp.flush();
+}
+
+function assertReusableMigrationTarget(target, id, snapshotFingerprint, sourceConfig) {
+  const targetConfig = target && target.config;
+  if (!targetConfig || targetConfig.migration_source !== id || targetConfig.migration_snapshot !== snapshotFingerprint) {
+    throw new Error("reschedule target belongs to another source");
+  }
+  if (target.pob_info && Object.keys(target.pob_info).length) {
+    throw new Error("reschedule target already has POB data");
+  }
+  const comparable = value => {
+    const copy = Object.assign({}, value);
+    ["migration_source", "migration_snapshot", "original_date", "delay_reasons"].forEach(key => delete copy[key]);
+    return copy;
+  };
+  if (canonicalJson(comparable(targetConfig)) !== canonicalJson(comparable(sourceConfig))) {
+    throw new Error("reschedule target conflicts with updated source configuration");
+  }
 }
 
 function cleanWindLogs(rawLogs) {
@@ -575,8 +610,13 @@ function archiveAndClearFirebase(simDate = null) {
         return;
       }
       const card = safeJsonParse(sourceResponse.getContentText(), null);
-      if (!card) return;
+      if (!card) {
+        failures.push(cardKey);
+        console.error(`❌ 歸檔卡片 ${cardKey} 無法解析，保留來源卡片`);
+        return;
+      }
       const sourceFingerprint = archiveFingerprint(card);
+      const snapshotFingerprint = archiveSnapshotFingerprint(card);
       const sourceEtag = responseEtag(sourceResponse);
       if (!sourceEtag) {
         failures.push(cardKey);
@@ -585,43 +625,86 @@ function archiveAndClearFirebase(simDate = null) {
       }
       const config = card.config || {}, pob = card.pob_info || {};
       const shipName = config.ship_name;
-      if (!shipName) return;
-      const id = archiveId(dateStr, cardKey, sourceFingerprint);
+      if (!shipName) {
+        failures.push(cardKey);
+        console.error(`❌ 歸檔卡片 ${cardKey} 缺少船名，保留來源卡片`);
+        return;
+      }
+      const id = archiveId(dateStr, cardKey, snapshotFingerprint);
       try {
-        const receipt = safeJsonParse(firebaseReadOrThrow(`archive_receipts/${dateStr}/${sanitizeKey(cardKey)}`).getContentText(), null);
-        if (!receipt || receipt.source_fingerprint !== sourceFingerprint) {
-          const scheduled = !pob.pob_time && schedule.find(item => item.ship_name === shipName && item.d && item.d !== todayMD);
-          const logs = JSON.stringify(cleanWindLogs(card.wind_logs));
-          if (scheduled) {
+        const receiptPath = `archive_receipts/${dateStr}/${sanitizeKey(cardKey)}`;
+        const receipt = safeJsonParse(firebaseReadOrThrow(receiptPath).getContentText(), null);
+        if (receipt && ((receipt.snapshot_fingerprint && receipt.snapshot_fingerprint !== snapshotFingerprint) ||
+            (!receipt.snapshot_fingerprint && receipt.source_fingerprint !== sourceFingerprint))) {
+          throw new Error("source business data changed after archive work began");
+        }
+        const logs = JSON.stringify(cleanWindLogs(card.wind_logs));
+        const completed = receipt && (receipt.completed === true || (!receipt.mode && receipt.source_fingerprint === sourceFingerprint));
+        if (completed) {
+          if (receipt.mode === "migration") {
+            if (!receipt.target_date || !receipt.target_key) throw new Error("migration receipt is incomplete");
+            const target = safeJsonParse(firebaseReadOrThrow(`daily_records/${receipt.target_date}/${receipt.target_key}`).getContentText(), null);
+            assertReusableMigrationTarget(target, id, snapshotFingerprint, config);
+          }
+          const archiveRow = archiveSheetRowById(sheet, receipt.archive_id || id);
+          if (!archiveRow) throw new Error("archive receipt exists without its archive row");
+          sheet.getRange(archiveRow, 10).setValue(logs);
+          SpreadsheetApp.flush();
+        } else {
+          let migration = receipt && receipt.mode === "migration" ? receipt : null;
+          const scheduled = schedule.find(item => item.ship_name === shipName && item.d && item.d !== todayMD);
+          if (!migration && !pob.pob_time && scheduled) {
             const targetDate = rescheduledDate(scheduled.d, new Date(`${dateStr}T12:00:00+08:00`));
             const targetKey = `${targetDate}_${sanitizeKey(shipName)}`;
-            appendArchiveRowOnce(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson]);
-            const targetResponse = firebaseReadOrThrow(`daily_records/${targetDate}/${targetKey}`, {"X-Firebase-ETag": "true"});
+            migration = {archive_id: id, source_fingerprint: sourceFingerprint, snapshot_fingerprint: snapshotFingerprint,
+              mode: "migration", target_date: targetDate, target_key: targetKey, completed: false};
+            firebaseWriteOrThrow(receiptPath, migration, "put");
+          }
+          if (migration) {
+            if (pob.pob_time) throw new Error("source now has POB data while migration is pending");
+            if (!migration.target_date || !migration.target_key) throw new Error("migration receipt is incomplete");
+            const targetResponse = firebaseReadOrThrow(`daily_records/${migration.target_date}/${migration.target_key}`, {"X-Firebase-ETag": "true"});
             const target = safeJsonParse(targetResponse.getContentText(), null);
-            if (target && (!target.config || target.config.migration_source !== id)) throw new Error(`target card ${targetKey} already exists`);
+            if (target) assertReusableMigrationTarget(target, id, snapshotFingerprint, config);
             if (!target) {
               const targetEtag = responseEtag(targetResponse);
               if (!targetEtag) throw new Error("reschedule target has no Firebase ETag");
               const migratedConfig = Object.assign({}, config, {
                 original_date: config.original_date || dateStr,
                 delay_reasons: (config.delay_reasons || []).concat([`${dateStr}: ${pob.no_entry_reason || "未進港"}`]),
-                migration_source: id
+                migration_source: id,
+                migration_snapshot: snapshotFingerprint
               });
-              firebaseWriteOrThrow(`daily_records/${targetDate}/${targetKey}`, {config: migratedConfig, pob_info: {}}, "put", {"if-match": targetEtag});
+              firebaseWriteOrThrow(`daily_records/${migration.target_date}/${migration.target_key}`, {config: migratedConfig, pob_info: {}}, "put", {"if-match": targetEtag});
             }
+            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson]);
           } else {
+            if (!receipt) {
+              firebaseWriteOrThrow(receiptPath, {archive_id: id, source_fingerprint: sourceFingerprint,
+                snapshot_fingerprint: snapshotFingerprint, mode: "archive", completed: false}, "put");
+            }
+            if (pob.pob_time && scheduled) {
+              const targetDate = rescheduledDate(scheduled.d, new Date(`${dateStr}T12:00:00+08:00`));
+              const targetKey = `${targetDate}_${sanitizeKey(shipName)}`;
+              const target = safeJsonParse(firebaseReadOrThrow(`daily_records/${targetDate}/${targetKey}`).getContentText(), null);
+              if (target && target.config && String(target.config.migration_source || "").startsWith(`${dateStr}:${cardKey}:`)) {
+                throw new Error("source now has POB data while a rescheduled target exists");
+              }
+            }
             let delayNote = "-";
             if (config.original_date && config.original_date !== dateStr) {
               delayNote = `原定:${config.original_date.substring(5)} 延遲:${Math.ceil(Math.abs(new Date(dateStr) - new Date(config.original_date)) / 86400000)}天`;
             }
-            appendArchiveRowOnce(sheet, id, [dateStr, shipName, config.limit_speed || "-", pob.pob_time || "未進港", pob.pob_wind_speed || "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", delayNote, logs, cpcJson, omJson]);
+            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", pob.pob_time || "未進港", pob.pob_wind_speed || "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", delayNote, logs, cpcJson, omJson]);
             const targetSheet = Number(config.limit_speed) === 13.8 ? sheet160K : Number(config.limit_speed) === 12 ? sheet180K : null;
             if (targetSheet && pob.pob_time) {
               if (targetSheet.getRange(1, 5).getValue() !== "archive_id") targetSheet.getRange(1, 5).setValue("archive_id");
               appendArchiveRowOnce(targetSheet, id, [targetSheet.getLastRow(), `${dateStr.replace(/-/g, "/")} ${pob.pob_time}`, shipName, pob.pob_wind_speed || "-"], 5);
             }
           }
-          firebaseWriteOrThrow(`archive_receipts/${dateStr}/${sanitizeKey(cardKey)}`, {archive_id: id, source_fingerprint: sourceFingerprint, completed_at: new Date().toISOString()}, "put");
+          firebaseWriteOrThrow(receiptPath, Object.assign({}, migration || {}, {archive_id: id, source_fingerprint: sourceFingerprint,
+            snapshot_fingerprint: snapshotFingerprint, mode: migration ? "migration" : "archive", completed: true,
+            completed_at: new Date().toISOString()}), "put");
         }
         firebaseWriteOrThrow(sourcePath, null, "delete", {"if-match": sourceEtag});
         archivedShips.push(shipName);
@@ -658,7 +741,10 @@ function doGet(e) {
   const isWriteAction = ['set_mode', 'reserve_next', 'trigger_update', 'archive_test', 'update_schedule', 'execute_monitor', 'check_daily_schedule', 'get_last_sheet_row', 'release_lock', 'verify_password'].includes(action);
   if (isWriteAction) {
     const inputPwd = e.parameter.pwd || "";
-    const correctPwd = props.getProperty('OP_PASSWORD') || '1234'; 
+    const correctPwd = (props.getProperty('OP_PASSWORD') || "").trim();
+    if (!correctPwd) {
+      return ContentService.createTextOutput(JSON.stringify({status: "error", msg: "操作密碼尚未設定。"})).setMimeType(ContentService.MimeType.JSON);
+    }
     
     // 🛡️ I6: 密碼防暴力破解 (失敗 5 次鎖定 5 分鐘)
     const lockKey = 'TEST_LOGIN_LOCK_TIME';
@@ -1296,7 +1382,6 @@ function setupProperties() {
     "FIREBASE_URL": "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test",
     "FIREBASE_SECRET": "",
     "SPREADSHEET_ID": "1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po",
-    "OP_PASSWORD": "",
     "TARGET_URL": "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3",
     "STATION_NAME": "北堤綠燈塔"
   });
