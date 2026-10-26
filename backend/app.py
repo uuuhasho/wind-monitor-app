@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import re
+import threading
 import requests
 import google.generativeai as genai
 from flask import Flask, request, jsonify, abort
@@ -10,7 +12,7 @@ from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 # Fully decoupled test version: main and src are in the same directory.
-from src.config import load_config
+from src.config import get_env, load_config
 from main import run_pipeline
 from src.rtdb import PipelineBusyError
 
@@ -107,21 +109,42 @@ def _process_pob_async(user_msg: str):
             return
 
         pob_time = data.get("time")
+        if (
+            not isinstance(pob_time, str)
+            or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", pob_time)
+            or not "04:00" <= pob_time <= "17:00"
+        ):
+            print("[POB] Invalid POB time, skipping GAS delegation.")
+            return
         print(f"✅ [POB] Gemini 解析 POB 時間成功: {pob_time}")
+
+        app_password = get_env("APP_PASSWORD")
+        if not app_password:
+            print("[POB] APP_PASSWORD missing, skipping GAS delegation.")
+            return
 
         # 委託 GAS set_mode endpoint 執行完整 POB 工作流：
         # 風速查找 → pob_info 寫入 → 船期更新 → 換班接力
         gas_url = "https://script.google.com/macros/s/AKfycbzlLKwqWEWqibSIUYMUYAHamsvT5oxSdVmlSprD6LhaDpCuyUkbXfrjuLB_TequEWF3/exec"
-        from urllib.parse import quote
         gas_resp = requests.get(
-            f"{gas_url}?action=set_mode&mode=reset&pob_time={quote(pob_time)}&pwd=502020",
-            timeout=30, allow_redirects=True
+            gas_url,
+            params={"action": "set_mode", "mode": "reset", "pob_time": pob_time, "pwd": app_password},
+            timeout=30,
+            allow_redirects=True,
         )
-        gas_result = gas_resp.text
-        print(f"✅ [POB] GAS set_mode 委託完成, status={gas_resp.status_code}, body={gas_result[:200]}")
+        gas_resp.raise_for_status()
+        gas_result = gas_resp.json()
+        if not isinstance(gas_result, dict) or gas_result.get("status") != "success":
+            print("[POB] GAS delegation rejected the request.")
+            return
+        print(f"✅ [POB] GAS set_mode 委託完成, status={gas_resp.status_code}")
 
-    except Exception as e:
-        print(f"❌ [POB] _process_pob_async 處理失敗: {e}")
+    except requests.RequestException as error:
+        status = getattr(getattr(error, "response", None), "status_code", None)
+        detail = f" HTTP {status}" if status else ""
+        print(f"❌ [POB] GAS delegation failed: {type(error).__name__}.{detail}")
+    except Exception as error:
+        print(f"❌ [POB] _process_pob_async failed: {type(error).__name__}")
 
 
 @app.route('/update_forecast', methods=['GET', 'POST'])
@@ -132,8 +155,10 @@ def update_forecast():
     
     if force:
         # Check against environment variable password (set in GCP Secret Manager)
-        app_password = os.environ.get("APP_PASSWORD")
-        if app_password and pwd != app_password:
+        app_password = get_env("APP_PASSWORD")
+        if not app_password:
+            return jsonify({"status": "error", "msg": "APP_PASSWORD is not configured"}), 503
+        if pwd != app_password:
             return jsonify({"status": "error", "msg": "Invalid password"}), 403
         
     print(f"Received update request: force={force}, target_date={target_date}")

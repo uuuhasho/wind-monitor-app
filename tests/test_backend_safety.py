@@ -14,6 +14,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from src import data_fusion
+from src.config import get_env
 from src.rtdb import ForecastRtdb, PipelineBusyError, RtdbError
 import main
 
@@ -253,7 +254,7 @@ class PipelineLifecycleTests(unittest.TestCase):
         function.decorator_list = []
         handler = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
         for force in ("true", "false"):
-            namespace = {"os": os, "request": SimpleNamespace(args={"force": force, "pwd": "synthetic"}),
+            namespace = {"os": os, "get_env": get_env, "request": SimpleNamespace(args={"force": force, "pwd": "synthetic"}),
                          "jsonify": lambda payload: payload, "PipelineBusyError": PipelineBusyError}
             with patch.dict(os.environ, {"APP_PASSWORD": "synthetic"}):
                 exec(compile(handler, "isolated_update_handler", "exec"), namespace)
@@ -261,6 +262,31 @@ class PipelineLifecycleTests(unittest.TestCase):
                     self.assertEqual(namespace["update_forecast"]()[1], 429)
                 with patch.dict(namespace, {"run_pipeline": lambda date: False}):
                     self.assertEqual(namespace["update_forecast"]()[1], 500)
+
+    def test_forced_update_requires_cleanly_configured_password(self):
+        module = ast.parse((Path(__file__).resolve().parents[1] / "backend" / "app.py").read_text(encoding="utf-8"))
+        function = next(item for item in module.body if isinstance(item, ast.FunctionDef) and item.name == "update_forecast")
+        function.decorator_list = []
+        request = SimpleNamespace(args={})
+        run_pipeline = unittest.mock.Mock(return_value=True)
+        namespace = {"os": os, "get_env": get_env, "request": request, "run_pipeline": run_pipeline,
+                     "jsonify": lambda payload: payload, "PipelineBusyError": PipelineBusyError}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[])), "isolated_update_handler", "exec"), namespace)
+
+        request.args = {"force": "true", "pwd": "configured-password"}
+        with patch.dict(os.environ, {"APP_PASSWORD": ""}):
+            self.assertEqual(namespace["update_forecast"]()[1], 503)
+        run_pipeline.assert_not_called()
+
+        with patch.dict(os.environ, {"APP_PASSWORD": "configured-password"}):
+            request.args["pwd"] = "wrong-password"
+            self.assertEqual(namespace["update_forecast"]()[1], 403)
+        run_pipeline.assert_not_called()
+
+        with patch.dict(os.environ, {"APP_PASSWORD": "\ufeff configured-password \n"}):
+            request.args["pwd"] = "configured-password"
+            self.assertEqual(namespace["update_forecast"]()[1], 200)
+        run_pipeline.assert_called_once_with(None)
 
     def test_publish_failure_makes_pipeline_fail(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(main, "download_forecast_attachment", return_value="mock.doc"), patch.object(

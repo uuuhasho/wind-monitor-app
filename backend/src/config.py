@@ -9,7 +9,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 
 def get_env(name):
     value = os.environ.get(name)
-    return value.strip().strip("\ufeff") if value else None
+    return value.strip().strip("\ufeff").strip() if value else None
 
 
 def load_config():

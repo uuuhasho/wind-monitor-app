@@ -9,6 +9,9 @@ from pathlib import Path
 
 
 REQUIRED = ("app.py", "main.py", "requirements.txt", "src")
+PROJECT_ID = "newlngship"
+SERVICE_NAME = "forecast-api-test"
+REGION = "asia-southeast1"
 
 
 def stage_backend(project: Path, clean_dir: Path) -> Path:
@@ -61,10 +64,14 @@ def main() -> int:
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
     clean_dir = Path(r"C:\Users\hilla\Desktop\newlngship_clean")
+    gcloud = shutil.which("gcloud") if args.deploy else None
+    if args.deploy and not gcloud:
+        raise RuntimeError("gcloud CLI is required for Cloud Run deployment.")
     stage_backend(project, clean_dir)
     if args.deploy:
+        print(f"Deploying {SERVICE_NAME} to project {PROJECT_ID}, region {REGION}.")
         subprocess.run(
-            ["gcloud", "run", "deploy", "forecast-api-test", "--source", ".", "--region", "asia-southeast1", "--allow-unauthenticated", "--execution-environment", "gen2", "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
+            [gcloud, "run", "deploy", SERVICE_NAME, "--project", PROJECT_ID, "--source", ".", "--region", REGION, "--allow-unauthenticated", "--execution-environment", "gen2", "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
             cwd=clean_dir,
             check=True,
         )

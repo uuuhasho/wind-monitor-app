@@ -1,7 +1,9 @@
 import importlib.util
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,6 +91,39 @@ class CloudRunStagingTests(unittest.TestCase):
             self.assertFalse((clean / "config.json").exists())
             self.assertFalse((clean / "src" / "service_account.json").exists())
             self.assertIn("config.json", (clean / ".gcloudignore").read_text(encoding="ascii"))
+
+    def test_deploy_pins_project_and_reports_target(self):
+        with patch.object(sys, "argv", ["deploy_cloud_run.py", "--deploy"]), patch.object(
+            cloud_run, "stage_backend"
+        ) as stage, patch.object(cloud_run.shutil, "which", return_value="C:/synthetic/gcloud.cmd"), patch.object(
+            cloud_run.subprocess, "run"
+        ) as run, patch("builtins.print") as output:
+            self.assertEqual(cloud_run.main(), 0)
+        stage.assert_called_once()
+        run.assert_called_once_with(
+            ["C:/synthetic/gcloud.cmd", "run", "deploy", "forecast-api-test", "--project", "newlngship", "--source", ".",
+             "--region", "asia-southeast1", "--allow-unauthenticated", "--execution-environment", "gen2",
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
+            cwd=Path(r"C:\Users\hilla\Desktop\newlngship_clean"),
+            check=True,
+        )
+        output.assert_any_call("Deploying forecast-api-test to project newlngship, region asia-southeast1.")
+
+    def test_missing_gcloud_stops_before_staging_or_deploy(self):
+        with patch.object(sys, "argv", ["deploy_cloud_run.py", "--deploy"]), patch.object(
+            cloud_run.shutil, "which", return_value=None
+        ), patch.object(cloud_run, "stage_backend") as stage, patch.object(cloud_run.subprocess, "run") as run:
+            with self.assertRaisesRegex(RuntimeError, "gcloud CLI is required"):
+                cloud_run.main()
+        stage.assert_not_called()
+        run.assert_not_called()
+
+    def test_default_build_does_not_invoke_gcloud(self):
+        with patch.object(sys, "argv", ["deploy_cloud_run.py"]), patch.object(
+            cloud_run, "stage_backend"
+        ), patch.object(cloud_run.subprocess, "run") as run:
+            self.assertEqual(cloud_run.main(), 0)
+        run.assert_not_called()
 
 
 if __name__ == "__main__":
