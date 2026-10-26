@@ -1,7 +1,5 @@
 import os
 import sys
-import threading
-import time
 import json
 import requests
 import google.generativeai as genai
@@ -14,6 +12,7 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 # Fully decoupled test version: main and src are in the same directory.
 from src.config import load_config
 from main import run_pipeline
+from src.rtdb import PipelineBusyError
 
 config = load_config()
 line_config = config.get("line_bot", {})
@@ -125,13 +124,8 @@ def _process_pob_async(user_msg: str):
         print(f"❌ [POB] _process_pob_async 處理失敗: {e}")
 
 
-is_pipeline_running = False
-pipeline_start_time = 0
-lock = threading.Lock()
-
 @app.route('/update_forecast', methods=['GET', 'POST'])
 def update_forecast():
-    global is_pipeline_running, pipeline_start_time
     force = request.args.get('force', 'false').lower() == 'true'
     target_date = request.args.get('date', None)
     pwd = request.args.get('pwd', '')
@@ -144,17 +138,6 @@ def update_forecast():
         
     print(f"Received update request: force={force}, target_date={target_date}")
     
-    with lock:
-        # 逾時死鎖防護：若上次執行超過 300 秒（5 分鐘），判定為異常殘留並強制重置
-        if is_pipeline_running and (time.time() - pipeline_start_time > 300):
-            print(f"[Warning] Pipeline running lock expired (>{time.time() - pipeline_start_time:.1f}s). Auto-resetting lock.")
-            is_pipeline_running = False
-
-        if is_pipeline_running and not force:
-            return jsonify({"status": "ignored", "msg": "Pipeline is already running"}), 429
-        is_pipeline_running = True
-        pipeline_start_time = time.time()
-    
     # Synchronous execution to prevent Cloud Run CPU throttling
     try:
         print(f"Starting pipeline execution for date {target_date}...")
@@ -165,12 +148,11 @@ def update_forecast():
             return jsonify({"status": "success", "msg": "Pipeline completed successfully"}), 200
         else:
             return jsonify({"status": "error", "msg": "Pipeline failed to process data"}), 500
+    except PipelineBusyError:
+        return jsonify({"status": "ignored", "msg": "Pipeline is already running"}), 429
     except Exception as e:
         print(f"Pipeline execution error: {e}")
         return jsonify({"status": "error", "msg": str(e)}), 500
-    finally:
-        with lock:
-            is_pipeline_running = False
 
 @app.route('/health', methods=['GET'])
 def health():

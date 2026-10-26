@@ -3,7 +3,8 @@ import re
 import json
 import requests
 from datetime import datetime, timezone, timedelta
-from src.config import load_config, get_service_account_path
+from src.config import load_config
+from src.rtdb import ForecastRtdb
 
 MONTHS_MAP = {
     "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
@@ -109,18 +110,14 @@ def fetch_open_meteo_data(start_date_str, end_date_str):
         print(f"Failed to fetch Open-Meteo data: {e}")
         return {}
 
-def fuse_and_save_data(gemini_output=None):
+def fuse_and_save_data(gemini_output=None, runtime_dir=None, lock_owner=None):
     """
     Fuses parsed Gmail chart wind speed data and Open-Meteo data,
-    performs conversions, and writes to Firestore and local JSON.
-    If gemini_output is None, uses existing local JSON to update Open-Meteo data.
+    performs conversions, writes one runtime artifact, and publishes to RTDB.
     """
     config = load_config()
     ratio = config.get("Algorithm", {}).get("WindRatio", 1.5333)
     
-    from src.config import BASE_DIR
-    local_db_path = os.path.join(BASE_DIR, "data.json")
-
     fused_data = []
     
     if not gemini_output:
@@ -200,117 +197,24 @@ def fuse_and_save_data(gemini_output=None):
         if om_val is not None:
             item["open_meteo_wind_speed"] = om_val
 
-    # 5. Write to local JSON file
-    from src.config import BASE_DIR
-    local_db_path = os.path.join(BASE_DIR, "data.json")
+    # Keep each execution's inspectable artifact outside historical inputs.
+    if not runtime_dir:
+        raise ValueError("runtime_dir is required for forecast output.")
+    local_db_path = os.path.join(runtime_dir, "data.json")
     try:
         with open(local_db_path, "w", encoding="utf-8") as f:
             json.dump(fused_data, f, indent=2, ensure_ascii=False)
         print(f"Saved fused data locally to {local_db_path}")
     except Exception as e:
-        print(f"Error saving local JSON: {e}")
+        raise RuntimeError(f"Could not save runtime forecast data: {e}") from e
 
     # Write to Firebase RTDB
     rtdb_settings = config.get("Firebase_RTDB_Settings", {})
-    # For test environment, override with env var if exists
-    db_url = os.environ.get("FIREBASE_RTDB_URL", rtdb_settings.get("DbUrl"))
-    db_secret = os.environ.get("FIREBASE_RTDB_SECRET", rtdb_settings.get("DbSecret"))
-    
-    if db_url and db_secret:
-        print("Connecting to Firebase RTDB...")
-        try:
-            # We are writing to `/test/forecast_data` and `/test/forecast_metadata`
-            # Wait, to support both test and prod, let's use an env var for prefix
-            prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "/test")
-            
-            if prefix == "/test":
-                print("WARNING: Using default '/test' prefix for Firebase RTDB. If this is PRODUCTION, ensure FIREBASE_RTDB_PREFIX is set to an empty string ''!")
-            elif prefix == "":
-                print("INFO: FIREBASE_RTDB_PREFIX is empty. Writing to PRODUCTION RTDB Root!")
-            
-            # PATCH forecast_data
-            url_data = f"{db_url.rstrip('/')}{prefix}/forecast_data.json?auth={db_secret}"
-            response_data = requests.put(url_data, json=fused_data, timeout=15)
-            response_data.raise_for_status()
-            
-            # PATCH metadata with updatedAt
-            url_meta = f"{db_url.rstrip('/')}{prefix}/forecast_metadata.json?auth={db_secret}"
-            meta_payload = {
-                "updatedAt": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
-            }
-            response_meta = requests.patch(url_meta, json=meta_payload, timeout=15)
-            response_meta.raise_for_status()
-            
-            print(f"Successfully uploaded {len(fused_data)} records to Firebase RTDB at {prefix}/forecast_data!")
-        except Exception as e:
-            print(f"Firebase RTDB upload failed: {e}")
-    else:
-        print("Firebase RTDB credentials missing. Upload bypassed.")
-        
-    # 6. Write to Firebase Firestore (if credentials exist)
-    sa_path = get_service_account_path()
-    if sa_path:
-        print("Connecting to Firebase Firestore...")
-        try:
-            import firebase_admin
-            from firebase_admin import credentials, firestore
-            
-            # Initialise if not already done
-            if not firebase_admin._apps:
-                cred = credentials.Certificate(sa_path)
-                firebase_admin.initialize_app(cred)
-                
-            db = firestore.client()
-            batch = db.batch()
-            col_ref = db.collection("wind_forecasts")
-            
-            # Clear old documents in Firestore to keep only today's data
-            docs = col_ref.stream()
-            delete_count = 0
-            for doc in docs:
-                batch.delete(doc.reference)
-                delete_count += 1
-                if delete_count >= 400:
-                    batch.commit()
-                    batch = db.batch()
-                    delete_count = 0
-            if delete_count > 0:
-                batch.commit()
-                batch = db.batch()
-                print("Cleared old wind_forecasts documents.")
-            
-            write_count = 0
-            for record in fused_data:
-                # Firestore doc ID format: YYYY-MM-DD_HH
-                # E.g. '2026-05-29_20'
-                dt_obj = datetime.fromisoformat(record["timestamp"])
-                doc_id = dt_obj.strftime("%Y-%m-%d_%H")
-                
-                doc_ref = col_ref.document(doc_id)
-                # Convert timestamp string to native datetime object for Firestore
-                doc_data = {
-                    "timestamp": dt_obj,
-                    "cpc_wind": record["cpc_wind_speed"],
-                    "open_meteo_wind": record["open_meteo_wind_speed"],
-                    "updatedAt": firestore.SERVER_TIMESTAMP
-                }
-                
-                batch.set(doc_ref, doc_data, merge=True)
-                write_count += 1
-                
-                if write_count >= 400: # Commit in batches (Firestore limit is 500)
-                    batch.commit()
-                    batch = db.batch()
-                    write_count = 0
-                    
-            if write_count > 0:
-                batch.commit()
-                
-            print(f"Successfully uploaded {len(fused_data)} records to Cloud Firestore!")
-        except Exception as e:
-            print(f"Firebase Firestore upload failed: {e}")
-            print("Firestore upload bypassed. Local database 'data.json' remains valid.")
-    else:
-        print("Firebase service account credentials missing. Firestore upload bypassed.")
+    if not lock_owner:
+        raise ValueError("lock_owner is required for RTDB publishing.")
+    rtdb = ForecastRtdb(rtdb_settings)
+    updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    rtdb.publish(lock_owner, fused_data, updated_at)
+    print(f"Successfully published {len(fused_data)} forecast records to RTDB.")
         
     return fused_data

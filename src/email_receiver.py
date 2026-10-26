@@ -39,7 +39,8 @@ def download_forecast_attachment(target_date=None, save_dir=None):
     # Try searching for a local file first as a cache/fallback
     local_filename = f"{target_date}中油.doc"
     # Also support other variations in workspace and 空軍原始檔
-    search_dirs = [save_dir, os.path.join(save_dir, "空軍原始檔")]
+    from src.config import BASE_DIR
+    search_dirs = [save_dir, os.path.join(BASE_DIR, "空軍原始檔")]
     for sdir in search_dirs:
         if os.path.exists(sdir):
             for filename in os.listdir(sdir):

@@ -11,7 +11,7 @@
 // *7.新增Github指令碼屬性
 // *8.新增 17:00 超時防呆警示，同步 Firebase 狀態以控制前端警告 UI。
 // *9. 移除 Gmail 監聽機制的信件收件時間限制（只要日期與主旨符合即可)。
-// *10. 23:00 歸檔 H, I 欄的 JSON 預報數據，只保留 POB 當天資料，格式改為與 G 欄一致的 {"HH:mm": speed} 格式，並新增手動修正函式 fixLastRowJson。
+// *10. 23:00 歸檔預報數據採用與實測相同的 {"HH:mm": speed} 格式。
 // *11. 移除預約隔天監控功能，改為無法進港時將船期移至調整清單首位（日期空白），手動儲存調整或重置時清空此暫存（UNFINISHED_SHIP）。
 // *12. 歸檔重構為 12 欄 (G:碼頭, H:未進港原因, I:備註, J~L:預報JSON)，並實作改期船隻智慧繼承機制，避免其被歸檔過濾。
 // *13.只要包含「台中廠」、「已於」、「POB」及「時間(含未打冒號)」即可擷取LINE訊息。
@@ -110,7 +110,7 @@ function ensureTestEnvironment() {
 // ==========================================
 // 1. Firebase 核心通訊模組 (加入錯誤回報與防護機制) 
 // ==========================================
-function callFirebase(path, data, method = "patch") {
+function callFirebase(path, data, method = "patch", headers = {}) {
   const fbUrl = getProp('FIREBASE_URL', '');
   const fbSecret = dynamicFbToken || getProp('FIREBASE_SECRET', '');
   const baseUrl = fbUrl.endsWith('/') ? fbUrl : `${fbUrl}/`;
@@ -130,7 +130,8 @@ function callFirebase(path, data, method = "patch") {
     method: method.toUpperCase(),
     contentType: "application/json",
     payload: data ? JSON.stringify(data) : null,
-    muteHttpExceptions: true // 保持 true，避免非 2xx 狀態碼引發程式中斷
+    muteHttpExceptions: true, // 保持 true，避免非 2xx 狀態碼引發程式中斷
+    headers: headers
   };
   
   try {
@@ -142,14 +143,13 @@ function callFirebase(path, data, method = "patch") {
       const errorText = response.getContentText();
       console.error(`❌ Firebase API 錯誤 [${method.toUpperCase()}] /${path}`);
       console.error(`👉 狀態碼: ${statusCode}, 回傳訊息: ${errorText}`);
-      if (data) console.error(`👉 傳送的 Payload: ${options.payload}`);
     }
     
     return response; // 必須原封不動回傳，確保其他函式呼叫 .getContentText() 正常
     
   } catch (e) {
     // 捕捉更底層的網路斷線或 DNS 解析失敗 (這種情況連 HTTP 狀態碼都沒有)
-    console.error(`🚨 Firebase 底層連線嚴重異常 [${method.toUpperCase()}] /${path}: ${e.message}`);
+    console.error(`🚨 Firebase request failed [${method.toUpperCase()}] /${path}`);
     
     // 回傳一個安全的 Mock 物件，防止下游邏輯因為找不到 .getContentText() 而引發二次 Crash
     return {
@@ -444,310 +444,198 @@ function executeMonitor() {
 // ==========================================
 // 6. 🌙 深夜 23:00 自動歸檔與大掃除
 // ==========================================
-function archiveAndClearFirebase(simDate = null) {
-  // 🌟 防止 GAS 時間觸發器預設傳入 Event Object 導致誤判
-  if (typeof simDate !== 'string') {
-    simDate = null;
+function firebaseWriteOrThrow(path, data, method, headers = {}) {
+  const response = callFirebase(path, data, method, headers);
+  const status = response.getResponseCode();
+  if (status < 200 || status >= 300) throw new Error(`Firebase ${method} ${path} failed (${status})`);
+  return response;
+}
+
+function firebaseReadOrThrow(path, headers = {}) {
+  const response = callFirebase(path, null, "get", headers);
+  const status = response.getResponseCode();
+  if (status < 200 || status >= 300) throw new Error(`Firebase read ${path} failed (${status})`);
+  return response;
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
   }
-  
-  // 🌟 確保 23:00 自動觸發時有載入正確的環境防護 (防止污染正式機)
+  return JSON.stringify(value);
+}
+
+function archiveFingerprint(card) {
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, canonicalJson(card));
+  return bytes.map(byte => (byte & 255).toString(16).padStart(2, "0")).join("");
+}
+
+function archiveId(dateStr, cardKey, sourceFingerprint) { return `${dateStr}:${cardKey}:${sourceFingerprint}`; }
+
+function responseEtag(response) {
+  const headers = response.getAllHeaders ? response.getAllHeaders() : {};
+  return headers.ETag || headers.Etag || headers.etag || null;
+}
+
+function archiveSheetHasId(sheet, id, idColumn = 13) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false;
+  return sheet.getRange(2, idColumn, lastRow - 1, 1).getValues().some(row => row[0] === id);
+}
+
+function appendArchiveRowOnce(sheet, id, row, idColumn = 13) {
+  if (!archiveSheetHasId(sheet, id, idColumn)) sheet.appendRow(row.concat([id]));
+  SpreadsheetApp.flush();
+}
+
+function cleanWindLogs(rawLogs) {
+  const cleaned = {};
+  let isPm = false;
+  let lastHour = -1;
+  Object.keys(rawLogs || {}).sort().forEach(key => {
+    const match = key.match(/(上午|下午)?.*?(\d{1,2}):(\d{2})/);
+    if (!match) { cleaned[key] = rawLogs[key]; return; }
+    let hour = Number(match[2]);
+    if (match[1] === "下午" && hour < 12) { isPm = true; hour += 12; }
+    else if (match[1] === "上午") { isPm = false; if (hour === 12) hour = 0; }
+    else if (hour >= 12) isPm = true;
+    else if (isPm || hour < 4 || (lastHour >= 11 && hour < lastHour)) { isPm = true; hour += 12; }
+    lastHour = hour;
+    cleaned[String(hour).padStart(2, "0") + ":" + match[3]] = rawLogs[key];
+  });
+  return cleaned;
+}
+
+function getForecastArchiveJson(dateStr) {
+  const response = callFirebase("forecast_data", null, "get");
+  if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+    throw new Error("forecast_data read failed");
+  }
+  const data = safeJsonParse(response.getContentText(), null);
+  if (!data) throw new Error("forecast_data is unavailable; archive deferred to retain source cards");
+  const cpc = {}, om = {};
+  (Array.isArray(data) ? data.filter(Boolean) : Object.values(data)).forEach(item => {
+    if (!item.timestamp || item.timestamp.indexOf(dateStr) !== 0) return;
+    const time = item.timestamp.substring(11, 16);
+    if (item.cpc_wind_speed != null) cpc[time] = item.cpc_wind_speed;
+    if (item.open_meteo_wind_speed != null) om[time] = item.open_meteo_wind_speed;
+  });
+  return [JSON.stringify(cpc), JSON.stringify(om)];
+}
+
+function rescheduledDate(targetMD, now) {
+  const parts = targetMD.split("/");
+  const month = Number(parts[0]), day = Number(parts[1]);
+  if (!month || !day) throw new Error(`invalid rescheduled date: ${targetMD}`);
+  let year = now.getFullYear();
+  if (now.getMonth() > 8 && month < 3) year += 1;
+  if (now.getMonth() < 3 && month > 8) year -= 1;
+  return Utilities.formatDate(new Date(year, month - 1, day), "GMT+8", "yyyy-MM-dd");
+}
+
+// Per-card receipts make retry safe after a timeout or partial archive failure.
+function archiveAndClearFirebase(simDate = null) {
+  if (typeof simDate !== "string") simDate = null;
   ensureTestEnvironment();
-
-  const now = new Date();
-  const dateStr = simDate || getTwDateStr(now);
-  const todayM_D = simDate ? (parseInt(simDate.substring(5, 7), 10) + "/" + parseInt(simDate.substring(8, 10), 10)) : `${now.getMonth() + 1}/${now.getDate()}`;
-  
+  const archiveLock = LockService.getScriptLock();
+  if (!archiveLock.tryLock(1000)) throw new Error("archive already running");
   try {
-    const todayDataRes = callFirebase(`daily_records/${dateStr}`, null, "get").getContentText();
-    const todayData = safeJsonParse(todayDataRes, null);
-    
-    if (todayData && SPREADSHEET_ID) {
-      const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-      
-      // 取得或建立歸檔總表
-      const sheet = ss.getSheetByName("歸檔總表") || ss.insertSheet("歸檔總表", 0);
-      if (sheet.getLastRow() === 0) {
-        sheet.appendRow(["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值"]);
-      }
-      
-      // 抓取 Firebase RTDB 上的風速預測資料
-      let cpcJsonStr = "";
-      let omJsonStr = "";
-      let fetchSuccess = false;
-      try {
-        const response = callFirebase("forecast_data", null, "get");
-        const dataObj = JSON.parse(response.getContentText());
-        const dataArr = Array.isArray(dataObj) ? dataObj.filter(i => i) : Object.values(dataObj || {});
-        
-        const cpcLogs = {};
-        const omLogs = {};
-        
-        dataArr.forEach(d => {
-          if (d.timestamp && d.timestamp.indexOf(dateStr) === 0) {
-            const timeKey = d.timestamp.substring(11, 16); // 提取 "HH:mm"
-            if (d.cpc_wind_speed !== null && d.cpc_wind_speed !== undefined) {
-              cpcLogs[timeKey] = d.cpc_wind_speed;
-            }
-            if (d.open_meteo_wind_speed !== null && d.open_meteo_wind_speed !== undefined) {
-              omLogs[timeKey] = d.open_meteo_wind_speed;
-            }
-          }
-        });
-        
-        cpcJsonStr = JSON.stringify(cpcLogs);
-        omJsonStr = JSON.stringify(omLogs);
-        fetchSuccess = true;
-      } catch (e) {
-        console.error("❌ 歸檔時抓取 Firebase forecast_data 失敗: " + e);
-        cpcJsonStr = "fetch_failed: " + e.message;
-        omJsonStr = "fetch_failed: " + e.message;
-      }
-
-      // 取得最新船期表，用以判斷今日未進港的船隻是否已改期到明天或未來
-      let latestSchedule = [];
-      try {
-        latestSchedule = getScheduleList();
-      } catch(e) {
-        console.error("無法取得最新船期表: " + e);
-      }
-
-      // 預先取得或建立 160K 與 180K 分頁
-      const sheet160K = ss.getSheetByName("160K") || ss.insertSheet("160K");
-      if (sheet160K.getLastRow() === 0) sheet160K.appendRow(["序號", "時間", "船名", "POB風速"]);
-      
-      const sheet180K = ss.getSheetByName("180K") || ss.insertSheet("180K");
-      if (sheet180K.getLastRow() === 0) sheet180K.appendRow(["序號", "時間", "船名", "POB風速"]);
-
-      const archivedShips = [];
-      let allSuccess = true;
-
-      for (const cardKey in todayData) {
-        const card = todayData[cardKey];
-        const config = card.config || {};
-        const pob = card.pob_info || {};
-        const rawLogs = card.wind_logs || {};
-        const shipName = config.ship_name;
-        
-        if (!shipName) continue;
-        
-        const hasPob = !!pob.pob_time;
-        
-        // 智慧檢查該未進港船隻是否被改期到了明天或未來
-        let isRescheduled = false;
-        let targetMD = "";
-        
-        if (!hasPob) {
-          const scheduleItem = latestSchedule.find(item => item.ship_name === shipName);
-          if (scheduleItem && scheduleItem.d && scheduleItem.d !== todayM_D && scheduleItem.d !== "") {
-            isRescheduled = true;
-            targetMD = scheduleItem.d;
-          }
-        }
-        
-        if (isRescheduled) {
-          // 🚢 改期船隻繼承機制：先將原定日「未進港」記錄寫入試算表，再將卡片（不含 wind_logs）移轉至未來日期
-          try {
-            const parts = targetMD.split('/');
-            const m = parseInt(parts[0], 10);
-            const d = parseInt(parts[1], 10);
-            let targetYear = now.getFullYear();
-            if (now.getMonth() > 8 && m < 3) targetYear += 1;
-            if (now.getMonth() < 3 && m > 8) targetYear -= 1;
-            
-            const targetDate = new Date(targetYear, m - 1, d);
-            const targetDateStr = Utilities.formatDate(targetDate, "GMT+8", "yyyy-MM-dd");
-            const targetCardKey = `${targetDateStr}_${sanitizeKey(shipName)}`;
-            
-            // 寫入/繼承 original_date，保留最原始的預定日
-            config.original_date = config.original_date || dateStr;
-            
-            // 將無法進港的最新原因記錄下來（累積記錄，但不寫入試算表）
-            const currentReason = pob.no_entry_reason || "未進港";
-            const delayReasons = config.delay_reasons || [];
-            delayReasons.push(`${dateStr}: ${currentReason}`);
-            config.delay_reasons = delayReasons;
-            
-            // 改期後新的一天需要重新監控，清空 POB 資訊
-            const newPobInfo = {};
-            
-            // ✅ Bug 1 Fix: 不繼承 wind_logs，讓改期後的新一天從空白卡片重新記錄實際風速
-            const inheritedCard = {
-              config: config,
-              pob_info: newPobInfo
-            };
-            
-            // ✅ Bug 2 Fix: 先將原日期的「未進港」記錄寫入試算表，保留完整的無法進港原因
-            const cleanedLogsForArchive = {};
-            Object.keys(rawLogs).sort().forEach(k => {
-              const match = k.match(/(上午|下午)?.*?(\d{1,2}):(\d{2})/);
-              if (match) {
-                let h = Number(match[2]);
-                if (match[1] === "下午" && h < 12) h += 12;
-                else if (match[1] === "上午" && h === 12) h = 0;
-                cleanedLogsForArchive[String(h).padStart(2, '0') + ":" + match[3]] = rawLogs[k];
-              } else {
-                cleanedLogsForArchive[k] = rawLogs[k];
-              }
-            });
-            sheet.appendRow([
-              dateStr,                                 // A: 日期（原定日）
-              config.ship_name || "未知",              // B: 船名
-              config.limit_speed || "-",               // C: 限制風速
-              "未進港",                                 // D: POB 時間
-              "-",                                     // E: POB 風速（無）
-              pob.formatted_msg || "無訊息",            // F: POB 訊息
-              config.terminal || "-",                  // G: 碼頭
-              pob.no_entry_reason || "-",              // H: 未進港原因
-              "-",                                     // I: 備註（原定日無延遲備註）
-              JSON.stringify(cleanedLogsForArchive),   // J: 北堤實際風力
-              cpcJsonStr,                              // K: 空軍預測值
-              omJsonStr                                // L: 陣風預測值
-            ]);
-            archivedShips.push(config.ship_name);
-            callFirebase(`daily_records/${targetDateStr}/${targetCardKey}`, inheritedCard, "put");
-            console.log(`✅ [${shipName}] 監控卡片已順利繼承並移轉至 ${targetDateStr}`);
-            // 改期成功視為處理完成
-            callFirebase(`daily_records/${dateStr}/${cardKey}`, null, "delete");
-          } catch(err) {
-            console.error(`❌ 移轉改期船隻 [${shipName}] 失敗: ${err}`);
-            allSuccess = false;
-          }
-          continue; // 跳過當天歸檔程序，不寫入試算表
-        }
-        
-        // =========================================================
-        // ⭐ 新增功能：判斷 limit_speed 並寫入 160K 或 180K 分頁
-        // =========================================================
-        const limitSpeedNum = Number(config.limit_speed);
-        let targetSheet = null;
-        
-        // 判斷該船屬於哪一個分類
-        if (limitSpeedNum === 13.8) {
-          targetSheet = sheet160K;
-        } else if (limitSpeedNum === 12.0) {
-          targetSheet = sheet180K;
-        }
-
-        // 如果有對應的分頁，而且有 POB 時間，就進行寫入
-        if (targetSheet && pob.pob_time) {
-          const serialNum = targetSheet.getLastRow(); // 總列數剛好可以當作序號 (標題列為1 -> 序號1)
-          const formattedDate = dateStr.replace(/-/g, '/') + " " + pob.pob_time; // 轉換為 YYYY/MM/DD HH:mm
-          
-          try {
-            targetSheet.appendRow([
-              serialNum,
-              formattedDate,
-              config.ship_name || "未知",
-              pob.pob_wind_speed || "-"
-            ]);
-          } catch (rowErr) {
-            console.error(`❌ 寫入 ${limitSpeedNum}K 分頁失敗:`, rowErr);
-          }
-        }
-        // =========================================================
-
-        // 整理全天風速日誌
-        const timeKeys = Object.keys(rawLogs).sort();
-        const cleanedLogs = {};
-        
-        // 💡 優化：萃取乾淨的 24H 時間格式 (例如 "17:30") 寫入試算表
-        let isPm = false;
-        let lastHour = -1;
-        timeKeys.forEach(k => {
-          const match = k.match(/(上午|下午)?.*?(\d{1,2}):(\d{2})/);
-          if (match) {
-            let ampm = match[1];
-            let h = Number(match[2]);
-            let m = match[3];
-            
-            if (ampm === "下午") {
-              isPm = true;
-              if (h < 12) h += 12;
-            } else if (ampm === "上午") {
-              isPm = false;
-              if (h === 12) h = 0;
-            } else {
-              // 無 AM/PM 標識
-              if (h >= 12) {
-                isPm = true;
-              } else {
-                // 若已標記為下午、或小時小於4 (代表不可能凌晨，只可能13, 14, 15點)、或小時出現倒退 (從 12 變 1)
-                if (isPm || h < 4 || (lastHour >= 11 && h < lastHour)) {
-                  isPm = true;
-                  h += 12;
-                }
-              }
-            }
-            
-            lastHour = h;
-            let timeStr = String(h).padStart(2, '0') + ":" + m; // 補零變成 HH:mm
-            cleanedLogs[timeStr] = rawLogs[k];
-          } else {
-            cleanedLogs[k] = rawLogs[k]; 
-          }
-        });
-        
-        // 💡 判斷未進港的備註文字
-        let pobTimeDisplay = pob.pob_time;
-        if (!pobTimeDisplay) {
-          pobTimeDisplay = "未進港";
-        }
-
-        // 計算延遲備註 (精簡版：原定:MM-DD 延遲:N天)
-        let delayNote = "-";
-        if (config.original_date && config.original_date !== dateStr) {
-          try {
-            const d1 = new Date(config.original_date);
-            const d2 = new Date(dateStr);
-            const diffTime = Math.abs(d2 - d1);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            delayNote = `原定:${config.original_date.substring(5)} 延遲:${diffDays}天`;
-          } catch(e) {}
-        }
-
-        // 執行寫入歸檔總表
-        sheet.appendRow([
-          dateStr,                                 // A: 日期
-          config.ship_name || "未知",              // B: 船名
-          config.limit_speed || "-",               // C: 限制風速
-          pobTimeDisplay,                          // D: POB 時間
-          pob.pob_wind_speed || "-",               // E: POB 風速
-          pob.formatted_msg || "無訊息",           // F: POB 訊息
-          config.terminal || "-",                  // G: 碼頭
-          pob.no_entry_reason || "-",              // H: 未進港原因
-          delayNote,                               // I: 備註
-          JSON.stringify(cleanedLogs),             // J: 北堤實際風力 (JSON)
-          cpcJsonStr,                              // K: 空軍預測值 (JSON)
-          omJsonStr                                // L: 陣風預測值 (JSON)
-        ]);
-
-        // 只有真正被歸檔的船隻才加入今日歸檔快取，避免重複顯示
-        archivedShips.push(config.ship_name);
-      }
-
-      if (archivedShips.length > 0) {
-        props.setProperty('ARCHIVED_SHIPS_TODAY', JSON.stringify({
-          date: dateStr,
-          ships: archivedShips
-        }));
-      }
-
-      // 🌟 只有在歸檔試算表成功寫入後，才清除 Firebase 當日卡片資料
-      callFirebase(`daily_records/${dateStr}`, null, "delete");
-      console.log("✅ 歸檔成功，已清除 Firebase 當日監控卡片");
-    } else {
-      console.log("⚠️ 今日無監控資料或未設定 SPREADSHEET_ID，跳過試算表寫入與資料清除");
+    const now = new Date();
+    const dateStr = simDate || getTwDateStr(now);
+    const todayMD = simDate ? `${Number(simDate.substring(5, 7))}/${Number(simDate.substring(8, 10))}` : `${now.getMonth() + 1}/${now.getDate()}`;
+    const dataResponse = firebaseReadOrThrow(`daily_records/${dateStr}`);
+    const todayData = JSON.parse(dataResponse.getContentText()) || {};
+    if (!Object.keys(todayData).length) {
+      firebaseWriteOrThrow("active_status", {app_mode: "stop", target_key: "", ship_name: "", limit_speed: "", forecast_auto_failed: null}, "patch");
+      props.deleteProperty("LAST_WIND_DATA_TIME");
+      updateFirebaseScheduleList();
+      return;
     }
-    
-    // 🌟 不論是否有歸檔，深夜都應重置監控狀態與定時器狀態，確保隔日乾淨運作
-    callFirebase("active_status", { "app_mode": "stop", "target_key": "", "ship_name": "", "limit_speed": "", "forecast_auto_failed": null }, "patch");
-    props.deleteProperty('LAST_WIND_DATA_TIME');
-    
-    // 🌟 更新 Firebase 上的船期表
+    if (!SPREADSHEET_ID) throw new Error("SPREADSHEET_ID is not configured; source cards retained");
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName("歸檔總表") || ss.insertSheet("歸檔總表", 0);
+    if (sheet.getLastRow() === 0) sheet.appendRow(["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值", "archive_id"]);
+    else if (sheet.getRange(1, 13).getValue() !== "archive_id") sheet.getRange(1, 13).setValue("archive_id");
+    const [cpcJson, omJson] = getForecastArchiveJson(dateStr);
+    const schedule = getScheduleList();
+    const sheet160K = ss.getSheetByName("160K") || ss.insertSheet("160K");
+    if (sheet160K.getLastRow() === 0) sheet160K.appendRow(["序號", "時間", "船名", "POB風速"]);
+    const sheet180K = ss.getSheetByName("180K") || ss.insertSheet("180K");
+    if (sheet180K.getLastRow() === 0) sheet180K.appendRow(["序號", "時間", "船名", "POB風速"]);
+
+    const archivedShips = [], failures = [];
+    Object.keys(todayData).forEach(cardKey => {
+      const sourcePath = `daily_records/${dateStr}/${cardKey}`;
+      const sourceResponse = callFirebase(sourcePath, null, "get", {"X-Firebase-ETag": "true"});
+      if (sourceResponse.getResponseCode() < 200 || sourceResponse.getResponseCode() >= 300) {
+        failures.push(cardKey);
+        return;
+      }
+      const card = safeJsonParse(sourceResponse.getContentText(), null);
+      if (!card) return;
+      const sourceFingerprint = archiveFingerprint(card);
+      const sourceEtag = responseEtag(sourceResponse);
+      if (!sourceEtag) {
+        failures.push(cardKey);
+        console.error(`❌ 歸檔卡片 ${cardKey} 缺少 Firebase ETag，保留來源卡片`);
+        return;
+      }
+      const config = card.config || {}, pob = card.pob_info || {};
+      const shipName = config.ship_name;
+      if (!shipName) return;
+      const id = archiveId(dateStr, cardKey, sourceFingerprint);
+      try {
+        const receipt = safeJsonParse(firebaseReadOrThrow(`archive_receipts/${dateStr}/${sanitizeKey(cardKey)}`).getContentText(), null);
+        if (!receipt || receipt.source_fingerprint !== sourceFingerprint) {
+          const scheduled = !pob.pob_time && schedule.find(item => item.ship_name === shipName && item.d && item.d !== todayMD);
+          const logs = JSON.stringify(cleanWindLogs(card.wind_logs));
+          if (scheduled) {
+            const targetDate = rescheduledDate(scheduled.d, now);
+            const targetKey = `${targetDate}_${sanitizeKey(shipName)}`;
+            appendArchiveRowOnce(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson]);
+            const targetResponse = firebaseReadOrThrow(`daily_records/${targetDate}/${targetKey}`, {"X-Firebase-ETag": "true"});
+            const target = safeJsonParse(targetResponse.getContentText(), null);
+            if (target && (!target.config || target.config.migration_source !== id)) throw new Error(`target card ${targetKey} already exists`);
+            if (!target) {
+              const targetEtag = responseEtag(targetResponse);
+              if (!targetEtag) throw new Error("reschedule target has no Firebase ETag");
+              const migratedConfig = Object.assign({}, config, {
+                original_date: config.original_date || dateStr,
+                delay_reasons: (config.delay_reasons || []).concat([`${dateStr}: ${pob.no_entry_reason || "未進港"}`]),
+                migration_source: id
+              });
+              firebaseWriteOrThrow(`daily_records/${targetDate}/${targetKey}`, {config: migratedConfig, pob_info: {}}, "put", {"if-match": targetEtag});
+            }
+          } else {
+            let delayNote = "-";
+            if (config.original_date && config.original_date !== dateStr) {
+              delayNote = `原定:${config.original_date.substring(5)} 延遲:${Math.ceil(Math.abs(new Date(dateStr) - new Date(config.original_date)) / 86400000)}天`;
+            }
+            appendArchiveRowOnce(sheet, id, [dateStr, shipName, config.limit_speed || "-", pob.pob_time || "未進港", pob.pob_wind_speed || "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", delayNote, logs, cpcJson, omJson]);
+            const targetSheet = Number(config.limit_speed) === 13.8 ? sheet160K : Number(config.limit_speed) === 12 ? sheet180K : null;
+            if (targetSheet && pob.pob_time) {
+              if (targetSheet.getRange(1, 5).getValue() !== "archive_id") targetSheet.getRange(1, 5).setValue("archive_id");
+              appendArchiveRowOnce(targetSheet, id, [targetSheet.getLastRow(), `${dateStr.replace(/-/g, "/")} ${pob.pob_time}`, shipName, pob.pob_wind_speed || "-"], 5);
+            }
+          }
+          firebaseWriteOrThrow(`archive_receipts/${dateStr}/${sanitizeKey(cardKey)}`, {archive_id: id, source_fingerprint: sourceFingerprint, completed_at: new Date().toISOString()}, "put");
+        }
+        firebaseWriteOrThrow(sourcePath, null, "delete", {"if-match": sourceEtag});
+        archivedShips.push(shipName);
+      } catch (error) {
+        console.error(`❌ 歸檔卡片 ${cardKey} 失敗: ${error}`);
+        failures.push(cardKey);
+      }
+    });
+    if (archivedShips.length) props.setProperty("ARCHIVED_SHIPS_TODAY", JSON.stringify({date: dateStr, ships: archivedShips}));
+    if (failures.length) throw new Error(`archive incomplete; retained source cards: ${failures.join(", ")}`);
+    firebaseWriteOrThrow("active_status", {app_mode: "stop", target_key: "", ship_name: "", limit_speed: "", forecast_auto_failed: null}, "patch");
+    props.deleteProperty("LAST_WIND_DATA_TIME");
     updateFirebaseScheduleList();
-  } catch (e) {
-    console.error(`歸檔失敗: ${e}`);
-    throw e;
+  } finally {
+    archiveLock.releaseLock();
   }
 }
 
@@ -1391,72 +1279,6 @@ function onCalendarOrSheetChange() {
 }
 
 
-
-// ==========================================
-// 7. 🛠️ 手動修正最後一列 H, I 欄 JSON 資料
-// ==========================================
-function fixLastRowJson() {
-  if (!SPREADSHEET_ID) {
-    console.error("❌ 未設定 SPREADSHEET_ID");
-    return;
-  }
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName("歸檔總表");
-    if (!sheet) {
-      console.error("❌ 找不到 歸檔總表 分頁");
-      return;
-    }
-    const lastRow = sheet.getLastRow();
-    if (lastRow <= 1) {
-      console.log("⚠️ 歸檔總表為空或僅包含標題列");
-      return;
-    }
-    
-    // 取得最後一列的日期 (欄 A)
-    const dateVal = sheet.getRange(lastRow, 1).getValue();
-    let dateStr = "";
-    if (dateVal instanceof Date) {
-      dateStr = Utilities.formatDate(dateVal, "GMT+8", "yyyy-MM-dd");
-    } else {
-      dateStr = String(dateVal).trim().replace(/\//g, "-");
-    }
-    
-    console.log(`🔍 正在修正最後一列 (Row ${lastRow})，日期: ${dateStr}`);
-    
-    // 抓取 GitHub Pages 上的風速預測資料
-    const url = "https://uuuhasho.github.io/wind-monitor-app/data.json?t=" + new Date().getTime();
-    const response = UrlFetchApp.fetch(url);
-    const dataArr = JSON.parse(response.getContentText());
-    
-    const cpcLogs = {};
-    const omLogs = {};
-    
-    dataArr.forEach(d => {
-      if (d.timestamp && d.timestamp.indexOf(dateStr) === 0) {
-        const timeKey = d.timestamp.substring(11, 16); // 提取 "HH:mm"
-        if (d.cpc_wind_speed !== null && d.cpc_wind_speed !== undefined) {
-          cpcLogs[timeKey] = d.cpc_wind_speed;
-        }
-        if (d.open_meteo_wind_speed !== null && d.open_meteo_wind_speed !== undefined) {
-          omLogs[timeKey] = d.open_meteo_wind_speed;
-        }
-      }
-    });
-    
-    const cpcJsonStr = JSON.stringify(cpcLogs);
-    const omJsonStr = JSON.stringify(omLogs);
-    
-    // 寫入 K 欄 (11) 與 L 欄 (12)
-    sheet.getRange(lastRow, 11).setValue(cpcJsonStr);
-    sheet.getRange(lastRow, 12).setValue(omJsonStr);
-    
-    console.log("✅ 成功修正 K 欄 (空軍預測風力): " + cpcJsonStr);
-    console.log("✅ 成功修正 L 欄 (ECMWF預測陣風): " + omJsonStr);
-  } catch (e) {
-    console.error("❌ 執行手動修正失敗: " + e);
-  }
-}
 
 function setupProperties() {
   const props = PropertiesService.getScriptProperties();

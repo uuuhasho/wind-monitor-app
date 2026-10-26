@@ -1,7 +1,8 @@
 import os
 import sys
 import argparse
-import requests
+import shutil
+import uuid
 from datetime import datetime, timedelta
 
 # Add the project directory to the path so modules can be imported
@@ -12,70 +13,44 @@ from src.doc_parser import convert_doc_to_docx, extract_image_from_docx
 from src.image_processor import remove_horizontal_red_line
 from src.cv2_parser import parse_chart_with_cv2
 from src.data_fusion import fuse_and_save_data
+from src.config import BASE_DIR, load_config
+from src.rtdb import ForecastRtdb, PipelineBusyError
 
-def reset_rtdb_updating_state():
-    """
-    Resets the 'forecast_updating' flag to False on Firebase Realtime Database
-    to unlock the manual update button in the frontend.
-    """
-    try:
-        from src.config import load_config
-        config = load_config()
-        rtdb_settings = config.get("Firebase_RTDB_Settings", {})
-        db_url = rtdb_settings.get("DbUrl")
-        db_secret = rtdb_settings.get("DbSecret")
-        
-        if not db_url or not db_secret:
-            print("\n[RTDB Reset] Firebase RTDB settings not configured in config.json. Skipping state reset.")
-            return
-            
-        url = f"{db_url.rstrip('/')}/active_status.json?auth={db_secret}"
-        payload = {
-            "forecast_updating": False
-        }
-        print(f"\n[RTDB Reset] Sending PATCH to Firebase RTDB to unlock updates...")
-        response = requests.patch(url, json=payload, timeout=10)
-        response.raise_for_status()
-        print("[RTDB Reset] Successfully reset forecast_updating to False in RTDB.")
-    except Exception as e:
-        print(f"\n[RTDB Reset] Error resetting RTDB updating state: {e}")
+LOCK_TTL_SECONDS = 300
 
-def cleanup_old_files(target_date):
-    print("\n[Cleanup] Removing old .doc files and temp files...")
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    temp_dir = os.path.join(base_dir, "temp")
-    
-    # 1. Root directory .doc files
-    for filename in os.listdir(base_dir):
-        if filename.endswith(".doc") and "中油" in filename:
-            if target_date not in filename:
-                try:
-                    os.remove(os.path.join(base_dir, filename))
-                    print(f"Removed old file: {filename}")
-                except Exception as e:
-                    print(f"Failed to remove {filename}: {e}")
-                    
-    # 2. Temp directory files
-    if os.path.exists(temp_dir):
-        for filename in os.listdir(temp_dir):
-            if target_date not in filename:
-                try:
-                    os.remove(os.path.join(temp_dir, filename))
-                    print(f"Removed old temp file: {filename}")
-                except Exception as e:
-                    print(f"Failed to remove temp file {filename}: {e}")
+
+def create_runtime_dir(owner):
+    runtime_dir = os.path.join(BASE_DIR, "runtime", owner)
+    os.makedirs(runtime_dir, exist_ok=False)
+    return runtime_dir
+
+
+def cleanup_runtime_dir(runtime_dir):
+    # Only delete the run directory created by this process; source archives stay intact.
+    if os.path.dirname(runtime_dir) == os.path.join(BASE_DIR, "runtime"):
+        shutil.rmtree(runtime_dir, ignore_errors=True)
 
 def run_pipeline(target_date=None):
     """
     Executes the wind forecast data pipeline.
     target_date format: MMDD (e.g. '0530')
     """
+    rtdb = ForecastRtdb(load_config().get("Firebase_RTDB_Settings", {}))
+    owner = str(uuid.uuid4())
+    rtdb.acquire_lock(owner, LOCK_TTL_SECONDS)
+    runtime_dir = None
     try:
-        return _run_pipeline_impl(target_date)
+        runtime_dir = create_runtime_dir(owner)
+        return _run_pipeline_impl(target_date, runtime_dir, owner)
     finally:
-        reset_rtdb_updating_state()
+        try:
+            rtdb.release_lock(owner)
+        except Exception as error:
+            print(f"RTDB update lock release failed: {error}")
+        if runtime_dir:
+            cleanup_runtime_dir(runtime_dir)
 
-def _run_pipeline_impl(target_date=None):
+def _run_pipeline_impl(target_date=None, runtime_dir=None, lock_owner=None):
     if not target_date:
         cst_time = datetime.utcnow() + timedelta(hours=8)
         target_date = cst_time.strftime("%m%d")
@@ -84,19 +59,16 @@ def _run_pipeline_impl(target_date=None):
     print(f"CPC Wind Forecast Pipeline Triggered at {datetime.now().isoformat()} for date {target_date}")
     print("=" * 60)
     
-    cleanup_old_files(target_date)
-    
     # 1. Download / Locating mail attachment
     print("\n[Step 1] Fetching forecast document...")
     gemini_output = None
     try:
-        doc_path = download_forecast_attachment(target_date=target_date)
+        doc_path = download_forecast_attachment(target_date=target_date, save_dir=runtime_dir)
         print(f"Forecast document located at: {doc_path}")
         
         # Get filenames
         base_name = os.path.basename(doc_path).replace(".doc", "")
-        temp_dir = os.path.join(os.path.dirname(doc_path), "temp")
-        os.makedirs(temp_dir, exist_ok=True)
+        temp_dir = runtime_dir
         
         docx_path = os.path.join(temp_dir, f"{base_name}.docx")
         raw_img_path = os.path.join(temp_dir, f"{base_name}_raw.png")
@@ -124,7 +96,7 @@ def _run_pipeline_impl(target_date=None):
     # 5. Open-Meteo & OpenWeather fetching, timezone/unit alignment and data writing
     print("\n[Step 5] Performing data fusion and writing to database...")
     try:
-        fused_data = fuse_and_save_data(gemini_output)
+        fused_data = fuse_and_save_data(gemini_output, runtime_dir, lock_owner)
         print(f"Data fusion completed! Total records saved: {len(fused_data)}")
         if fused_data:
             print(f"First record: {fused_data[0]}")
