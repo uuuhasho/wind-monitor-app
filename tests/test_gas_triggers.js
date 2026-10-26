@@ -4,14 +4,16 @@ const path = require("path");
 const vm = require("vm");
 
 const source = fs.readFileSync(path.join(__dirname, "../gas/monitor.js"), "utf8");
-const start = source.indexOf("function setupSystemTriggers()");
-let depth = 0;
-let end = start;
-for (let index = source.indexOf("{", start); index < source.length; index += 1) {
-  if (source[index] === "{") depth += 1;
-  if (source[index] === "}" && --depth === 0) { end = index + 1; break; }
+function extractFunction(name) {
+  const start = source.indexOf(`function ${name}()`);
+  let depth = 0;
+  for (let index = source.indexOf("{", start); index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}" && --depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`Function not found: ${name}`);
 }
-const setupSource = source.slice(start, end);
+const triggerSource = `${extractFunction("setupSystemTriggers")}\n${extractFunction("pauseSystemTriggers")}`;
 const calendarId = "89f17p8et94udnavnaqgihrgvg@group.calendar.google.com";
 
 function trigger(handler, source, sourceId = null) {
@@ -28,6 +30,7 @@ function createHarness(initial = []) {
   const scriptApp = {
     TriggerSource: {CLOCK: "CLOCK", CALENDAR: "CALENDAR", SPREADSHEETS: "SPREADSHEETS"},
     getProjectTriggers: () => triggers,
+    deleteTrigger(item) { triggers.splice(triggers.indexOf(item), 1); },
     newTrigger(handler) {
       return {
         timeBased() {
@@ -57,8 +60,8 @@ function createHarness(initial = []) {
   };
   const context = {ScriptApp: scriptApp};
   vm.createContext(context);
-  vm.runInContext(setupSource, context);
-  return {triggers, created, setup: context.setupSystemTriggers, source: scriptApp.TriggerSource};
+  vm.runInContext(triggerSource, context);
+  return {triggers, created, setup: context.setupSystemTriggers, pause: context.pauseSystemTriggers, source: scriptApp.TriggerSource};
 }
 
 {
@@ -101,4 +104,32 @@ function createHarness(initial = []) {
   assert.equal(test.created.filter(item => item.source === "CALENDAR").length, 1, "required calendar is still created");
 }
 
-console.log("GAS trigger setup: 4 scenarios passed");
+{
+  const targetTriggers = [
+    trigger("checkDailySchedule", "CLOCK"),
+    trigger("executeMonitor", "CLOCK"),
+    trigger("archiveAndClearFirebase", "CLOCK"),
+    trigger("onCalendarOrSheetChange", "CALENDAR", calendarId),
+  ];
+  const otherCalendar = trigger("onCalendarOrSheetChange", "CALENDAR", "other-calendar@example.test");
+  const wrongSource = trigger("executeMonitor", "SPREADSHEETS", "sheet-id");
+  const unrelated = trigger("unrelated", "CLOCK");
+  const test = createHarness([...targetTriggers, otherCalendar, wrongSource, unrelated]);
+
+  const result = test.pause();
+  assert.equal(result.deletedCount, 4, "only the four confirmed triggers are deleted");
+  assert.deepEqual(Array.from(result.handlers), targetTriggers.map(item => item.getHandlerFunction()));
+  assert.deepEqual(test.triggers, [otherCalendar, wrongSource, unrelated], "other calendars and unrelated triggers are preserved");
+
+  const repeated = test.pause();
+  assert.equal(repeated.deletedCount, 0, "repeated pause is safe");
+  assert.deepEqual(Array.from(repeated.handlers), []);
+
+  test.setup();
+  assert.equal(test.created.length, 4, "setup restores all missing system triggers");
+  assert.ok(test.triggers.includes(otherCalendar), "setup also preserves other calendars");
+  assert.ok(test.triggers.includes(wrongSource), "setup also preserves unrelated sources");
+  assert.ok(test.triggers.includes(unrelated), "setup also preserves unrelated handlers");
+}
+
+console.log("GAS trigger setup/pause: 5 scenarios passed");

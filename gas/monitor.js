@@ -1361,6 +1361,24 @@ function setupSystemTriggers() {
   }
 }
 
+function pauseSystemTriggers() {
+  const handlers = [];
+  const calendarId = "89f17p8et94udnavnaqgihrgvg@group.calendar.google.com";
+  ScriptApp.getProjectTriggers().slice().forEach(trigger => {
+    const handler = trigger.getHandlerFunction();
+    const source = trigger.getTriggerSource();
+    const isClockTrigger = source === ScriptApp.TriggerSource.CLOCK &&
+      ["checkDailySchedule", "executeMonitor", "archiveAndClearFirebase"].includes(handler);
+    const isTargetCalendarTrigger = source === ScriptApp.TriggerSource.CALENDAR &&
+      handler === "onCalendarOrSheetChange" && trigger.getTriggerSourceId() === calendarId;
+    if (isClockTrigger || isTargetCalendarTrigger) {
+      ScriptApp.deleteTrigger(trigger);
+      handlers.push(handler);
+    }
+  });
+  return {deletedCount: handlers.length, handlers};
+}
+
 function updateFirebaseScheduleList() {
   try {
     const list = getScheduleList();
