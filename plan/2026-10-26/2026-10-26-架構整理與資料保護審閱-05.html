@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="claymorphism">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="奶昔 APP 架構整理、維護資料保護、部署與驗收狀態">
+  <title>奶昔 APP 架構整理與資料保護｜2026-10-26</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1A202C; --muted: #4A5568; --paper: #FFF9F5; --surface: #fff;
+      --line: #2D3748; --sky: #D6EEFF; --peach: #FFD8D0; --mint: #D4F4E2;
+      --amber: #FEF3C7; --lavender: #E6E6FA; --success: #175D38;
+      --warning: #6B4A00; --danger: #8B2E2A; --shadow-hero: 6px 6px 0 #2D3748;
+      --shadow-card: 4px 4px 0 #2D3748; --shadow-small: 2px 2px 0 #2D3748;
+      --radius: 16px; --width: 1120px; --gutter: clamp(16px, 4vw, 36px);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    a { color: #203a5b; text-underline-offset: 3px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid #8a4f00; outline-offset: 3px; }
+    .skip { position: absolute; top: -80px; left: 12px; z-index: 20; padding: 10px; background: #172b36; color: #fff; border-radius: 8px; }
+    .skip:focus { top: 12px; }
+    .shell { width: min(var(--width), calc(100% - 2 * var(--gutter))); margin-inline: auto; min-width: 0; }
+    .hero { padding: clamp(28px, 7vw, 68px) 0 30px; }
+    .hero-card { padding: clamp(22px, 5vw, 46px); border: 3px solid var(--line); border-radius: 20px; background: linear-gradient(120deg, var(--sky) 0 60%, #fff 60%); box-shadow: var(--shadow-hero); }
+    .eyebrow, .kicker { margin: 0 0 8px; font-size: .78rem; font-weight: 800; letter-spacing: .08em; }
+    h1, h2, h3 { line-height: 1.22; text-wrap: balance; }
+    h1 { max-width: 880px; margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); }
+    h2 { margin: 0 0 12px; font-size: clamp(1.45rem, 3vw, 2.1rem); }
+    h3 { margin: 0 0 8px; font-size: 1.12rem; }
+    p { margin: 0 0 14px; } p:last-child { margin-bottom: 0; }
+    .lede { max-width: 72ch; color: var(--muted); font-size: 1.08rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; color: var(--muted); font-size: .9rem; }
+    .quick { margin-top: 20px; padding: 16px 18px; border: 2.5px solid var(--line); border-radius: 12px; background: var(--mint); box-shadow: var(--shadow-card); }
+    .quick h2 { margin-bottom: 6px; font-size: 1.15rem; }
+    .quick ul { margin: 0; padding-left: 1.25rem; }
+    .quick li + li { margin-top: 4px; }
+    nav { position: sticky; top: 0; z-index: 5; border-bottom: 2px solid var(--line); background: #fff9f5f2; }
+    .navrow { display: flex; gap: 8px; overflow-x: auto; padding-block: 9px; scrollbar-width: thin; }
+    .navrow a { flex: 0 0 auto; min-height: 44px; display: inline-flex; align-items: center; padding: 7px 11px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow-small); text-decoration: none; }
+    main { padding-block: 28px 48px; }
+    section { min-width: 0; margin-bottom: 38px; scroll-margin-top: 70px; }
+    .intro { max-width: 76ch; color: var(--muted); }
+    .panel { min-width: 0; padding: 18px; border: 2.5px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .callout { padding: 15px 17px; border: 2px solid var(--line); border-radius: 12px; background: var(--sky); box-shadow: 3px 3px 0 var(--line); }
+    .ok { background: var(--mint); } .warn { background: var(--amber); } .risk { background: var(--peach); }
+    .pill { display: inline-block; padding: 2px 9px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--mint); font-size: .82rem; font-weight: 750; white-space: nowrap; }
+    .pill.wait { background: var(--amber); } .pill.risk { background: var(--peach); }
+    .diagram-wrap { max-width: 100%; overflow-x: auto; border: 2px solid var(--line); border-radius: 12px; background: #fff; }
+    .diagram { display: block; width: 100%; min-width: 1200px; height: auto; }
+    .diagram text { fill: var(--ink); font: 600 14px/1.3 system-ui, "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    .diagram .small { font-size: 12px; font-weight: 500; fill: var(--muted); }
+    .diagram .route { fill: none; stroke: #2D3748; stroke-width: 3; marker-end: url(#arrow); }
+    .diagram .node { stroke: #2D3748; stroke-width: 3; rx: 12; }
+    .diagram .focal { fill: #FFD8D0; } .diagram .sky { fill: #D6EEFF; } .diagram .mint { fill: #D4F4E2; } .diagram .white { fill: #fff; }
+    figcaption, .note { margin-top: 9px; color: var(--muted); font-size: .9rem; }
+    .table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    caption { padding: 8px; color: var(--muted); text-align: left; }
+    th, td { padding: 10px 12px; border: 1px solid #CBD5E1; text-align: left; vertical-align: top; }
+    th { background: var(--sky); }
+    code { overflow-wrap: anywhere; padding: 1px 4px; border-radius: 4px; background: var(--sky); }
+    pre { max-width: 100%; overflow: auto; padding: 14px; border-radius: 10px; color: #f5f7fa; background: #202b35; font: .88rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    pre code { padding: 0; color: inherit; background: transparent; }
+    details { margin-top: 12px; border: 2px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--shadow-small); }
+    summary { min-height: 44px; padding: 10px 14px; cursor: pointer; font-weight: 750; }
+    details > :not(summary) { margin-inline: 14px; } details > :last-child { margin-bottom: 14px; }
+    .sources { display: grid; gap: 8px; }
+    footer { padding: 22px 0 38px; border-top: 2px solid var(--line); color: var(--muted); }
+    @media (max-width: 760px) { .grid2 { grid-template-columns: minmax(0, 1fr); } th, td { padding: 9px; } }
+    @media (max-width: 420px) { .shell { width: calc(100% - 28px); } .hero-card { padding: 20px; background: linear-gradient(155deg, var(--sky) 0 46%, #fff 46%); } .panel, .quick { padding: 14px; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print { body { background: #fff; } nav, .skip { display: none !important; } .shell { width: 100%; } .hero { padding: 14px 0; } .hero-card { background: #fff; box-shadow: none; } .panel { box-shadow: none; break-inside: avoid; } details > * { display: block !important; } a { color: inherit; } a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .8em; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳至主要內容</a>
+  <header class="hero">
+    <div class="shell hero-card">
+      <p class="eyebrow">維護狀態與驗收紀錄</p>
+      <h1>奶昔 APP 架構整理與資料保護</h1>
+      <p class="lede">主要安全修改已通過隔離驗收，Cloud Run 新版已承接目前 APP 使用服務的流量；GAS 四個觸發器與 Cloud Scheduler 已恢復。本次選定 Cool Rover 為實際觀察案例：追蹤 10/28 未進港時的船期同步與夜間改期歸檔，以及 10/29 若實際進港時的 POB 與後續換班。</p>
+      <p class="meta"><time datetime="2026-10-26">更新：2026-10-26 20:48（台北時間）</time><span>涵蓋：GCP、Firebase RTDB、Cloud Run、Apps Script、Hosting</span></p>
+      <div class="quick" aria-labelledby="quick-title">
+        <h2 id="quick-title">30 秒看懂</h2>
+        <ul>
+          <li>RTDB 維護前快照已匯出，並在本機 Firebase Emulator 完成還原往返比對。</li>
+          <li>Cloud Run <code>forecast-api-test-00058-pew</code> 已接 100% 流量；健康檢查正常，舊版 <code>00057-4tc</code> 可回復。</li>
+          <li>使用者已恢復 GAS 四個觸發器；Cloud Scheduler 已為 <strong>ENABLED</strong>，時區與原排程不變。</li>
+          <li>64 個隔離案例通過，前端合成資料流程也通過；沒有對正式 RTDB／試算表做寫入回歸。</li>
+          <li><strong>下一步：</strong>依 Cool Rover 的實際日曆／船期、歸檔和 POB 事件觀察；不要為測試而手動寫正式資料。</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+  <nav aria-label="章節導覽"><div class="shell navrow">
+    <a href="#flow">現況資料流</a><a href="#state">目前狀態</a><a href="#evidence">保護措施與驗收</a><a href="#changes">變更與留存</a><a href="#next">恢復步驟</a><a href="#sources">證據來源</a>
+  </div></nav>
+  <main id="main" class="shell">
+    <section id="flow">
+      <p class="kicker">01 · SYSTEM MAP</p>
+      <h2>APP 的三條主要資料流</h2>
+      <p class="intro">GCP／Firebase 承載預報與即時資料，Apps Script 處理監控和歸檔；Hosting 只提供前端檔案。圖中以 <code>/test</code> 表示目前 APP 使用的 RTDB 命名空間。</p>
+      <figure>
+        <div class="diagram-wrap" role="region" aria-label="可水平捲動的系統架構圖" tabindex="0">
+          <svg class="diagram" viewBox="0 0 1200 520" role="img" aria-labelledby="milk-title milk-desc">
+            <title id="milk-title">奶昔 APP 主要資料流</title>
+            <desc id="milk-desc">預報由 Scheduler 或 APP 手動送至 Cloud Run，寫入 RTDB 後供 APP 圖表讀取。LINE 訊息由 Cloud Run 解析後交給 GAS，GAS 更新 RTDB 監控資料並將每日資料歸檔到試算表。</desc>
+            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#2D3748"/></marker></defs>
+            <path class="route" d="M220 132 H296"/>
+            <path class="route" d="M492 132 H568"/>
+            <path class="route" d="M764 132 H840"/>
+            <path class="route" d="M220 368 H296"/>
+            <path class="route" d="M492 368 H568"/>
+            <path class="route" d="M764 350 H814 Q824 350 824 340 V290 Q824 280 834 280 H872"/>
+            <path class="route" d="M764 386 H814 Q824 386 824 396 V438 Q824 448 834 448 H872"/>
+            <rect class="node sky" x="28" y="92" width="192" height="80"/>
+            <rect class="node white" x="296" y="92" width="196" height="80"/>
+            <rect class="node focal" x="568" y="92" width="196" height="80"/>
+            <rect class="node mint" x="840" y="92" width="216" height="80"/>
+            <rect class="node sky" x="28" y="328" width="192" height="80"/>
+            <rect class="node white" x="296" y="328" width="196" height="80"/>
+            <rect class="node white" x="568" y="328" width="196" height="80"/>
+            <rect class="node focal" x="872" y="244" width="216" height="72"/>
+            <rect class="node mint" x="872" y="412" width="216" height="72"/>
+            <text x="124" y="124" text-anchor="middle">Cloud Scheduler</text><text x="124" y="148" text-anchor="middle" class="small">或 APP 手動更新</text>
+            <text x="394" y="124" text-anchor="middle">Cloud Run 預報管線</text><text x="394" y="148" text-anchor="middle" class="small">解析、融合、發布</text>
+            <text x="666" y="124" text-anchor="middle">Firebase RTDB /test</text><text x="666" y="148" text-anchor="middle" class="small">forecast_data + metadata</text>
+            <text x="948" y="124" text-anchor="middle">APP 預報圖表</text><text x="948" y="148" text-anchor="middle" class="small">唯讀預報與更新時間</text>
+            <text x="124" y="360" text-anchor="middle">LINE POB</text><text x="124" y="384" text-anchor="middle" class="small">訊息輸入</text>
+            <text x="394" y="360" text-anchor="middle">Cloud Run POB 解析</text><text x="394" y="384" text-anchor="middle" class="small">轉交 GAS 作業</text>
+            <text x="666" y="360" text-anchor="middle">GAS 監控與船期</text><text x="666" y="384" text-anchor="middle" class="small">定時、日曆／試算表事件</text>
+            <text x="980" y="272" text-anchor="middle">RTDB 監控狀態</text><text x="980" y="296" text-anchor="middle" class="small">即時船期、POB</text>
+            <text x="980" y="440" text-anchor="middle">試算表歸檔</text><text x="980" y="464" text-anchor="middle" class="small">寫入成功才清除來源</text>
+          </svg>
+        </div>
+        <figcaption>目前流量狀態：Cloud Run 預報服務已切到新版；Cloud Scheduler 與 GAS 觸發器已恢復。Hosting 本機建置成功，但未比對線上內容，也沒有發布。</figcaption>
+      </figure>
+    </section>
+    <section id="state">
+      <p class="kicker">02 · LIVE STATE</p>
+      <h2>現在雲端處於什麼狀態</h2>
+      <div class="table-wrap">
+        <table>
+          <caption>2026-10-26 維護時段唯讀查詢與使用者確認</caption>
+          <thead><tr><th scope="col">服務</th><th scope="col">狀態</th><th scope="col">影響／回復</th></tr></thead>
+          <tbody>
+            <tr><td>Cloud Run <code>forecast-api-test</code></td><td><span class="pill">00058 · 100%</span><br><code>/health</code> 回傳 <code>{"status":"ok"}</code></td><td>舊版 <code>forecast-api-test-00057-4tc</code> 可作為流量回復目標。</td></tr>
+            <tr><td>Cloud Scheduler <code>forecast-trigger-test</code></td><td><span class="pill">ENABLED</span></td><td>唯讀查詢確認原排程 <code>*/15 12-17 * * *</code> 與 <code>Asia/Taipei</code> 時區。</td></tr>
+            <tr><td>GAS 系統觸發器</td><td><span class="pill">使用者確認四項已恢復</span></td><td>由使用者在原帳號執行 <code>setupSystemTriggers()</code>；觸發器清單由使用者畫面確認，未透過 Apps Script API 讀回。</td></tr>
+            <tr><td>GAS Web App</td><td><span class="pill">deployment v80</span></td><td>沿用原部署 ID；觸發器設定 helper 已納入新版程式。</td></tr>
+            <tr><td>Firebase Hosting</td><td><span class="pill">本機建置成功</span></td><td>資源檢查通過；本次沒有比對線上 Hosting 內容，也沒有發布。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout ok" style="margin-top:14px">
+        <strong>自動作業已恢復，正等待第一輪結果。</strong>GAS 每分鐘監控已啟動；今晚約 23:00 進入歸檔時段，Cloud Scheduler 下一個預報時段為明天 12:00–17:00。
+      </div>
+      <p class="note">觸發器 helper 只能列出與管理目前 Apps Script 帳號可見的專案觸發器；若其他帳號也建立過此專案的觸發器，目前沒有跨帳號核對證據。</p>
+    </section>
+    <section id="evidence">
+      <p class="kicker">03 · DATA SAFETY</p>
+      <h2>保護措施與本次驗收</h2>
+      <div class="grid2">
+        <div class="panel">
+          <h3>RTDB 備份與還原</h3>
+          <p>維護凍結後匯出 <code>/test</code> 快照至 <code>runtime/backups/rtdb-test-2026-10-26-maintenance.json</code>。檔案大小 18,499 bytes；SHA-256：<code>3FBEA74E0C33B2FC26974A47654F70FCB5E3264B24845DB9BB30D7E78B92E1C7</code>。</p>
+          <p>用便攜版 Java 21 啟動 Firebase Emulator，匯入快照後以本機 demo 專案 PUT／GET 比對，6 個根節點往返相同；未連接正式 RTDB，也未寫入 APP 資料。</p>
+          <p>另有 Drive 維護備份副本：<a href="https://docs.google.com/spreadsheets/d/1pQZlsdIyvGpIRQFBJFAG3h6O8tAbayrLONKVcwZosW4/edit">凍結後維護備份試算表</a>（私人副本；來源未被修改）。</p>
+        </div>
+        <div class="panel">
+          <h3>資料寫入防護</h3>
+          <ul>
+            <li>GAS 歸檔採先寫入、確認成功後再清來源；失敗保留卡片，重試以收據避免重複歸檔。</li>
+            <li>預報資料與 metadata 一起發布；RTDB 寫入失敗時回報失敗，保留上一版。</li>
+            <li>RTDB 工作鎖跨 Cloud Run 執行個體協調，檢查持有者與租約，過期／失主工作不可發布或解除他人鎖。</li>
+            <li>Cloud Run 建置使用獨立暫存子目錄，只清理自己建立的資料；現有外部 staging 目錄與同層資料保留。</li>
+          </ul>
+        </div>
+      </div>
+      <details>
+        <summary>查看隔離驗收數字與涵蓋情境</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">驗收組</th><th scope="col">結果</th><th scope="col">涵蓋</th></tr></thead>
+            <tbody>
+              <tr><td>Backend safety</td><td>17 通過</td><td>鎖競爭／到期／持有者、發布失敗保留舊預報、URL namespace、台灣時間與跨年、pipeline cleanup。</td></tr>
+              <tr><td>POB handler</td><td>7 通過</td><td>時間邊界、無密碼拒絕、錯誤不外洩、有效訊息轉交。</td></tr>
+              <tr><td>Hosting／Cloud Run 部署保護</td><td>14 通過</td><td>缺資源不替換 public、無敏感檔部署、stage 隔離與失敗清理、no-traffic 預檢。</td></tr>
+              <tr><td>GAS 歸檔／操作</td><td>21 通過</td><td>歸檔或移期失敗保留來源，重試不重複，鎖忙與資料競爭處理。</td></tr>
+              <tr><td>GAS 觸發器</td><td>5 通過</td><td>只停用確認的 3 個 clock 與指定 Calendar 觸發器，不碰其他觸發器；setup 可重建。</td></tr>
+              <tr><td>前端 Playwright 隔離流程</td><td>通過</td><td>合成船期／預報／POB、監控狀態、換班與歸檔請求；外部 HTTP 全部 mock，無頁面錯誤。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <div class="callout risk" style="margin-top:14px">
+        <strong>未做正式資料寫入回歸。</strong>尚未透過真實 POB、船期變更、換班或每日歸檔流程寫入 RTDB／試算表，也未觸發真實預報更新。隔離測試不能替代這些正式資料驗收。
+      </div>
+    </section>
+    <section id="changes">
+      <p class="kicker">04 · CHANGE RECORD</p>
+      <h2>已完成與保留項目</h2>
+      <div class="table-wrap">
+        <table>
+          <caption>以目前 checkout 與實際執行紀錄核對，不把舊文件計畫當成完成證據</caption>
+          <thead><tr><th scope="col">工作</th><th scope="col">狀態</th><th scope="col">證據／處理</th></tr></thead>
+          <tbody>
+            <tr><td>Cloud Run 暫存資料保護</td><td><span class="pill">完成</span></td><td>commit <code>98ee2b7</code>；既有 staging 父目錄與同層資料不清除。</td></tr>
+            <tr><td>GAS 暫停／恢復 helper</td><td><span class="pill">已部署並恢復</span></td><td>commit <code>4d2363e</code>；Web App v80。使用者先執行 pause，後執行 setup 並確認四項觸發器。</td></tr>
+            <tr><td>Cloud Run no-traffic 預檢</td><td><span class="pill">切流完成</span></td><td>commit <code>194af46</code>；新版先 0% 流量驗健康，再切至 100%。</td></tr>
+            <tr><td>Firestore 舊程式路徑</td><td><span class="pill">已退役</span></td><td>目前 backend 無 Firestore 寫入、套件依賴或 check_db.py；雲端歷史資料保留。</td></tr>
+            <tr><td>GAS 重複來源與舊 test_monitor</td><td><span class="pill">已封存</span></td><td>唯一追蹤來源為 <code>gas/monitor.js</code>；舊程式留在不部署的 <code>local_archive/retired/test_monitor/</code>。</td></tr>
+            <tr><td>影片、旁白與執行產物</td><td><span class="pill">已封存／忽略</span></td><td>影片、旁白與腳本留在 <code>local_archive/</code>；<code>data.json</code> 作為執行產物，不納入版本控制。</td></tr>
+            <tr><td>Hosting 重建</td><td><span class="pill">建置驗證</span></td><td>本機重建成功、資源檢查通過；沒有比對線上 Hosting 內容，也沒有發布。</td></tr>
+            <tr><td>正式流程端到端驗收</td><td><span class="pill wait">待做</span></td><td>等待恢復觸發器後，在安全維護時段安排真實資料流程驗收；不可用舊的寫入 /test 測試代替。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">使用者在工作開始前已有一份未提交規劃 Markdown 和一份刪除中的 10/25 HTML。它們未被本次提交或覆寫，保留原狀。</p>
+    </section>
+    <section id="next">
+      <p class="kicker">05 · POST-RESTORE CHECK</p>
+      <h2>接下來觀察哪些項目</h2>
+      <div class="callout warn">
+        <strong>不要為了測試而製造正式 POB、清除卡片或強制更新預報。</strong>先觀察自然發生的自動作業與下一筆真實業務事件。<code>/test</code> 是 APP 正在使用的資料路徑，不是可丟棄的測試沙箱。
+      </div>
+      <ol>
+        <li><strong>今晚約 23:00：GAS 歸檔。</strong>查看 Apps Script 執行紀錄與歸檔試算表；確認每艘來源卡片只新增一筆歸檔列。寫入失敗時來源應保留；不要手動清除，先保存錯誤時間與訊息。</li>
+        <li><strong>明天 12:00–17:00：Cloud Run 預報。</strong>排程每 15 分鐘執行。檢查 Cloud Run 執行紀錄、RTDB <code>forecast_metadata.updatedAt</code> 與 APP 圖表；失敗時確認上一版預報仍在。</li>
+        <li><strong>Cool Rover 觀察案例（10/28 → 10/29）。</strong>
+          <ul>
+            <li>預估（使用者提供，未獨立查證）：受東北季風影響，使用者估計 10/28 約有 99% 機率無法進港，10/29 才較有機會。</li>
+            <li>船期同步：觀察實際日曆／船期是否改到 10/29，以及 RTDB <code>schedule_list</code> 是否同步。</li>
+            <li>10/28 歸檔：若當天未進港，確認歸檔成功且 10/29 目標卡建立成功後才清除來源；失敗時來源應保留，重試不得重複歸檔。</li>
+            <li>10/29 POB：若實際進港，檢查 Cloud Run 是否接受有效時間、GAS 是否回報成功、RTDB 是否更新 POB／船期，以及有下一艘船時是否正確接力。未發生的事件記為「未觀察」，不要人工製造。</li>
+          </ul>
+        </li>
+        <li>如有錯誤，記下發生時間與錯誤訊息；保留 RTDB 和試算表現場，再檢查 Cloud Run／Apps Script 執行紀錄。不要手動重跑歸檔或直接刪除卡片。</li>
+      </ol>
+      <p>Cloud Run 回復指令（只在新版異常時使用）：</p>
+      <pre><code>gcloud.cmd run services update-traffic forecast-api-test --project=newlngship --region=asia-southeast1 --to-revisions=forecast-api-test-00057-4tc=100</code></pre>
+      <p>恢復工作已完成。正式 POB、船期／換班端到端驗收仍須等自然事件發生；目前 64 項隔離測試與合成前端流程通過，不能取代真實業務驗收。</p>
+    </section>
+    <section id="sources">
+      <p class="kicker">06 · EVIDENCE</p>
+      <h2>證據與來源</h2>
+      <div class="grid2">
+        <div class="panel">
+          <h3>本機程式與檢查</h3>
+          <ul>
+            <li><code>backend/src/rtdb.py</code>：RTDB 鎖、原子發布、持有者檢查（18–133 行）。</li>
+            <li><code>backend/app.py</code>：更新 API 與錯誤回應（151 行起）。</li>
+            <li><code>gas/monitor.js</code>：歸檔、觸發器 pause/setup（574、1340–1425 行）。</li>
+            <li><code>deploy/deploy_cloud_run.py</code>、<code>deploy/build_hosting.py</code>：部署 staging 與 public 原子替換。</li>
+            <li><code>tests/test_backend_safety.py</code>、<code>tests/test_gas_archive.js</code>、<code>tests/test_gas_triggers.js</code>、<code>tests/test_build_hosting.py</code>。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>官方平台說明</h3>
+          <ul>
+            <li><a href="https://firebase.google.com/docs/emulator-suite/install_and_configure">Firebase Emulator 安裝與 Java 需求</a>。</li>
+            <li><a href="https://firebase.google.com/docs/emulator-suite/connect_rtdb">Realtime Database Emulator 匯入與連線</a>。</li>
+            <li><a href="https://firebase.google.com/docs/database/manage-data-console">RTDB JSON 匯出／匯入</a>。</li>
+            <li><a href="https://developers.google.com/apps-script/api/how-tos/execute">Apps Script API 執行函式條件</a>。</li>
+            <li><a href="https://docs.cloud.google.com/run/docs/deploying-source-code">Cloud Run 從來源部署</a>。</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">狀態區分：程式碼與本機測試為本次直接檢查；Scheduler／Cloud Run 為 GCP 唯讀查詢；GAS 觸發器已由使用者在 Apps Script 畫面確認，未透過 API 讀回；正式業務寫入驗收尚未執行。</p>
+    </section>
+  </main>
+  <footer class="shell">
+    <p><strong>判讀：</strong>自動觸發器與 Scheduler 已恢復，Cloud Run 新版已切流；現在進入真實排程觀察期，正式 POB／船期／換班寫入回歸仍未完成。</p>
+    <p>文件日期：2026-10-26 20:48（台北時間）· 獨立 HTML，內嵌樣式與圖表，可離線開啟。</p>
+  </footer>
+</body>
+</html>
