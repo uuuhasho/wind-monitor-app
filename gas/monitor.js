@@ -1341,11 +1341,24 @@ function tryHandoffToNextShip(reasonContext) {
 // 系統初始化觸發器
 function setupSystemTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(t => ScriptApp.deleteTrigger(t));
-  
-  ScriptApp.newTrigger("checkDailySchedule").timeBased().atHour(4).everyDays(1).create();
-  ScriptApp.newTrigger("executeMonitor").timeBased().everyMinutes(1).create();
-  ScriptApp.newTrigger("archiveAndClearFirebase").timeBased().atHour(23).everyDays(1).create();
+  const calendarId = "89f17p8et94udnavnaqgihrgvg@group.calendar.google.com";
+  const hasTrigger = (handler, source, sourceId = null) => triggers.some(trigger =>
+    trigger.getHandlerFunction() === handler &&
+    trigger.getTriggerSource() === source &&
+    (sourceId === null || trigger.getTriggerSourceId() === sourceId));
+
+  if (!hasTrigger("checkDailySchedule", ScriptApp.TriggerSource.CLOCK)) {
+    ScriptApp.newTrigger("checkDailySchedule").timeBased().atHour(4).everyDays(1).create();
+  }
+  if (!hasTrigger("executeMonitor", ScriptApp.TriggerSource.CLOCK)) {
+    ScriptApp.newTrigger("executeMonitor").timeBased().everyMinutes(1).create();
+  }
+  if (!hasTrigger("archiveAndClearFirebase", ScriptApp.TriggerSource.CLOCK)) {
+    ScriptApp.newTrigger("archiveAndClearFirebase").timeBased().atHour(23).everyDays(1).create();
+  }
+  if (!hasTrigger("onCalendarOrSheetChange", ScriptApp.TriggerSource.CALENDAR, calendarId)) {
+    ScriptApp.newTrigger("onCalendarOrSheetChange").forUserCalendar(calendarId).onEventUpdated().create();
+  }
 }
 
 function updateFirebaseScheduleList() {
