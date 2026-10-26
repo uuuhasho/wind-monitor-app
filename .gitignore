@@ -17,6 +17,12 @@ env/
 
 # === 暫存 / 外部工具 ===
 temp/
+runtime/
+data.json
+public/
+local_archive/
+.public-previous-*/
+.public-previous/
 lib/
 tessdata/
 test_monitor/
@@ -24,6 +30,8 @@ gas_test_project/
 .gas/
 .antigravitycli/
 diagnostics/
+.playwright-cli/
+hosting-stage-*/
 GEMINI.md
 *.log
 .DS_Store

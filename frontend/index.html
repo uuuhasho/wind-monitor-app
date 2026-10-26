@@ -1525,12 +1525,37 @@
     }
 
     let serverTimeOffset = 0;
+    let forecastLease = null;
+    let forecastLeaseTimer = null;
+    let forecastUpdateStatus = {};
+
+    function refreshForecastUpdateButton() {
+        const button = document.getElementById('forecastUpdateBtn');
+        if (!button) return;
+        const expired = forecastLease && forecastLease.expiresAt * 1000 <= Date.now() + serverTimeOffset;
+        const running = forecastUpdateStatus.forecast_updating === true && !expired;
+        const wasUpdating = button.disabled;
+        button.disabled = running;
+        button.innerHTML = running ? '<span>⏳ 更新中...</span>' :
+            forecastUpdateStatus.forecast_auto_failed === true ? '<span>❗ 請手動更新</span>' : '<span>🔄 手動更新</span>';
+        button.style.animation = !running && forecastUpdateStatus.forecast_auto_failed === true ? 'pulse-highlight 1.5s ease-in-out 3' : '';
+        if (wasUpdating && !running) loadForecastData();
+    }
 
     // 啟動 Firebase 即時監聽
     function startFirebaseListeners() {
         // 🌟 新增：取得 Firebase 伺服器時間偏移量 (I12)
         db.ref('.info/serverTimeOffset').on('value', function(snap) {
             serverTimeOffset = snap.val() || 0;
+        });
+        db.ref('test/forecast_update_lock').on('value', snapshot => {
+            forecastLease = snapshot.val();
+            clearTimeout(forecastLeaseTimer);
+            if (forecastLease && forecastLease.expiresAt) {
+                forecastLeaseTimer = setTimeout(refreshForecastUpdateButton,
+                    Math.max(0, forecastLease.expiresAt * 1000 - Date.now() - serverTimeOffset));
+            }
+            refreshForecastUpdateButton();
         });
 
         // 🌟 新增：Firebase 連線狀態監控，加 3 秒延遲避免初始化閃頻 (C4)
@@ -1617,31 +1642,8 @@
             // 更新呼吸燈
             updateDynamicBox(data);
 
-            // 🌟 同步天氣預報手動更新按鈕狀態與即時重新加載
-            const updateBtn = document.getElementById('forecastUpdateBtn');
-            if (updateBtn) {
-                if (data.forecast_updating === true) {
-                    updateBtn.disabled = true;
-                    updateBtn.innerHTML = `<span>⏳ 更新中...</span>`;
-                } else {
-                    const wasUpdating = updateBtn.disabled;
-                    updateBtn.disabled = false;
-                    
-                    // 🌟 若自動更新超時失敗，提示使用者手動更新
-                    if (data.forecast_auto_failed === true) {
-                        updateBtn.innerHTML = `<span>❗ 請手動更新</span>`;
-                        updateBtn.style.animation = 'pulse-highlight 1.5s ease-in-out 3';
-                    } else {
-                        updateBtn.innerHTML = `<span>🔄 手動更新</span>`;
-                        updateBtn.style.animation = '';
-                    }
-                    
-                    // 若是剛更新完畢，自動重新抓取 Firestore 最新氣象預報
-                    if (wasUpdating && typeof loadForecastData === 'function') {
-                        loadForecastData();
-                    }
-                }
-            }
+            forecastUpdateStatus = data;
+            refreshForecastUpdateButton();
         });
 
 

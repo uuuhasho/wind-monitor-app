@@ -1,6 +1,8 @@
 import os
+import ast
 import sys
 import tempfile
+import subprocess
 import unittest
 from copy import deepcopy
 from importlib.util import module_from_spec, spec_from_file_location
@@ -10,6 +12,7 @@ from unittest.mock import patch
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from src import data_fusion
 from src.rtdb import ForecastRtdb, PipelineBusyError, RtdbError
 import main
@@ -167,6 +170,29 @@ class ForecastRtdbTests(unittest.TestCase):
 
 
 class ForecastDateAndFusionTests(unittest.TestCase):
+    def test_fusion_matches_pre_refactor_output_without_external_writes(self):
+        source = subprocess.run(
+            ["git", "show", "5233f9d:src/data_fusion.py"],
+            cwd=Path(__file__).resolve().parents[1], check=True, capture_output=True, text=True, encoding="utf-8",
+        ).stdout.replace(
+            "from src.config import load_config, get_service_account_path",
+            "from src.config import load_config\nget_service_account_path = lambda: None",
+        )
+        legacy = ModuleType("legacy_data_fusion")
+        exec(compile(source, "legacy_data_fusion.py", "exec"), legacy.__dict__)
+        settings = {"Algorithm": {"WindRatio": 1.5333}}
+        payload = {"initial_date": "12Z30OCT", "points": [
+            {"date_day": 30, "hour": 12, "wind_speed_kt": 15.333},
+            {"date_day": 31, "hour": 0, "wind_speed_kt": 30.666},
+        ]}
+        from src import config as backend_config
+        with tempfile.TemporaryDirectory() as directory, patch.object(backend_config, "BASE_DIR", directory), patch.object(
+            legacy, "load_config", return_value=settings
+        ), patch.object(legacy, "fetch_open_meteo_data", return_value={}), patch.object(
+            data_fusion, "load_config", return_value=settings
+        ), patch.object(data_fusion, "fetch_open_meteo_data", return_value={}), patch.object(data_fusion, "ForecastRtdb"):
+            self.assertEqual(legacy.fuse_and_save_data(payload), data_fusion.fuse_and_save_data(payload, directory, "job"))
+
     def test_utc_to_taiwan_and_year_rollover_are_preserved(self):
         class FixedDatetime(data_fusion.datetime):
             @classmethod
@@ -221,6 +247,29 @@ class ForecastDateAndFusionTests(unittest.TestCase):
 
 
 class PipelineLifecycleTests(unittest.TestCase):
+    def test_update_handler_force_obeys_busy_lock_and_failure_status(self):
+        module = ast.parse((Path(__file__).resolve().parents[1] / "backend" / "app.py").read_text(encoding="utf-8"))
+        function = next(item for item in module.body if isinstance(item, ast.FunctionDef) and item.name == "update_forecast")
+        function.decorator_list = []
+        handler = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+        for force in ("true", "false"):
+            namespace = {"os": os, "request": SimpleNamespace(args={"force": force, "pwd": "synthetic"}),
+                         "jsonify": lambda payload: payload, "PipelineBusyError": PipelineBusyError}
+            with patch.dict(os.environ, {"APP_PASSWORD": "synthetic"}):
+                exec(compile(handler, "isolated_update_handler", "exec"), namespace)
+                with patch.dict(namespace, {"run_pipeline": unittest.mock.Mock(side_effect=PipelineBusyError("busy"))}):
+                    self.assertEqual(namespace["update_forecast"]()[1], 429)
+                with patch.dict(namespace, {"run_pipeline": lambda date: False}):
+                    self.assertEqual(namespace["update_forecast"]()[1], 500)
+
+    def test_publish_failure_makes_pipeline_fail(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(main, "download_forecast_attachment", return_value="mock.doc"), patch.object(
+            main, "convert_doc_to_docx"
+        ), patch.object(main, "extract_image_from_docx"), patch.object(main, "parse_chart_with_cv2", return_value={"points": [1]}), patch.object(
+            main, "fuse_and_save_data", side_effect=RtdbError("publication failed")
+        ):
+            self.assertFalse(main._run_pipeline_impl("0101", directory, "job"))
+
     def test_busy_lock_stops_pipeline_before_any_work(self):
         class BusyRtdb:
             def __init__(self, _settings):

@@ -11,8 +11,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project into the container
-COPY . .
+# Only staged application sources enter the image.
+COPY app.py main.py ./
+COPY src/ ./src/
 
 # Expose port
 ENV PORT=8080

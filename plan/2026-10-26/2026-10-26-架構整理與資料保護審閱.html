@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="claymorphism">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="奶昔 APP 本機資料保護、來源整理與隔離驗收紀錄；尚未部署雲端。">
+  <title>奶昔 APP｜架構整理與資料保護</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1A202C;
+      --muted: #4A5568;
+      --paper: #FFF9F5;
+      --surface: #FFFFFF;
+      --line: #2D3748;
+      --accent: #D6EEFF;
+      --accent-strong: #1A202C;
+      --accent-soft: #D6EEFF;
+      --success: #175D38;
+      --success-soft: #D4F4E2;
+      --warning: #6B4A00;
+      --warning-soft: #FEF3C7;
+      --danger: #8B2E2A;
+      --danger-soft: #FFD8D0;
+      --peach: #FFD8D0;
+      --sky: #D6EEFF;
+      --mint: #D4F4E2;
+      --amber: #FEF3C7;
+      --lavender: #E6E6FA;
+      --shadow-hero: 6px 6px 0 #2D3748;
+      --shadow-card: 4px 4px 0 #2D3748;
+      --shadow-small: 2px 2px 0 #2D3748;
+      --radius: 16px;
+      --content-width: 1120px;
+      --gutter: clamp(16px, 4vw, 36px);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; color: var(--ink); background: var(--paper);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+    a { color: var(--accent-strong); text-underline-offset: 3px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid #bd7415; outline-offset: 3px; }
+    .skip-link { position: absolute; left: 12px; top: -100px; z-index: 20; padding: 9px 12px; color: #fff; background: #172b36; border-radius: 8px; }
+    .skip-link:focus { top: 12px; }
+    .shell { width: min(var(--content-width), calc(100% - 2 * var(--gutter))); margin-inline: auto; }
+    .masthead { padding: clamp(32px, 7vw, 72px) 0 36px; }
+    .masthead > .shell { padding: clamp(24px, 5vw, 48px); border: 3px solid var(--line); border-radius: 20px; background: linear-gradient(120deg, var(--sky) 0 62%, #fff 62%); box-shadow: var(--shadow-hero); }
+    .hero-panel { padding: clamp(24px, 5vw, 48px); border: 3px solid var(--line); border-radius: 20px; background: linear-gradient(120deg, var(--sky) 0 62%, #fff 62%); box-shadow: var(--shadow-hero); }
+    .eyebrow, .section-kicker { margin: 0 0 10px; color: var(--accent-strong); font-size: .78rem; font-weight: 800; letter-spacing: .08em; }
+    h1, h2, h3 { line-height: 1.22; text-wrap: balance; }
+    h1 { max-width: 880px; margin: 0 0 14px; font-size: clamp(2rem, 5vw, 3.6rem); }
+    h2 { margin: 0 0 14px; font-size: clamp(1.45rem, 3vw, 2.2rem); }
+    h3 { margin: 0 0 8px; font-size: 1.12rem; }
+    p { margin: 0 0 14px; }
+    p:last-child { margin-bottom: 0; }
+    .lede { max-width: 72ch; color: var(--muted); font-size: 1.08rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 18px; color: var(--muted); font-size: .9rem; }
+    .quick-read { margin-top: 22px; padding: 18px 20px; background: var(--mint); border: 2.5px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-card); }
+    .quick-read h2 { margin-bottom: 8px; font-size: 1.15rem; }
+    .quick-read ul { margin: 0; padding-inline-start: 1.25rem; }
+    .quick-read li + li { margin-top: 5px; }
+    .toc { position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); }
+    .toc-inner { display: flex; gap: 8px; overflow-x: auto; padding-block: 9px; scrollbar-width: thin; }
+    .toc a { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 7px 10px; border: 1.5px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); text-decoration: none; box-shadow: var(--shadow-small); }
+    .toc a:hover { background: var(--sky); }
+    main { padding-block: 28px 64px; }
+    section { min-width: 0; margin-bottom: 40px; scroll-margin-top: 72px; }
+    .section-intro { max-width: 72ch; margin-bottom: 18px; color: var(--muted); }
+    .panel, .step, .source { min-width: 0; padding: 18px; border: 2.5px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+    .grid-2, .grid-3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .callout { padding: 16px 18px; border: 2px solid var(--line); border-radius: 12px; background: var(--sky); box-shadow: 3px 3px 0 var(--line); }
+    .callout.success { background: var(--success-soft); }
+    .callout.warning { background: var(--warning-soft); }
+    .callout.danger { background: var(--danger-soft); }
+    .steps { display: grid; gap: 12px; }
+    .step { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; }
+    .step-number { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--peach); box-shadow: var(--shadow-small); font-weight: 800; }
+    .table-wrap, .code-wrap, .diagram-scroll { max-width: 100%; overflow: auto; overscroll-behavior-inline: contain; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; background: var(--surface); }
+    caption { padding: 10px; color: var(--muted); text-align: start; }
+    th, td { padding: 11px 13px; border: 1px solid #CBD5E1; text-align: start; vertical-align: top; }
+    th { background: var(--sky); color: var(--ink); }
+    pre { max-width: 100%; overflow: auto; padding: 16px; border-radius: 10px; color: #f5f7fa; background: #202b35; font: .9rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; tab-size: 2; }
+    :not(pre) > code { padding: 2px 5px; border-radius: 4px; background: var(--accent-soft); overflow-wrap: anywhere; }
+    figure { min-width: 0; margin: 0; }
+    .diagram { max-width: 100%; height: auto; }
+    figcaption, .note { margin-top: 8px; color: var(--muted); font-size: .9rem; }
+    details { margin-top: 12px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-small); }
+    summary { min-height: 44px; padding: 10px 14px; cursor: pointer; font-weight: 750; }
+    details > :not(summary) { margin-inline: 14px; }
+    details > :last-child { margin-bottom: 14px; }
+    .sources { display: grid; gap: 10px; }
+    footer { padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); }
+    @media (max-width: 760px) {
+      .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+      .step { grid-template-columns: 34px minmax(0, 1fr); gap: 10px; padding: 14px; }
+      th, td { padding: 9px 10px; }
+    }
+    @media (max-width: 420px) {
+      body { font-size: 16px; }
+      .shell { width: calc(100% - 28px); }
+      .masthead { padding-top: 30px; }
+      .masthead > .shell { padding: 20px; background: linear-gradient(155deg, var(--sky) 0 48%, #fff 48%); }
+      .panel { padding: 14px; }
+      .quick-read { padding: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print {
+      body { color: #111; background: #fff; }
+      .toc, .skip-link { display: none !important; }
+      .shell { width: 100%; }
+      .masthead { padding: 18px 0; }
+      .masthead > .shell { background: #fff; box-shadow: none; }
+      main { padding-block: 18px; }
+      .panel, .step, .source { box-shadow: none; break-inside: avoid; }
+      a { color: inherit; }
+      a[href^="http"]::after { content: " (" attr(href) ")"; font-size: .8em; overflow-wrap: anywhere; }
+      details > * { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="masthead">
+    <div class="shell">
+      <p class="eyebrow">奶昔 APP · 本機實作審閱</p>
+      <h1>架構整理與資料保護</h1>
+      <p class="lede">保留 GCP、Firebase、GAS 分工及正式使用中的 /test。先讓失敗保留資料，再集中來源；本頁區分本機驗證、雲端待驗證與回復步驟。</p>
+      <p class="meta"><time datetime="2026-10-26">2026-10-26</time><span>本機實作與隔離驗收</span></p>
+      <section class="quick-read" aria-labelledby="quick-read-title">
+        <h2 id="quick-read-title">30 秒看懂</h2>
+        <ul><li>歸檔必要寫入成功後才刪卡；預報與成功時間一起發布。</li><li>跨執行個體使用 RTDB 持有者鎖，強制更新也遵守鎖。</li><li>來源集中到 frontend、gas、backend、deploy、tests；public 可重建。</li><li>保留歷史預報、班表、Windows OCR 與原有未提交文件變更。</li><li><strong>未執行雲端部署、真實資料寫入或遠端 Git 操作。</strong></li></ul>
+      </section>
+    </div>
+  </header>
+  <nav class="toc" aria-label="章節導覽"><div class="shell toc-inner"><a href="#architecture">關係圖</a><a href="#evidence">問題證據</a><a href="#changes">刪留與批次</a><a href="#validation">驗證結果</a><a href="#release">部署與回復</a></div></nav>
+  <main id="main" class="shell">
+    <section id="architecture"><h2>1. 現況關係與保留分工</h2><p>以下為程式碼可確認的呼叫關係；雲端實際部署版本尚未比對。</p>
+      <figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="預報資料流，可左右捲動"><svg class="diagram" style="min-width:760px" width="1000" viewBox="0 0 1000 150" role="img" aria-labelledby="forecast-title forecast-desc"><title id="forecast-title">預報資料流</title><desc id="forecast-desc">排程器或 APP 手動更新呼叫 Cloud Run，經 RTDB 工作鎖及原子發布，供 APP 圖表讀取。</desc><defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0 0 8 3 0 6Z" fill="#2D3748"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0 0 8 3 0 6Z" fill="#175D38"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0 0 8 3 0 6Z" fill="#1A202C"/></marker></defs><g stroke="#2D3748" stroke-width="2" marker-end="url(#arrow)"><path d="M200 75H235"/><path d="M420 75H455"/><path d="M650 75H685"/><path d="M830 75H865"/></g><g stroke="#2D3748" stroke-width="2.5"><rect x="5" y="30" width="195" height="90" rx="12" fill="#FFFFFF"/><rect x="240" y="30" width="180" height="90" rx="12" fill="#D6EEFF"/><rect x="460" y="30" width="190" height="90" rx="12" fill="#D4F4E2"/><rect x="690" y="30" width="140" height="90" rx="12" fill="#D4F4E2"/><rect x="870" y="30" width="125" height="90" rx="12" fill="#FFFFFF"/></g><g fill="#1A202C" font-size="17" text-anchor="middle"><text x="102" y="67">Cloud Scheduler</text><text x="102" y="94">／APP 手動更新</text><text x="330" y="67">Cloud Run</text><text x="330" y="94">預報管線</text><text x="555" y="67">RTDB 工作鎖</text><text x="555" y="94">持有者＋期限</text><text x="760" y="67">RTDB /test</text><text x="760" y="94">預報＋時間</text><text x="932" y="81">APP 圖表</text></g></svg></div><figcaption>預報：排程／手動 → Cloud Run → 工作鎖 → 原子發布 → APP。工作鎖與預報發布使用同一個命名空間。</figcaption></figure>
+      <figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="POB 與歸檔資料流，可左右捲動"><svg class="diagram" style="min-width:760px" width="1000" viewBox="0 0 1000 145" role="img" aria-labelledby="pob-title pob-desc"><title id="pob-title">POB、監控與歸檔</title><desc id="pob-desc">LINE 傳到 Cloud Run 解析 POB，再委託 GAS 更新 RTDB 監控、船期與換班，最後歸檔至試算表。必要寫入成功才刪原卡。</desc><g stroke="#2D3748" stroke-width="2" marker-end="url(#arrow)"><path d="M135 72H170"/><path d="M365 72H400"/><path d="M565 72H600"/><path d="M795 72H830"/></g><g stroke="#2D3748" stroke-width="2.5"><rect x="5" y="27" width="130" height="90" rx="12" fill="#FFFFFF"/><rect x="175" y="27" width="190" height="90" rx="12" fill="#D6EEFF"/><rect x="405" y="27" width="160" height="90" rx="12" fill="#E6E6FA"/><rect x="605" y="27" width="190" height="90" rx="12" fill="#D4F4E2"/><rect x="835" y="27" width="160" height="90" rx="12" fill="#FFFFFF"/></g><g fill="#1A202C" font-size="17" text-anchor="middle"><text x="70" y="79">LINE</text><text x="270" y="64">Cloud Run</text><text x="270" y="91">Gemini 解析 POB</text><text x="485" y="64">GAS</text><text x="485" y="91">執行後續流程</text><text x="700" y="64">RTDB /test</text><text x="700" y="91">監控／船期／換班</text><text x="915" y="64">試算表歸檔</text><text x="915" y="91">成功才刪卡</text></g></svg></div><figcaption>POB：LINE → Cloud Run 解析 → GAS → RTDB 監控與船期 → 試算表。Cloud Run 不直接改寫 daily_records。</figcaption></figure>
+    </section>
+    <section id="evidence"><h2>2. 修改前的問題證據</h2><p>證據來自本機初始版本（Git 起點 5233f9d），不表示已觀察到線上資料損失。</p><div class="table-wrap" tabindex="0" role="region" aria-label="問題證據表"><table><thead><tr><th>原始位置</th><th>原有行為</th><th>風險與修正方向</th></tr></thead><tbody><tr><td>src/data_fusion.py</td><td>預報與成功時間分開寫入；錯誤只印出後繼續。</td><td>時間與資料可能不一致；改成受鎖保護的整體條件寫入。</td></tr><tr><td>app.py、main.py</td><td>使用行程內鎖；force 可繞過；重置與預報網址組法不同。</td><td>多執行個體競爭；改成同一環境的持有者鎖。</td></tr><tr><td>gs_test.js / archiveAndClearFirebase</td><td>分類分頁失敗仍繼續；改期先歸檔；最後整日刪卡。</td><td>部分失敗可能遺失或重複；改成逐卡確認及可重試歸檔。</td></tr><tr><td>main.py / cleanup_old_files</td><td>清理根目錄文件與 temp。</td><td>歷史樣本與執行產物混用；改成只清理自身 runtime 子目錄。</td></tr><tr><td>deploy_hosting.ps1</td><td>先清 public 再複製；根目錄音效來源缺失。</td><td>失敗留下缺檔輸出；改成暫存建置、檢查成功後替換。</td></tr></tbody></table></div></section>
+    <section id="changes"><h2>3. 分批變更與刪留</h2><p>APP 操作方式、/test、主頁與簡報網址保留。public 為建置輸出。</p><pre>frontend/  主頁、圖片、唯一音效、簡報原始檔
+gas/       GAS 程式與既有專案部署設定
+backend/   Python API、預報管線與解析
+deploy/    建置、部署與維護工具
+tests/     隔離驗收與樣本
+public/    可重建的 Hosting 產物</pre><div class="table-wrap" tabindex="0" role="region" aria-label="刪留清單"><table><thead><tr><th>項目</th><th>處理方式</th><th>核對依據</th></tr></thead><tbody><tr><td>主頁</td><td>三份相同頁面收斂成 frontend/index.html。</td><td>原始 SHA-256：EB9841D4…7D597CDEF。舊 test_monitor 頁已退役。</td></tr><tr><td>GAS</td><td>兩份相同程式收斂到 gas/monitor.js，沿用既有 clasp 設定。</td><td>原始 SHA-256：8996BCC9…966BF5F。scriptId 與 rootDir 核對相同。</td></tr><tr><td>Firestore、fixLastRowJson、舊測試</td><td>移除舊讀寫程式與會改寫 /test 的驗收腳本。</td><td>雲端既有 Firestore 資料未變動。</td></tr><tr><td>影片、旁白與腳本</td><td>留在不會部署的 local_archive。</td><td>4 個檔案逐一核對長度與 SHA-256，見 media-integrity.json。</td></tr><tr><td>data.json、public</td><td>保留本機執行與 Hosting 產物，取消 Git 追蹤。</td><td>Hosting 從 frontend/ 重建；GitHub Actions 僅留無預報工作的手動說明。</td></tr><tr><td>歷史文件、預報、班表、OCR</td><td>保留；清理只處理本次 runtime 子目錄。</td><td>原工作樹 10/25 文件刪除與未追蹤筆記保留於提交之外。</td></tr></tbody></table></div><details><summary>批次提交與變更範圍</summary><p>資料保護：3dc5f0c，已提交。目錄整理及本審閱文件另行提交。</p></details></section>
+    <section id="validation"><h2>4. 實際驗證結果</h2><div class="callout success"><strong>本機驗收通過：</strong>使用隔離資料與模擬服務，沒有把正式 /test 當作測試資料庫。</div><ul><li>Python：20 項測試通過。RTDB CAS 競爭、逾時、失敗保留舊預報、force 併發、台灣跨年及新舊融合輸出比對。</li><li>GAS：12 組 Node VM 情境通過。逐卡失敗／重試、分類列回執失敗、試算表逾時、目標卡衝突、ETag 防並行刪除、POB 風速及換班。</li><li>Hosting：建置測試及實際 build 通過；缺檔時保留舊 public。資源檢查、主頁及兩個音效網址通過。</li><li>前端：Playwright 使用合成 Firebase、ECharts 與 GAS 回應測預報、船期、鎖逾時、開始監控、POB 結束及手動歸檔指令；沒有 JavaScript 錯誤。</li><li>部署來源：Python compileall、Node 語法檢查、git diff --check 通過；Cloud Run staging 過濾非必要檔案。影片與旁白 4 檔長度／SHA-256 通過。</li></ul><details><summary>尚未執行與風險</summary><p>尚未部署 Cloud Run／Firebase Hosting，未執行 GAS push/deploy，未寫入線上 RTDB 或試算表。GAS 線上 HEAD、Web App 版本與觸發器版本仍待授權後比對。</p><p>瀏覽器服務皆為模擬；未做雲端端對端、容器內 OCR、Word／LibreOffice、Gmail IMAP 或 Gemini 呼叫。RTDB CAS 以 /test 根節點作條件更新，連續競爭 3 次會安全失敗並保留舊預報；真實資料量與更新量下的延遲尚未測量。</p></details></section>
+    <section id="release"><h2>5. 部署前審閱與回復</h2><p><strong>下一步：</strong>審閱提交、隔離驗收及回復方案，再另行授權雲端部署。</p><ol><li>記錄 GAS 既有專案、Web App deployment ID、部署版本與觸發器；記錄 Cloud Run revision 及流量。</li><li>備份 RTDB 與試算表。切換時先暫停預報觸發，確認沒有舊版工作；舊版工作不遵守新工作鎖。</li><li>從英文乾淨工作區部署 Cloud Run；機密透過 Secret Manager／環境變數。GAS 需同時升級 HEAD 與既有 Web App deployment。</li><li>Hosting 完整建置後部署，核對主頁、簡報、兩個音效網址及 APP 操作流程。</li><li>若驗證失敗，暫停觸發並回切先前 Cloud Run revision、GAS deployment 版本與 Hosting release；保留資料現況供檢查。</li></ol><p class="note">不自動清除舊容器映像，保留回復版本；雲端寫入與映像清理須另行審閱。</p></section>
+  </main>
+  <footer class="shell"><p>來源：使用者提供計畫、本機 Git 起點 5233f9d、程式差異、20 項 Python 測試、12 組 GAS 情境與 Playwright 隔離驗收。關係圖是程式呼叫關係；雲端現況未驗證。</p><p>樣式：visual-docs；關係圖：diagram-design。記錄日期：2026-10-26。</p></footer>
+</body>
+</html>

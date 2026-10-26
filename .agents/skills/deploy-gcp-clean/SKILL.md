@@ -1,57 +1,26 @@
----
+﻿---
 name: deploy-gcp-clean
-description: Use when deploying a GCP Cloud Run backend service on Windows to avoid ContainerImageImportFailed errors caused by Chinese character folder exclusion failures in gcloud CLI.
+description: Use when preparing or deploying this project's Cloud Run service on Windows, preserving an ASCII staging path and excluding local secrets.
 ---
 
 # Deploy GCP Clean
 
-## Overview
-Provides a reliable deployment workflow for GCP Cloud Run services when deploying from a Windows host. It bypasses a known bug where the Windows `gcloud` CLI fails to parse Chinese character patterns in `.gcloudignore`, which packages invalid character file paths and triggers Cloud Run's filesystem safety block.
+Use `deploy/deploy_cloud_run.py` as the only Cloud Run deployment entrypoint. Source files live in `backend/`; the Dockerfile lives in `deploy/`. Locate the project root from the script path, not the current working directory.
 
-## When to Use
-* **Symptom**: Cloud Run deployment fails during the `Creating Revision` step with:
-  ```text
-  ERROR: (gcloud.run.deploy) Container import failed. (ContainerImageImportFailed)
-  ```
-* **Context**: You are running `gcloud run deploy --source .` on a **Windows** machine.
-* **Condition**: The project directory contains folders or files with Chinese characters (e.g., `測試版/`, `正式版/`, `0627中油.doc`) that are listed in `.gcloudignore` but still get packaged because of Windows CLI encoding mismatches.
+## Preparation
 
-## Core Pattern
-Create a temporary, 100% ASCII/English-only directory containing ONLY the necessary backend files, execute the deployment from there, and then clean up.
+1. Run isolated checks: `python -m unittest discover -s tests -v` and `node tests/test_gas_archive.js`.
+2. Review the actual diff and previous Cloud Run revision, GAS Web App version and Hosting release for rollback.
+3. Stop scheduled triggers before a version transition so an older worker cannot publish outside the new lock protocol.
+4. Stage with `python deploy/deploy_cloud_run.py`. This uses `C:\Users\hilla\Desktop\newlngship_clean`; staging outside the workspace requires approval in Codex.
+5. Verify only app.py, main.py, requirements.txt, src Python modules, Dockerfile and ignore files are present. Never copy config.json, env.json, service_account.json, .env, local archives or OCR samples. Cloud credentials come from Secret Manager or environment variables.
 
-### Reusable PowerShell Script
-Deploy using the following helper script located at `C:\Users\hilla\Desktop\奶昔code\.agents\skills\deploy-gcp-clean\deploy_gcp_clean.ps1`:
+## Authorized deployment
 
-```powershell
-# 🚀 Windows GCP Clean Deploy Script
-# Run from project root
+Only after explicit authorization run `python deploy/deploy_cloud_run.py --deploy`. The legacy PowerShell helper in this skill forwards to that script; it is build-only unless `-Deploy` is supplied.
 
-$sourceDir = Get-Item .
-$cleanDir = "C:\Users\hilla\Desktop\newlngship_clean"
+Preserve service `forecast-api-test`, region `asia-southeast1` and `FIREBASE_RTDB_PREFIX=/test`. The /test namespace is actively used by the APP.
 
-Write-Host "[*] Creating clean workspace at $cleanDir..." -ForegroundColor Cyan
-if (Test-Path $cleanDir) { Remove-Item $cleanDir -Recurse -Force }
-New-Item -ItemType Directory -Path $cleanDir | Out-Null
+Do not automatically remove Artifact Registry images after deployment. Retain prior revisions for rollback; remote cleanup requires separate authorization.
 
-# Copy only necessary backend files
-Write-Host "[*] Copying backend files..." -ForegroundColor Cyan
-Copy-Item -Path "main.py" -Destination $cleanDir
-Copy-Item -Path "app_test.py" -Destination $cleanDir
-Copy-Item -Path "requirements.txt" -Destination $cleanDir
-Copy-Item -Path "Dockerfile" -Destination $cleanDir
-Copy-Item -Path "config.json" -Destination $cleanDir -ErrorAction SilentlyContinue
-Copy-Item -Path "service_account.json" -Destination $cleanDir -ErrorAction SilentlyContinue
-Copy-Item -Path "src" -Destination $cleanDir -Recurse
-
-# Execute gcloud deploy from the clean directory
-Write-Host "[*] Triggering gcloud run deploy..." -ForegroundColor Yellow
-Push-Location $cleanDir
-gcloud run deploy forecast-api-test --source . --region asia-southeast1 --allow-unauthenticated --execution-environment gen2
-Pop-Location
-
-Write-Host "[*] Deployment finished." -ForegroundColor Green
-```
-
-## Common Mistakes
-* **Executing `gcloud` from the project root**: Doing so bypasses the `.gcloudignore` rules on Windows due to Big5/UTF-8 page encoding differences. Always deploy from the clean temporary directory.
-* **Deleting the clean directory while deployment runs**: Cloud Build builds asynchronously, but the source is uploaded synchronously. Wait until the terminal says "Uploading sources... done" before touching the source files.
+GAS changes require both an authorized `clasp push` and updating the existing Web App deployment version from `gas/`. Scheduled triggers use HEAD, while external calls use the deployed version. Do not create a replacement GAS project.

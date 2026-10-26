@@ -140,9 +140,8 @@ function callFirebase(path, data, method = "patch", headers = {}) {
     
     // 攔截並紀錄非 2xx (成功) 的異常狀態碼
     if (statusCode < 200 || statusCode >= 300) {
-      const errorText = response.getContentText();
       console.error(`❌ Firebase API 錯誤 [${method.toUpperCase()}] /${path}`);
-      console.error(`👉 狀態碼: ${statusCode}, 回傳訊息: ${errorText}`);
+      console.error(`👉 狀態碼: ${statusCode}`);
     }
     
     return response; // 必須原封不動回傳，確保其他函式呼叫 .getContentText() 正常
@@ -527,11 +526,13 @@ function getForecastArchiveJson(dateStr) {
 function rescheduledDate(targetMD, now) {
   const parts = targetMD.split("/");
   const month = Number(parts[0]), day = Number(parts[1]);
-  if (!month || !day) throw new Error(`invalid rescheduled date: ${targetMD}`);
+  if (!Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1 || day > 31) throw new Error(`invalid rescheduled date: ${targetMD}`);
   let year = now.getFullYear();
   if (now.getMonth() > 8 && month < 3) year += 1;
   if (now.getMonth() < 3 && month > 8) year -= 1;
-  return Utilities.formatDate(new Date(year, month - 1, day), "GMT+8", "yyyy-MM-dd");
+  const target = new Date(year, month - 1, day);
+  if (target.getMonth() !== month - 1 || target.getDate() !== day) throw new Error(`invalid rescheduled date: ${targetMD}`);
+  return Utilities.formatDate(target, "GMT+8", "yyyy-MM-dd");
 }
 
 // Per-card receipts make retry safe after a timeout or partial archive failure.
@@ -559,7 +560,7 @@ function archiveAndClearFirebase(simDate = null) {
     if (sheet.getLastRow() === 0) sheet.appendRow(["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值", "archive_id"]);
     else if (sheet.getRange(1, 13).getValue() !== "archive_id") sheet.getRange(1, 13).setValue("archive_id");
     const [cpcJson, omJson] = getForecastArchiveJson(dateStr);
-    const schedule = getScheduleList();
+    const schedule = getScheduleList(true);
     const sheet160K = ss.getSheetByName("160K") || ss.insertSheet("160K");
     if (sheet160K.getLastRow() === 0) sheet160K.appendRow(["序號", "時間", "船名", "POB風速"]);
     const sheet180K = ss.getSheetByName("180K") || ss.insertSheet("180K");
@@ -592,7 +593,7 @@ function archiveAndClearFirebase(simDate = null) {
           const scheduled = !pob.pob_time && schedule.find(item => item.ship_name === shipName && item.d && item.d !== todayMD);
           const logs = JSON.stringify(cleanWindLogs(card.wind_logs));
           if (scheduled) {
-            const targetDate = rescheduledDate(scheduled.d, now);
+            const targetDate = rescheduledDate(scheduled.d, new Date(`${dateStr}T12:00:00+08:00`));
             const targetKey = `${targetDate}_${sanitizeKey(shipName)}`;
             appendArchiveRowOnce(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson]);
             const targetResponse = firebaseReadOrThrow(`daily_records/${targetDate}/${targetKey}`, {"X-Firebase-ETag": "true"});
@@ -629,7 +630,11 @@ function archiveAndClearFirebase(simDate = null) {
         failures.push(cardKey);
       }
     });
-    if (archivedShips.length) props.setProperty("ARCHIVED_SHIPS_TODAY", JSON.stringify({date: dateStr, ships: archivedShips}));
+    if (archivedShips.length) {
+      const previous = safeJsonParse(props.getProperty("ARCHIVED_SHIPS_TODAY"), {});
+      const ships = previous.date === dateStr ? (previous.ships || []).concat(archivedShips) : archivedShips;
+      props.setProperty("ARCHIVED_SHIPS_TODAY", JSON.stringify({date: dateStr, ships: [...new Set(ships)]}));
+    }
     if (failures.length) throw new Error(`archive incomplete; retained source cards: ${failures.join(", ")}`);
     firebaseWriteOrThrow("active_status", {app_mode: "stop", target_key: "", ship_name: "", limit_speed: "", forecast_auto_failed: null}, "patch");
     props.deleteProperty("LAST_WIND_DATA_TIME");
@@ -1009,7 +1014,7 @@ function fetchWindData() {
 // ==========================================
 // 8. 🚢 產生未來 10 筆船期表 (供前端顯示)
 // ==========================================
-function getScheduleList() {
+function getScheduleList(strict = false) {
   const now = new Date();
   const twDateStr = Utilities.formatDate(now, "GMT+8", "yyyy/MM/dd");
   const twParts = twDateStr.split('/');
@@ -1030,15 +1035,19 @@ function getScheduleList() {
       if (resp.getResponseCode() === 200) {
         apiDataRaw = resp.getContentText();
       } else {
+        if (strict) throw new Error("Schedule API read failed");
         console.warn("抓取日曆 API 非 200 狀態: " + resp.getResponseCode());
       }
     } catch (e) {
+      if (strict) throw new Error("Schedule API unavailable; source cards retained");
       console.error("抓取日曆 API 失敗: " + e);
     }
   }
   
+  if (strict && SHIP_SCHEDULE_API_URL && !apiDataRaw) throw new Error("Schedule API returned no data; source cards retained");
   if (apiDataRaw) {
-    const apiData = safeJsonParse(apiDataRaw, { data: [] }).data || [];
+    const apiData = (strict ? JSON.parse(apiDataRaw) : safeJsonParse(apiDataRaw, { data: [] })).data || [];
+    if (strict && !Array.isArray(apiData)) throw new Error("Schedule API returned invalid data; source cards retained");
     
     // 過濾出「今天起」未來的船期
     let futureApiData = apiData.filter(item => {
@@ -1064,10 +1073,11 @@ function getScheduleList() {
   // 2. 讀取手動覆蓋層 (schedule_overrides)
   let overridesMap = {};
   try {
-    const overridesRes = callFirebase("schedule_overrides", null, "get").getContentText();
-    overridesMap = safeJsonParse(overridesRes, {});
+    const overridesRes = (strict ? firebaseReadOrThrow("schedule_overrides") : callFirebase("schedule_overrides", null, "get")).getContentText();
+    overridesMap = strict ? JSON.parse(overridesRes) : safeJsonParse(overridesRes, {});
     if (!overridesMap || typeof overridesMap !== 'object') overridesMap = {};
   } catch(e) {
+    if (strict) throw new Error("Schedule overrides unavailable; source cards retained");
     console.error("讀取 schedule_overrides 失敗: " + e);
   }
 

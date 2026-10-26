@@ -1,6 +1,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const vm = require("vm");
+const path = require("path");
 const crypto = require("crypto");
 
 function createSheet(name) {
@@ -54,6 +55,7 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
       formatDate: date => new Date(date.getTime() + 8 * 3600000).toISOString().slice(0, 10),
       DigestAlgorithm: {SHA_256: "sha256"},
       computeDigest: (_algorithm, value) => [...crypto.createHash("sha256").update(value).digest()],
+      sleep: () => {},
     },
     SpreadsheetApp: {flush: () => {}, openById: () => ({
       getSheetByName: name => sheets.get(name) || null,
@@ -81,7 +83,7 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
     }},
   };
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync("gs_test.js", "utf8"), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "../gas/monitor.js"), "utf8"), context);
   context.ensureTestEnvironment = () => {};
   context.getScheduleList = () => schedule;
   context.updateFirebaseScheduleList = () => {};
@@ -210,9 +212,43 @@ function normalCard() {
 {
   const test = createHarness({records: {}});
   assert.equal(test.context.rescheduledDate("1/1", new Date("2026-12-31T12:00:00Z")), "2027-01-01");
+  assert.throws(() => test.context.rescheduledDate("2/31", new Date("2026-10-26T12:00:00Z")), /invalid rescheduled date/);
   assert.equal(test.context.archiveFingerprint({a: 1, b: 2}), test.context.archiveFingerprint({b: 2, a: 1}));
   test.context.archiveAndClearFirebase("2026-10-26");
   assert.equal(test.db.active_status.app_mode, "stop", "empty day still resets monitoring");
 }
 
-console.log("GAS archive protection: 10 scenarios passed");
+{
+  const date = "2026-10-26";
+  const key = `${date}_A`;
+  const card = normalCard();
+  card.config.original_date = "2026-10-25";
+  const test = createHarness({records: {[date]: {[key]: card}}});
+  test.context.getTwDateStr = () => date;
+  test.context.getTodaySeasonTime = () => "16:00";
+  test.context.startMonitoring("A", 12, "true", "W12");
+  assert.equal(test.db.daily_records[date][key].config.original_date, "2026-10-25", "monitor start preserves inherited metadata");
+  assert.equal(test.db.active_status.app_mode, "start");
+  let handoff = false;
+  test.context.tryHandoffToNextShip = () => { handoff = true; return false; };
+  test.context.processPobDirect("A", "10:00");
+  assert.equal(test.db.daily_records[date][key].pob_info.pob_wind_speed, 3, "POB uses nearest preceding ten-minute log");
+  assert.equal(test.db.daily_records[date][key].pob_info.pob_time, "10:00");
+  assert.equal(test.db.active_status.app_mode, "stop");
+  assert.ok(handoff, "POB invokes handoff");
+}
+
+{
+  const today = new Date();
+  const d = `${today.getMonth() + 1}/${today.getDate()}`;
+  const test = createHarness({records: {}, schedule: [
+    {d, ship_name: "OTHER", limit_speed: 13.8, terminal: "W11"},
+    {d, ship_name: "PRIORITY", limit_speed: 12, terminal: "W12"},
+  ]});
+  let selected;
+  test.context.startMonitoring = (...args) => { selected = args; };
+  assert.ok(test.context.tryHandoffToNextShip("test"));
+  assert.equal(selected[0], "PRIORITY", "handoff gives W12 priority");
+}
+
+console.log("GAS archive and operations: 12 scenarios passed");

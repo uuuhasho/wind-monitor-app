@@ -1,0 +1,11 @@
+{
+  "algorithm": "SHA-256",
+  "moved_from": "public/presentation/奶昔APP介紹影片",
+  "moved_to": "local_archive/presentation/奶昔APP介紹影片",
+  "files": [
+    {"path": "APP-60s-Narrated-R1.mp4", "bytes": 22298202, "sha256": "203754604C80A1C0BF317618A7299A080D44D51BF2A628F2D565FADCD296D596"},
+    {"path": "APP-90s-R2-no-progress.mp4", "bytes": 15035097, "sha256": "33B9B54FC1CAA7EDE340046FE0381EB829D43EFB3735752A4184BC3E54138ECD"},
+    {"path": "APP-60s-新版旁白腳本-R1.md", "bytes": 3289, "sha256": "032300D9EEE3BA39399A93CAD94B44976FC0B1F93DC42CF5FF5C4009A8A6F0DE"},
+    {"path": "ttsmaker-R1.mp3", "bytes": 396864, "sha256": "CC1CEC3E7A95686CC16F2A72E678F400866548A64080252F4FB5A53C3AC69CD9"}
+  ]
+}

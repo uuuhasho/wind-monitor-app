@@ -38,7 +38,8 @@ class TesseractCAPI:
         if cls._instance is not None:
             return cls._instance
             
-        cur_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        from src.config import BASE_DIR
+        cur_dir = BASE_DIR
         candidates_dll = [
             os.path.join(cur_dir, "lib", "tesseract50.dll"),
             r"C:\Users\hilla\Desktop\空軍及open-meteo陣風比對\lib\tesseract50.dll",
@@ -459,8 +460,3 @@ def parse_chart_with_cv2(image_path, target_date_str):
 
     print("[CV2 Parser] Programmatic parsing completed successfully!")
     return result_data
-
-if __name__ == "__main__":
-    res = parse_chart_with_cv2("temp/0613中油_raw.png", "0613")
-    import json
-    print(json.dumps(res, indent=2))
