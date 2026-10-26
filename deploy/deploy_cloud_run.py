@@ -13,6 +13,7 @@ REQUIRED = ("app.py", "main.py", "requirements.txt", "src")
 PROJECT_ID = "newlngship"
 SERVICE_NAME = "forecast-api-test"
 REGION = "asia-southeast1"
+PREFLIGHT_TAG = "codex-preflight"
 DEFAULT_STAGING_PARENT = Path(r"C:\Users\hilla\Desktop\newlngship_clean")
 
 
@@ -97,7 +98,9 @@ def main() -> int:
     if args.deploy:
         print(f"Deploying {SERVICE_NAME} to project {PROJECT_ID}, region {REGION}.")
         subprocess.run(
-            [gcloud, "run", "deploy", SERVICE_NAME, "--project", PROJECT_ID, "--source", ".", "--region", REGION, "--allow-unauthenticated", "--execution-environment", "gen2", "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
+            [gcloud, "run", "deploy", SERVICE_NAME, "--project", PROJECT_ID, "--source", ".", "--region", REGION,
+             "--tag", PREFLIGHT_TAG, "--no-traffic", "--allow-unauthenticated", "--execution-environment", "gen2",
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
             cwd=clean_dir,
             check=True,
         )
