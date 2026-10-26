@@ -40,7 +40,33 @@
     "headMatchesVersionAfterNewlineNormalization": true,
     "headMatchesGitBaselineAfterNewlineNormalization": true,
     "queriedAtUtc": "2026-10-26T07:13:04.511Z",
-    "actualInstalledTriggersVerified": false,
+    "actualInstalledTriggersVerified": true,
+    "triggerVerificationSource": "User-provided installed trigger inventory, 2026-10-26; not queried through the API",
+    "installedTriggers": [
+      {
+        "handler": "checkDailySchedule",
+        "type": "timeDriven",
+        "window": "04:00–05:00 daily",
+        "timeZone": "Asia/Taipei"
+      },
+      {
+        "handler": "onCalendarOrSheetChange",
+        "type": "calendarEventUpdated",
+        "calendarId": "89f17p8et94udnavnaqgihrgvg@group.calendar.google.com"
+      },
+      {
+        "handler": "archiveAndClearFirebase",
+        "type": "timeDriven",
+        "window": "23:00–00:00 daily",
+        "timeZone": "Asia/Taipei"
+      },
+      {
+        "handler": "executeMonitor",
+        "type": "timeDriven",
+        "intervalMinutes": 1
+      }
+    ],
+    "triggerMaintenanceNote": "Preserve all four triggers, including the calendar event trigger. setupSystemTriggers deletes all visible project triggers and recreates only the three time-driven triggers; do not run it during deployment. Confirm the maintenance account can manage all installed triggers before the maintenance window.",
     "scriptPropertyPasswordValueRead": false
   },
   "cloudWritesPerformed": false,
