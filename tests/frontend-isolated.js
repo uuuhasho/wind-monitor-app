@@ -1,4 +1,5 @@
 async page => {
+  await page.clock.install();
   await page.context().setOffline(false);
   await page.unrouteAll({behavior: 'wait'});
   await page.route('https://**/*', route => route.fulfill({status: 200, contentType: 'application/javascript', body: ''}));
@@ -30,7 +31,7 @@ async page => {
         off() { listeners[path] = []; }, once: async () => snapshot(path),
       })}),
     };
-    window.echarts = {graphic: {LinearGradient: class {}}, init: () => ({resize() {}, setOption(value) { window.__chartOptions.push(value); }, dispose() {}})};
+    window.echarts = {graphic: {LinearGradient: class {}}, init: () => ({resize() {}, setOption(value) { window.__chartOptions.push(value); }, dispatchAction() {}, dispose() {}})};
     window.Audio = class {constructor() {this.paused = true;} play() {this.paused = false; return Promise.resolve();} pause() {this.paused = true;} addEventListener() {}};
     window.alert = message => { (window.__alerts ||= []).push(message); };
     window.confirm = () => true;
@@ -50,11 +51,42 @@ async page => {
   const forecast = await page.evaluate(() => ({drawn: window.__chartOptions.length > 0, status: document.getElementById('forecastStatus').textContent}));
   if (!forecast.drawn || !forecast.status.includes('10:00')) throw new Error(`Forecast UI: ${JSON.stringify(forecast)}`);
   await page.evaluate(() => {
-    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 0.15});
+    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10});
     window.__emit('test/active_status', {app_mode: 'stop', current_wind: 4, forecast_updating: true});
   });
   if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Live lease must disable update');
-  await page.waitForFunction(() => !document.getElementById('forecastUpdateBtn').disabled);
+  await page.clock.fastForward(5000);
+  if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Valid lease must remain disabled');
+  await page.evaluate(() => window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10}));
+  await page.clock.fastForward(5000);
+  if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Renewed lease must remain disabled');
+  await page.evaluate(() => window.__emit('.info/serverTimeOffset', 6000));
+  if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Server offset must expire lease immediately');
+  await page.evaluate(() => {
+    window.__emit('.info/serverTimeOffset', 0);
+    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+  });
+  if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('New lease must disable update');
+  await page.clock.fastForward(5000);
+  if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Expired lease must restore update');
+  await page.evaluate(() => {
+    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+    window.__emit('.info/serverTimeOffset', -5000);
+  });
+  await page.clock.fastForward(5000);
+  if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Negative server offset must delay expiry');
+  await page.clock.fastForward(5000);
+  if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Lease must expire after negative offset');
+  await page.evaluate(() => {
+    window.__emit('.info/serverTimeOffset', 0);
+    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+    window.__emit('test/active_status', {app_mode: 'stop', forecast_updating: false});
+  });
+  if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Completed update must restore button');
+  await page.evaluate(() => window.__emit('test/active_status', {app_mode: 'stop', forecast_updating: false, forecast_auto_failed: true}));
+  if (!await page.locator('#forecastUpdateBtn').textContent().then(text => text.includes('請手動更新'))) throw new Error('Failed update must show manual retry');
+  await page.evaluate(() => window.__emit('test/forecast_update_lock', null));
+  if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Completed update with missing lease must remain enabled');
   await page.evaluate(() => {
     window.__emit('test/active_status', {app_mode: 'start', target_key: 'synthetic', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12', current_wind: 4});
     window.__emit(`test/daily_records/${window.__today}`, {synthetic: {config: {ship_name: 'DEMO-SHIP'}, pob_info: {pob_time: '10:00', formatted_msg: '示意 POB'}}});
