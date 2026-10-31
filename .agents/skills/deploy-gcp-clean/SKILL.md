@@ -1,4 +1,4 @@
-﻿---
+---
 name: deploy-gcp-clean
 description: Use when preparing or deploying this project's Cloud Run service on Windows, preserving an ASCII staging path and excluding local secrets.
 ---

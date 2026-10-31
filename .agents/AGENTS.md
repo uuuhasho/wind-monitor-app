@@ -8,7 +8,7 @@
 * **雲端金鑰安全管理 (Secrets Management)**：部署 GCP Cloud Run 或 Google 雲端服務時，所有敏感密鑰（如 Firebase RTDB DbSecret、Service Account 金鑰等）必須全面改用 **GCP Secret Manager** 存放或設定為 Cloud Run 環境變數。絕對不可將 `config.json` 或 `service_account.json` 等實體設定檔隨容器映像檔打包上傳，必須確實將它們加入 `.gcloudignore` 中。
 * **Secret Manager BOM 防護**：程式碼中讀取 Secret Manager 注入的環境變數時，必須一律加上 `.strip().strip("\ufeff")` 防護，避免 Windows UTF-8 BOM 導致 gRPC 層拒絕 API 請求 (503 Error)。
 * **Windows 中文路徑安全部署 (Clean Workspace Deployment)**：Cloud Run 的唯一入口是 `deploy/deploy_cloud_run.py`。它先把 `backend/` 暫存到 `C:\Users\hilla\Desktop\newlngship_clean`；預設只建置，只有明確傳入 `--deploy` 才能執行雲端部署。
-* **Artifact Registry 空間維持與清理**：`deploy/cleanup_registry.py` 是人工維護工具，不得由部署流程自動呼叫。清理前先保留可回復映像並審閱刪除清單。
+* **Artifact Registry 500 MB 硬上限與清理**：儲存空間必須嚴格低於 500 MB（500,000,000 bytes）。每次建置或推送映像前，先查詢 Repository 目前用量並估算新增映像後的用量；若無法確認低於上限，停止推送與部署，先縮小映像或完成核准的清理。清理須保護目前服務映像，另確認該次維護需要保留的回復映像；使用者核准精確刪除清單後才執行。`deploy/cleanup_registry.py` 僅供人工維護，不得由部署流程自動呼叫。歷史版本與清理完成狀態見維護交接。
 * **單一權威部署源 (Single Source of Truth)**：後端位於 `backend/`，前端位於 `frontend/`，GAS 位於 `gas/`；`public/` 是 `deploy/build_hosting.py` 產生的 Hosting 輸出，不可手動編輯。Hosting 預設僅建置，須以 `deploy/deploy_hosting.ps1 -Deploy` 明確部署。
 * **Cloud Run POB Webhook 架構分工**：LINE Webhook 指向 Cloud Run `/webhook`，Cloud Run 僅負責用 Gemini 解析 POB 時間，解析成功後委託 GAS `set_mode?pob_time=HH:MM` 完成後續全流程（風速查找、`pob_info` 寫入、船期更新、換班接力）。Cloud Run 不直接寫入 `daily_records`。
 
@@ -34,3 +34,9 @@
 
 ## 回覆與文件呈現風格
 * 回覆問題或輸出文件，盡量套用 `i-have-adhd` + `show-me` 風格（詳見全域 `GLOBAL_RULES.md` 的「Response & Output Style」）；專案報告仍須為淺色 HTML 並存放於 `./plan/YYYY-MM-DD/`。
+
+## GitHub 同步確認
+* 每次修改本專案的程式、測試、設定、規範或文件後，主動詢問使用者是否同步更新 GitHub repo `uuuhasho/wind-monitor-app`。取得該批變更的明確授權後才推送；已授權的範圍直接完成，不重複詢問。回報時明確區分「本機提交」與「GitHub 已更新」，推送後讀回遠端分支與檔案確認結果。
+
+## 維護交接入口
+* 接續驗收、部署或清理工作前，先讀 `plan/2026-10-31/2026-10-31-維護交接_handoff.md`；歷史雲端狀態須重新查核後才能當成目前狀態。換班接力依使用者決定暫不觀察，恢復觀察須由使用者提出。
