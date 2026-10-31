@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>奶昔 APP 系統架構圖</title>
+<style>
+:root{color-scheme:light;--bg:#fff9f5;--ink:#1a202c;--muted:#4a5568;--border:#2d3748;--lavender:#e6e6fa;--mint:#d4f4e2;--sky:#d6eeff;--peach:#ffd8d0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Microsoft JhengHei",sans-serif;line-height:1.65}main{max-width:1320px;margin:auto;padding:clamp(16px,3vw,40px)}header{background:var(--lavender);border:3px solid var(--border);border-radius:20px;padding:24px;box-shadow:6px 6px 0 var(--border)}h1{font-size:clamp(28px,4vw,44px);line-height:1.2;margin:0 0 12px}header p{max-width:900px;margin:0}nav{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}nav a{color:var(--ink);font-weight:700;text-decoration:none;padding:8px 14px;border:2px solid var(--border);border-radius:8px;background:white}nav a:focus-visible,.diagram:focus-visible{outline:3px solid #4566ab;outline-offset:3px}section{margin:32px 0}h2{font-size:26px;line-height:1.3;margin:0 0 8px}.lead{color:var(--muted);max-width:1000px;margin:0 0 16px}.diagram{overflow-x:auto;border:2px solid var(--border);border-radius:10px;background:#fff;padding:12px}.diagram svg{display:block;width:100%;min-width:900px;height:auto}svg text{font-family:system-ui,"Microsoft JhengHei",sans-serif;fill:#1a202c;font-size:20px;font-weight:600}svg .sub{font-size:16px;font-weight:400;fill:#4a5568}svg .edge{font-size:16px;font-weight:600;fill:#354253}svg .line{fill:none;stroke:#4a5568;stroke-width:2.5;marker-end:url(#arrow)}svg .dash{stroke-dasharray:8 6}svg .node{fill:#fff;stroke:#2d3748;stroke-width:2}svg .focus{fill:#e6e6fa}svg .store{fill:#d4f4e2}svg .external{fill:#f3f5f8}svg .zone{fill:#f8f9fc;stroke:#c4cad5;stroke-width:1.5}figcaption{font-size:15px;color:var(--muted);margin-top:10px}figure{margin:0}.note{border:2px solid var(--border);border-radius:10px;padding:16px 20px;background:#fff5f0;box-shadow:3px 3px 0 var(--border)}.sources{border-top:2px solid var(--border);padding-top:18px;color:var(--muted);font-size:14px}.sources li{overflow-wrap:anywhere}code{font-family:Consolas,monospace;color:#25364a}footer{border-top:2px solid var(--border);padding-top:16px;color:var(--muted);font-size:14px}@media(max-width:600px){header{padding:18px}h2{font-size:22px}nav a{flex:1 1 40%;text-align:center}.diagram{padding:8px}}@media print{body{background:#fff}main{max-width:none;padding:0}header,.note{box-shadow:none}nav{display:none}section{break-inside:avoid}.diagram{overflow:visible}.diagram svg{min-width:0}a{color:inherit}}
+</style>
+</head>
+<body><main>
+<header><h1>奶昔 APP 系統架構圖</h1><p>臺中 LNG 船風速監控：前端直接讀取 Firebase 即時資料；Google Apps Script 負責監控與船期；Cloud Run 負責風速預報及 LINE 進港訊息解析。</p></header>
+<nav aria-label="章節導覽"><a href="#overview">系統總覽</a><a href="#forecast">預報管線</a><a href="#monitor">監控與歸檔</a><a href="#sources">資料來源</a></nav>
+<div class="note"><strong>閱讀界線：</strong>這是依本機程式碼整理的架構，不代表線上部署一定與本機一致。RTDB <code>/test</code> 是 APP 使用中的資料，並非可任意清除的沙箱。</div>
+
+<section id="overview"><h2>01｜系統總覽</h2><p class="lead">使用者從 Hosting 開啟 APP。APP 直接讀取資料庫，也可呼叫 GAS 執行操作，或呼叫 Cloud Run 手動更新預報。</p>
+<figure><div class="diagram" tabindex="0" role="region" aria-label="系統總覽架構圖，可左右捲動"><svg viewBox="0 0 1280 720" role="img" aria-labelledby="overview-title overview-desc">
+<title id="overview-title">奶昔 APP 系統總覽</title><desc id="overview-desc">Firebase Hosting 提供前端，前端讀取 Firebase RTDB 並呼叫 GAS 與 Cloud Run；排程器觸發預報，LINE 經 Cloud Run 與 Gemini 解析後由 GAS 處理進港資料。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4a5568"/></marker></defs>
+<rect class="zone" x="24" y="40" width="376" height="544" rx="8"/><rect class="zone" x="424" y="40" width="392" height="544" rx="8"/><rect class="zone" x="840" y="40" width="416" height="544" rx="8"/>
+<text x="48" y="76" class="sub">使用介面與觸發</text><text x="448" y="76" class="sub">系統服務</text><text x="864" y="76" class="sub">資料與外部服務</text>
+<g class="line"><path d="M208 160 H264"/><path d="M384 176 H440"/><path d="M384 200 H408 Q416 200 416 208 V324 Q416 332 424 332 H440"/><path d="M384 224 H400 Q408 224 408 232 V464 Q408 472 416 472 H440"/><path d="M208 344 H440"/><path d="M208 480 H440"/><path d="M1160 160 H1216 Q1224 160 1224 168 V540 Q1224 548 1216 548 H536 Q528 548 528 540 V508"/><path d="M616 332 H880"/><path d="M616 356 H648 Q656 356 656 348 V240 Q656 232 664 232 H880"/><path d="M616 472 H704 Q712 472 712 464 V380 Q712 372 720 372 H880"/><path d="M528 428 V376"/></g>
+<g class="line dash"><path d="M616 496 H760 Q768 496 768 488 V472 Q768 464 776 464 H880"/></g>
+<g class="line"><path d="M528 296 V196"/><path d="M616 448 H792 Q800 448 800 440 V208 Q800 200 792 200 H644 Q636 200 636 192 V180 H616"/></g>
+<rect class="node external" x="48" y="124" width="160" height="72" rx="8"/><text x="128" y="156" text-anchor="middle">Hosting</text><text class="sub" x="128" y="180" text-anchor="middle">提供網頁</text>
+<rect class="node focus" x="264" y="124" width="120" height="120" rx="8"/><text x="324" y="164" text-anchor="middle">APP</text><text class="sub" x="324" y="192" text-anchor="middle">瀏覽器</text><text class="sub" x="324" y="216" text-anchor="middle">PWA</text>
+<rect class="node external" x="48" y="308" width="160" height="72" rx="8"/><text x="128" y="340" text-anchor="middle">GAS 觸發器</text><text class="sub" x="128" y="364" text-anchor="middle">排程／日曆</text>
+<rect class="node external" x="48" y="444" width="160" height="72" rx="8"/><text x="128" y="476" text-anchor="middle">LINE</text><text class="sub" x="128" y="500" text-anchor="middle">Webhook</text>
+<rect class="node store" x="440" y="124" width="176" height="72" rx="8"/><text x="528" y="156" text-anchor="middle">Firebase RTDB</text><text class="sub" x="528" y="180" text-anchor="middle">/test 即時資料</text>
+<rect class="node focus" x="440" y="296" width="176" height="80" rx="8"/><text x="528" y="328" text-anchor="middle">Apps Script</text><text class="sub" x="528" y="352" text-anchor="middle">監控・船期・歸檔</text>
+<rect class="node" x="440" y="428" width="176" height="80" rx="8"/><text x="528" y="460" text-anchor="middle">Cloud Run</text><text class="sub" x="528" y="484" text-anchor="middle">預報・POB 解析</text>
+<rect class="node external" x="880" y="124" width="280" height="72" rx="8"/><text x="1020" y="156" text-anchor="middle">Cloud Scheduler</text><text class="sub" x="1020" y="180" text-anchor="middle">排程紀錄見下方說明</text>
+<rect class="node external" x="880" y="216" width="280" height="72" rx="8"/><text x="1020" y="248" text-anchor="middle">Google Sheets</text><text class="sub" x="1020" y="272" text-anchor="middle">每日歸檔</text>
+<rect class="node external" x="880" y="316" width="280" height="112" rx="8"/><text x="1020" y="352" text-anchor="middle">外部資料來源</text><text class="sub" x="1020" y="380" text-anchor="middle">港務風速・船期 API</text><text class="sub" x="1020" y="404" text-anchor="middle">Gmail・Open-Meteo</text>
+<rect class="node external" x="880" y="448" width="280" height="72" rx="8"/><text x="1020" y="480" text-anchor="middle">Gemini</text><text class="sub" x="1020" y="504" text-anchor="middle">POB 解析／OCR 備援</text>
+<text class="edge" x="228" y="148" text-anchor="middle">載入</text><text class="edge" x="648" y="320">讀取資料</text><text class="edge" x="224" y="332">定時執行</text><text class="edge" x="224" y="468">訊息</text>
+<text class="sub" x="48" y="632">連線為概覽；各資料來源與預報處理的細節見下一圖。</text><text class="sub" x="48" y="660">虛線：視情況呼叫 Gemini；資料庫由前端直接訂閱。</text>
+</svg></div><figcaption>圖中來源群組為簡化顯示；各來源分別連到 GAS 或 Cloud Run，而非共用同一條資料管線。</figcaption></figure></section>
+
+<section id="forecast"><h2>02｜預報資料如何進入 APP</h2><p class="lead">Cloud Run 先取得工作鎖，再處理預報文件與圖片，整合 Open-Meteo 後發布至 RTDB；前端讀取預報資料與更新時間。</p>
+<figure><div class="diagram" tabindex="0" role="region" aria-label="預報資料管線圖，可左右捲動"><svg viewBox="0 0 1280 720" role="img" aria-labelledby="forecast-title forecast-desc">
+<title id="forecast-title">預報資料管線</title><desc id="forecast-desc">排程或手動請求觸發 Cloud Run，從 Gmail 取得預報文件，經文件轉換、OpenCV 與 OCR 解析並合併 Open-Meteo，再使用資料庫鎖發布資料給 APP。</desc>
+<defs><marker id="arrow-forecast" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4a5568"/></marker></defs>
+<g fill="none" stroke="#4a5568" stroke-width="2.5" marker-end="url(#arrow-forecast)"><path d="M240 172 H288"/><path d="M488 172 H536"/><path d="M736 172 H784"/><path d="M984 172 H1032"/><path d="M1132 212 V252 Q1132 260 1124 260 H644 Q636 260 636 268 V300"/><path d="M784 344 H736"/><path d="M388 388 V456 Q388 464 396 464 H536"/><path d="M636 388 V424"/><path d="M736 464 H784"/><path d="M992 464 H1032"/></g>
+<path d="M1080 212 V280 Q1080 288 1072 288 H896 Q888 288 888 296 V300" fill="none" stroke="#4a5568" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow-forecast)"/>
+<rect class="node external" x="40" y="132" width="200" height="80" rx="8"/><text x="140" y="164" text-anchor="middle">排程／手動</text><text class="sub" x="140" y="188" text-anchor="middle">觸發更新</text>
+<rect class="node focus" x="288" y="132" width="200" height="80" rx="8"/><text x="388" y="164" text-anchor="middle">Cloud Run</text><text class="sub" x="388" y="188" text-anchor="middle">取得 RTDB 工作鎖</text>
+<rect class="node external" x="536" y="132" width="200" height="80" rx="8"/><text x="636" y="164" text-anchor="middle">Gmail IMAP</text><text class="sub" x="636" y="188" text-anchor="middle">取得預報附件</text>
+<rect class="node" x="784" y="132" width="200" height="80" rx="8"/><text x="884" y="164" text-anchor="middle">文件轉換</text><text class="sub" x="884" y="188" text-anchor="middle">DOC → 圖表圖片</text>
+<rect class="node" x="1032" y="132" width="200" height="80" rx="8"/><text x="1132" y="164" text-anchor="middle">OpenCV／OCR</text><text class="sub" x="1132" y="188" text-anchor="middle">辨識預報曲線</text>
+<rect class="node external" x="784" y="300" width="208" height="88" rx="8"/><text x="888" y="336" text-anchor="middle">Gemini Vision</text><text class="sub" x="888" y="360" text-anchor="middle">起報時間辨識備援</text>
+<rect class="node" x="536" y="300" width="200" height="88" rx="8"/><text x="636" y="336" text-anchor="middle">預報資料</text><text class="sub" x="636" y="360" text-anchor="middle">時間／風速正規化</text>
+<rect class="node external" x="288" y="300" width="200" height="88" rx="8"/><text x="388" y="336" text-anchor="middle">Open-Meteo</text><text class="sub" x="388" y="360" text-anchor="middle">逐時陣風資料</text>
+<rect class="node focus" x="536" y="424" width="200" height="80" rx="8"/><text x="636" y="456" text-anchor="middle">融合與插值</text><text class="sub" x="636" y="480" text-anchor="middle">對齊時間與單位</text>
+<rect class="node store" x="784" y="424" width="208" height="80" rx="8"/><text x="888" y="456" text-anchor="middle">RTDB /test</text><text class="sub" x="888" y="480" text-anchor="middle">預報＋更新時間</text>
+<rect class="node" x="1032" y="424" width="200" height="80" rx="8"/><text x="1132" y="456" text-anchor="middle">APP 圖表</text><text class="sub" x="1132" y="480" text-anchor="middle">ECharts 顯示</text>
+<text class="sub" x="40" y="584">備註：預報文件解析失敗時不發布；Open-Meteo 無資料時仍可能以空值發布。</text><text class="sub" x="40" y="616">Gemini Vision 只有在起報時間 OCR 不匹配時嘗試；OCR 未能辨識仍有程式推斷備援。</text><text class="sub" x="40" y="648">線上排程以 2026-10-26 紀錄為基準，未於本次重新查詢；GitHub Actions 工作已停用。</text>
+</svg></div><figcaption>虛線代表 Gemini 備援；它不是每次執行的必經步驟。Gmail 之外，本機程式也會先尋找符合日期的本地文件。</figcaption></figure></section>
+
+<section id="monitor"><h2>03｜即時監控、進港與歸檔</h2><p class="lead">GAS 合併船期及人工調整、取得港務風速，更新 RTDB。進港後寫入 POB 資訊並嘗試接力下一艘船；夜間歸檔至試算表。</p>
+<figure><div class="diagram" tabindex="0" role="region" aria-label="監控與歸檔架構圖，可左右捲動"><svg viewBox="0 0 1280 720" role="img" aria-labelledby="monitor-title monitor-desc">
+<title id="monitor-title">監控、進港與歸檔流程</title><desc id="monitor-desc">船期 API 與港務風速資料由 GAS 取得，與手動操作及 LINE POB 輸入共同更新 Firebase RTDB；GAS 依排程將資料歸檔到 Google Sheets。</desc>
+<defs><marker id="arrow-monitor" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4a5568"/></marker></defs>
+<g fill="none" stroke="#4a5568" stroke-width="2.5" marker-end="url(#arrow-monitor)"><path d="M264 164 H424 Q432 164 432 172 V268 Q432 276 440 276 H504"/><path d="M264 300 H504"/><path d="M264 456 H352 Q360 456 360 448 V372 Q360 364 368 364 H504"/><path d="M640 204 V248"/><path d="M776 296 H936"/><path d="M776 320 H840 Q848 320 848 328 V456 Q848 464 856 464 H936"/></g>
+<rect class="node external" x="40" y="124" width="224" height="80" rx="8"/><text x="152" y="156" text-anchor="middle">船期 API</text><text class="sub" x="152" y="180" text-anchor="middle">日曆船期</text>
+<rect class="node external" x="40" y="260" width="224" height="80" rx="8"/><text x="152" y="292" text-anchor="middle">港務即時風速</text><text class="sub" x="152" y="316" text-anchor="middle">北堤綠燈塔</text>
+<rect class="node external" x="40" y="416" width="224" height="80" rx="8"/><text x="152" y="448" text-anchor="middle">APP／LINE POB</text><text class="sub" x="152" y="472" text-anchor="middle">人工操作／進港訊息</text>
+<rect class="node" x="504" y="124" width="272" height="80" rx="8"/><text x="640" y="156" text-anchor="middle">GAS 觸發器</text><text class="sub" x="640" y="180" text-anchor="middle">每日船期・每分鐘監控</text>
+<rect class="node focus" x="504" y="248" width="272" height="160" rx="8"/><text x="640" y="284" text-anchor="middle">Apps Script 業務處理</text><text class="sub" x="640" y="316" text-anchor="middle">風速、船期與手動操作</text><text class="sub" x="640" y="344" text-anchor="middle">POB 查風速・換班接力</text><text class="sub" x="640" y="372" text-anchor="middle">夜間歸檔／必要時改期</text>
+<rect class="node store" x="936" y="256" width="264" height="96" rx="8"/><text x="1068" y="292" text-anchor="middle">Firebase RTDB /test</text><text class="sub" x="1068" y="320" text-anchor="middle">狀態・船期・當日紀錄</text>
+<rect class="node external" x="936" y="424" width="264" height="112" rx="8"/><text x="1068" y="460" text-anchor="middle">Google Sheets</text><text class="sub" x="1068" y="488" text-anchor="middle">歸檔總表・船型分類</text><text class="sub" x="1068" y="512" text-anchor="middle">實測與預報紀錄</text>
+<text class="sub" x="40" y="584">LINE 主要路徑：LINE → Cloud Run 驗簽與 Gemini 解析 → GAS set_mode → RTDB。</text><text class="sub" x="40" y="616">歸檔：先寫入試算表與收據，再以 ETag 保護刪除來源；失敗時保留來源資料。</text><text class="sub" x="40" y="648">圖中只呈現主要路徑；GAS 亦保留直接處理模擬 LINE 訊息的程式入口。</text>
+</svg></div><figcaption>歸檔是否涉及改期，取決於當日卡片與實際船期；不代表每一艘船都會產生下一日卡片。</figcaption></figure></section>
+
+<section id="sources" class="sources"><h2>來源與範圍</h2><ul>
+<li>前端與資料訂閱：<code>frontend/index.html</code>、<code>frontend/manifest.json</code>、<code>firebase.json</code>。</li>
+<li>Cloud Run 與預報：<code>backend/app.py</code>、<code>backend/main.py</code>、<code>backend/src/email_receiver.py</code>、<code>backend/src/doc_parser.py</code>、<code>backend/src/cv2_parser.py</code>、<code>backend/src/data_fusion.py</code>、<code>backend/src/rtdb.py</code>。</li>
+<li>監控、觸發器與歸檔：<code>gas/monitor.js</code>、<code>gas/appsscript.json</code>。</li>
+<li>建置與歷史狀態：<code>deploy/README.md</code>、<code>.github/workflows/update_forecast.yml</code>、<code>plan/2026-10-26/2026-10-26_改奶昔架構_handoff.md</code>。交接紀錄稱 Scheduler 已啟用，但不能據此認定目前雲端狀態。</li>
+</ul></section><footer>依本機來源整理 · 2026-10-28 · 未執行雲端操作</footer>
+</main></body></html>

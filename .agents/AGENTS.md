@@ -36,6 +36,7 @@
 * 回覆問題或輸出文件，盡量套用 `i-have-adhd` + `show-me` 風格（詳見全域 `GLOBAL_RULES.md` 的「Response & Output Style」）；專案報告仍須為淺色 HTML 並存放於 `./plan/YYYY-MM-DD/`。
 
 ## GitHub 同步確認
+* 日常工作以本機 `main` 為基準；新增功能時從 `main` 建立功能分支。
 * 每次修改本專案的程式、測試、設定、規範或文件後，主動詢問使用者是否同步更新 GitHub repo `uuuhasho/wind-monitor-app`。取得該批變更的明確授權後才推送；已授權的範圍直接完成，不重複詢問。回報時明確區分「本機提交」與「GitHub 已更新」，推送後讀回遠端分支與檔案確認結果。
 
 ## 維護交接入口
