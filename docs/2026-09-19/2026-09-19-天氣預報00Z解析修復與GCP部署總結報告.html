@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026-09-19 天氣預報 00Z 解析修復與 GCP 部署工作總結報告</title>
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-bg: #eff6ff;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
+            --code-bg: #f1f5f9;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            line-height: 1.65;
+            padding: 36px 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+        h1 {
+            margin: 0 0 12px 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .meta-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            font-size: 13px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .badge-blue { background-color: var(--primary-bg); color: var(--primary); border: 1px solid #bfdbfe; }
+        .badge-green { background-color: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
+        .badge-amber { background-color: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 26px 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h3 {
+            font-size: 15px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        ul, ol {
+            padding-left: 22px;
+            margin-top: 6px;
+            margin-bottom: 14px;
+            color: var(--text-secondary);
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        .callout {
+            border-left: 4px solid var(--primary);
+            background-color: var(--primary-bg);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+            color: var(--text-secondary);
+        }
+        .callout-warning {
+            border-left-color: var(--warning);
+            background-color: var(--warning-bg);
+        }
+        .callout-success {
+            border-left-color: var(--success);
+            background-color: var(--success-bg);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13.5px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        code {
+            font-family: "JetBrains Mono", Consolas, Monaco, monospace;
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12.5px;
+            color: #b91c1c;
+            border: 1px solid #e2e8f0;
+        }
+        pre {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+            overflow-x: auto;
+            font-family: "JetBrains Mono", Consolas, monospace;
+            font-size: 12.5px;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 18px 0;
+        }
+        .summary-box {
+            background-color: var(--bg-page);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px 18px;
+        }
+        .summary-box .title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .summary-box .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .summary-box .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 2026-09-19 天氣預報 00Z 解析修復與 GCP 部署工作總結報告</h1>
+        <div class="meta-tags">
+            <span class="badge badge-blue">版本：forecast-api-test-00055-ktr</span>
+            <span class="badge badge-green">狀態：生產測試環境已生效</span>
+            <span class="badge badge-amber">A/B Review：PASS</span>
+            <span style="color: var(--text-muted); font-size: 12px;">執行日期：2026-09-19</span>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-box">
+            <div class="title">時序修正指標</div>
+            <div class="value" style="color: var(--success);">0 小時偏差</div>
+            <div class="sub">原為 +12 小時誤位移</div>
+        </div>
+        <div class="summary-box">
+            <div class="title">首點對齊時間 (00Z)</div>
+            <div class="value">08:00 CST</div>
+            <div class="sub">原誤判為前日 20:00</div>
+        </div>
+        <div class="summary-box">
+            <div class="title">Cloud Run 服務</div>
+            <div class="value" style="color: var(--primary);">200 OK</div>
+            <div class="sub">asia-southeast1 / Rev 55</div>
+        </div>
+        <div class="summary-box">
+            <div class="title">Registry 容量</div>
+            <div class="value">381.2 MB</div>
+            <div class="sub">額度內 (&lt; 500 MB)</div>
+        </div>
+    </div>
+
+    <!-- 1. 問題現象與根因分析 -->
+    <div class="card">
+        <h2>一、問題現象與根因分析</h2>
+        <div class="callout-warning callout">
+            <strong>錯誤現象：</strong>當空軍發布起算時間為 <code>00Z</code>（如 <code>0918中油</code>，時長 5.5 天/23 點）的預報時，系統將起始時間誤判為前一天的 <code>12Z17SEP</code>（換算台灣時間 <code>2026-09-17 20:00</code>，正確應為 <code>2026-09-18 08:00</code>），造成整體時間軸向過去提早了 12 小時，導致 Open-Meteo 逐時陣風數據與空軍風速預報完全錯位。
+        </div>
+
+        <h3>底層機制與根因：</h3>
+        <ol>
+            <li><strong>Windows 本機環境未安裝 Tesseract CLI：</strong>舊程式碼依賴 <code>pytesseract.image_to_string</code> 並寫死指向 <code>C:\Program Files\Tesseract-OCR\tesseract.exe</code>。本機因缺少該可執行檔，呼叫時靜默拋出例外並直接觸發 Fallback。</li>
+            <li><strong>舊版 Fallback 邏輯死鎖於 12Z：</strong>舊程式在辨識失敗後直接執行 <code>initial_dt = (target_dt - timedelta(days=1)).replace(hour=12)</code>，未做任何動態校驗，直接假設所有預報都是「前一天的 12Z」。</li>
+            <li><strong>缺乏雙重校驗機制：</strong>僅依賴圖表右上角的文字辨識，未讀取底部時間軸刻度標籤 <code>(00|06|12|18)</code>，既無法驗證首節點時間，亦無法以實際標籤數量校驗總天數（5.5 天 vs 8 天）。</li>
+        </ol>
+    </div>
+
+    <!-- 2. 修改內容與技術方案 -->
+    <div class="card">
+        <h2>二、修改內容與技術方案</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%;">模組 / 檔案</th>
+                    <th style="width: 38%;">修改前狀況</th>
+                    <th style="width: 42%;">修改後方案</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>src/cv2_parser.py</code></td>
+                    <td>
+                        • 依賴系統安裝 <code>tesseract.exe</code><br>
+                        • Fallback 固定死鎖 12Z<br>
+                        • 點數僅由單純自相關估算
+                    </td>
+                    <td>
+                        • <strong>TesseractCAPI 封裝</strong>：透過 <code>ctypes</code> 直接載入 <code>tesseract50.dll</code>，Windows 免安裝 CLI 即可辨識；在 Cloud Run (Linux) 自動退回系統 <code>pytesseract</code>。<br>
+                        • <strong>雙重 OCR 機制</strong>：裁切右上角專屬 ROI，並對底部時間軸做 3 倍插值放大補白辨識。<br>
+                        • <strong>動態 Fallback</strong>：依據底部時間軸首標籤是 00 還是 12 動態推導，告別死鎖。<br>
+                        • <strong>Ground Truth 投票</strong>：底部 OCR 辨識出 23 點 (5.5天) 或 33 點 (8天) 時直接採納為真實點數。
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>src/doc_parser.py</code></td>
+                    <td>Windows 無 Word COM 時直接執行 <code>libreoffice</code>，系統未設 PATH 即失敗</td>
+                    <td>
+                        • 新增 <code>get_libreoffice_cmd()</code>，自動探測 <code>C:\Program Files\LibreOffice</code> 常見安裝路徑，跨平台相容性更佳。
+                    </td>
+                </tr>
+                <tr>
+                    <td>依賴庫與配置排除</td>
+                    <td>專案未配置本地 C-API 資源庫</td>
+                    <td>
+                        • 引入 <code>lib/</code> (<code>tesseract50.dll</code>, <code>leptonica-1.82.0.dll</code>) 與 <code>tessdata/</code>。<br>
+                        • 於 <code>.gitignore</code> 與 <code>.gcloudignore</code> 嚴格排除，確保 Docker 鏡像維持輕量。
+                    </td>
+                </tr>
+                <tr>
+                    <td>GAS 端 (<code>gs_test.js</code>)</td>
+                    <td>負責風速歸檔與 Google Sheets 寫入</td>
+                    <td>
+                        • <strong>無須任何修改</strong>。資料契約格式 (Schema) 完全一致，GAS 直接消費修正後正確的 RTDB 時序資料。
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. 實體測試與驗證數據 -->
+    <div class="card">
+        <h2>三、實體測試與驗證數據</h2>
+        <div class="callout-success callout">
+            <strong>驗證結果：通過。</strong>採用真實 <code>0918中油_raw.png</code>（00Z, 5.5 天）執行端對端測試：
+        </div>
+        <pre>
+[CV2 Parser] Y-Axis Bounds: 50KT at 32, 0KT at 442
+[OCR] Successfully detected Initial Time from chart title: 00Z18SEP
+[OCR Bottom Axis] Found 23 intervals: ['00', '06', '12', '18'] ... ['00', '06', '12']
+[CV2 Parser] Number of points confirmed by Bottom Axis OCR: 23 points (5.5 days)
+[CV2 Parser] Chart spans X:80 to 780. dx=31.82, points=23
+Initial date detected: 00Z18SEP initial field
+Points parsed: 23 (總時長 132 小時)
+First point CST: {'timestamp_cst': '2026-09-18T08:00:00+08:00', 'wind_speed_kt': 10.55}
+Last point CST:  {'timestamp_cst': '2026-09-23T20:00:00+08:00', 'wind_speed_kt': 14.39}
+        </pre>
+        <ul>
+            <li>首筆台灣時間由錯誤的 <code>2026-09-17 20:00</code> 成功校正為 <strong><code>2026-09-18 08:00:00+08:00</code></strong>。</li>
+            <li>進行<strong>標題塗銷遮蔽極端情境測試</strong>，系統依然能藉由底部時間軸開頭的 <code>00</code> 標籤精準推導出 <code>00Z18SEP</code>，容錯機制完備。</li>
+        </ul>
+    </div>
+
+    <!-- 4. A/B 異質模型代碼審查 -->
+    <div class="card">
+        <h2>四、A/B 異質模型代碼審查 (A/B Model Review)</h2>
+        <p>依據專案代碼審查規範，指派異質大模型 <strong>Gemini 3.1 Pro</strong> 作為獨立審查員，重點檢查：</p>
+        <ul>
+            <li><strong>00Z 時間軸位移修復</strong>：邏輯完整，消除 12 小時死鎖。</li>
+            <li><strong>C-API 記憶體安全</strong>：<code>TessDeleteText</code>、<code>TessBaseAPIEnd</code> 與 <code>atexit</code> 生命週期釋放機制健全無洩漏。</li>
+            <li><strong>雙重 OCR 與投票穩健性</strong>：底部特徵 Ground Truth 結合自相關週期估算，能穩定應對各類圖表噪訊。</li>
+            <li><strong>Cloud Run 相容性</strong>：Linux 容器平滑退回使用 <code>pytesseract</code> 與系統套件，相容性良好。</li>
+        </ul>
+        <div class="callout-success callout" style="margin-bottom: 0;">
+            <strong>審查結論：PASS ✅</strong>
+        </div>
+    </div>
+
+    <!-- 5. GCP 部署與維護狀態 -->
+    <div class="card">
+        <h2>五、GCP 部署與維護狀態</h2>
+        <ul>
+            <li><strong>Cloud Run 部署成功</strong>：執行 <code>python deploy_clean.py</code> 乾淨工作區部署，生成新 Revision <code>forecast-api-test-00055-ktr</code> 並承接 100% 流量。</li>
+            <li><strong>服務健康狀態</strong>：存取 <code>https://forecast-api-test-178957932744.asia-southeast1.run.app/health</code> 回應 <code>200 OK</code>。</li>
+            <li><strong>Artifact Registry 空間維護</strong>：
+                <ul>
+                    <li>部署後自動執行 <code>cleanup_registry.py</code>，成功清除舊映像檔版本。</li>
+                    <li>目前有效映像檔僅保留 1 個最新版（實體大小 <strong>399,744,823 bytes ≈ 381.2 MB</strong>）。</li>
+                    <li>完全控制於 GCP 500 MB 免費額度之內。</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>引水人班表功能討論總結</title>
+<style>
+:root{--bg-body:#FFF9F5;--card-bg:#FFFFFF;--text-title:#1A202C;--text-body:#4A5568;--text-muted:#718096;--border-color:#2D3748;--clay-peach:#FFD8D0;--clay-sky:#D6EEFF;--clay-lavender:#E6E6FA;--clay-mint:#D4F4E2;--clay-amber:#FEF3C7;--shadow-hero:6px 6px 0 var(--border-color);--shadow-card:4px 4px 0 var(--border-color);--shadow-sm:2px 2px 0 var(--border-color);--shadow-callout:3px 3px 0 var(--border-color)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-body);color:var(--text-body);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.7;padding:32px 16px}
+.wrap{max-width:960px;margin:0 auto}
+.hero-banner{background:linear-gradient(135deg,var(--clay-sky),var(--clay-lavender));border:3px solid var(--border-color);border-radius:20px;box-shadow:var(--shadow-hero);padding:28px 32px;margin-bottom:28px}
+.hero-badge{display:inline-block;background:#fff;border:2px solid var(--border-color);border-radius:9999px;box-shadow:var(--shadow-sm);padding:2px 14px;font-weight:700;font-size:13px;color:var(--text-title)}
+.hero-title{margin:12px 0 6px;font-size:30px;color:var(--text-title)}
+.hero-subtitle{margin:0;color:var(--text-body)}
+.date-subtitle{display:block;margin-top:10px;font-size:13px;color:var(--text-muted)}
+.card{background:var(--card-bg);border:2.5px solid var(--border-color);border-radius:16px;box-shadow:var(--shadow-card);padding:22px 24px;margin-bottom:24px}
+.card-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px dashed #CBD5E1;padding-bottom:12px;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.card-title-group{display:flex;align-items:center;gap:12px}
+.card-icon{width:40px;height:40px;border:2px solid var(--border-color);border-radius:12px;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text-title)}
+.icon-peach{background:var(--clay-peach)}.icon-sky{background:var(--clay-sky)}.icon-mint{background:var(--clay-mint)}.icon-amber{background:var(--clay-amber)}.icon-lav{background:var(--clay-lavender)}
+.card-title{margin:0;font-size:20px;color:var(--text-title)}
+.status-pill{border:2px solid var(--border-color);border-radius:9999px;box-shadow:var(--shadow-sm);padding:1px 12px;font-size:12px;font-weight:700;color:var(--text-title)}
+.pill-peach{background:var(--clay-peach)}.pill-mint{background:var(--clay-mint)}.pill-amber{background:var(--clay-amber)}.pill-sky{background:var(--clay-sky)}
+table{width:100%;border-collapse:separate;border-spacing:0;border:2px solid var(--border-color);border-radius:10px;overflow:hidden;font-size:14px}
+th{background:#F8FAFC;color:var(--text-title);text-align:left;padding:10px 12px;border-bottom:2px solid var(--border-color)}
+td{padding:9px 12px;border-bottom:1px solid #E2E8F0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.code-tag{background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:0 6px;font-family:Consolas,monospace;font-size:13px;color:var(--text-title)}
+.milestone-list{list-style:none;margin:0;padding:0}
+.milestone-item{display:flex;gap:14px;padding:8px 0}
+.item-dot{flex:none;width:12px;height:12px;margin-top:9px;border-radius:50%;background:var(--border-color);box-shadow:0 0 0 3px var(--clay-peach)}
+.dot-sky .item-dot{box-shadow:0 0 0 3px var(--clay-sky)}.dot-mint .item-dot{box-shadow:0 0 0 3px var(--clay-mint)}.dot-amber .item-dot{box-shadow:0 0 0 3px var(--clay-amber)}
+.item-title{font-weight:700;color:var(--text-title)}
+.callout-box{background:#FFF5F0;border:2px solid var(--border-color);border-radius:12px;box-shadow:var(--shadow-callout);padding:12px 16px;margin:14px 0}
+.callout-box.info{background:#F0F9FF}.callout-box.success{background:#F0FDF4}
+.new-item{background:#FFE14D;border:3px solid var(--border-color);border-radius:12px;box-shadow:var(--shadow-callout);padding:12px 14px;margin:10px 0}
+.new-item .item-dot{background:#E11D48;box-shadow:0 0 0 3px #fff}
+.new-badge{display:inline-block;background:#E11D48;color:#fff;border:2px solid var(--border-color);border-radius:9999px;padding:0 10px;font-size:12px;font-weight:800;margin-right:6px}
+.footer{border-top:2px solid var(--border-color);margin-top:32px;padding-top:12px;display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero-banner">
+  <span class="hero-badge">討論總結（第一次）</span>
+  <h1 class="hero-title">引水人班表功能</h1>
+  <p class="hero-subtitle">Gmail 班表 Excel → Firebase → APP 船期表顯示與撥號 → 23:00 歸檔寫入 M 欄</p>
+  <span class="date-subtitle">報告日期：2026-10-23</span>
+</header>
+
+<section class="card">
+  <div class="card-header">
+    <div class="card-title-group"><div class="card-icon icon-mint">1</div><h2 class="card-title">已確認的決定</h2></div>
+    <span class="status-pill pill-mint">已定案</span>
+  </div>
+  <table>
+    <thead><tr><th style="width:22%">項目</th><th>結論</th></tr></thead>
+    <tbody>
+      <tr><td><strong>班表欄位</strong></td><td>A 日期、H 工二（職日員）、I 工一（日班班長），資料從第 6 列起</td></tr>
+      <tr><td><strong>電話表</strong></td><td>工作表 2，D5/E5 起共 19 人。比對前要去掉姓名所有空白</td></tr>
+      <tr><td><strong>資料檢查</strong></td><td>9、10 月班表的工一、工二全部對得到電話。9 月有 14 格空白（已過日期），要跳過</td></tr>
+      <tr><td><strong>Firebase 路徑</strong></td><td>Demo 階段 <span class="code-tag">/test/pilot_schedule</span>，上線後 <span class="code-tag">/pilot_schedule</span></td></tr>
+      <tr><td><strong>日期 key</strong></td><td><span class="code-tag">YYYY-MM-DD</span>；本月與下個月並存，月份取自工作表標題（如 115-10月）</td></tr>
+      <tr><td><strong>資料結構</strong></td><td><span class="code-tag">{gong1:{name,phone}, gong2:{name,phone}}</span>，不存職稱</td></tr>
+      <tr><td><strong>安全規則</strong></td><td><span class="code-tag">.read:true</span>、<span class="code-tag">.write:false</span>。GAS 與 Python 用 DbSecret 寫入，會略過規則，不需公開寫入。電話公開可讀</td></tr>
+      <tr><td><strong>前端</strong></td><td>點船名滑出工一、工二；點人名彈出確認；只有手機才有撥打（<span class="code-tag">tel:</span>），桌機只顯示</td></tr>
+      <tr><td><strong>歸檔</strong></td><td>在 <span class="code-tag">archiveAndClearFirebase</span> 兩處 <span class="code-tag">appendRow</span> 加第 13 個值（M 欄），格式「工一/工二」只放姓名；歸檔成功後刪除 pilot_schedule 當天資料</td></tr>
+      <tr><td><strong>無船的日子</strong></td><td>歸檔當天沒有船（沒有列）時不寫入歸檔總表，只刪除 pilot_schedule 當天資料</td></tr>
+      <tr><td><strong>同日多艘船</strong></td><td>每列 M 欄都寫同一個值</td></tr>
+      <tr><td><strong>電話對照</strong></td><td>班表上的人一定在電話表內，不會出現缺漏（解析時仍保留記 log 的防呆）</td></tr>
+      <tr><td><strong>信件處理</strong></td><td>每天 16:00 抓主旨含「領港值班表」或「班表」、日期不早於今天的信</td></tr>
+      <tr><td><strong>解析方式</strong></td><td>方案 B：Python（imaplib + openpyxl），沿用現有 Gmail IMAP 設定，不需 GAS Gmail 授權</td></tr>
+      <tr><td><strong>空間限制</strong></td><td>Artifact Registry 維持 500MB 內，部署走 <span class="code-tag">deploy_clean.py</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <div class="card-title-group"><div class="card-icon icon-sky">2</div><h2 class="card-title">專案現況發現</h2></div>
+    <span class="status-pill pill-sky">已查證</span>
+  </div>
+  <ul class="milestone-list dot-sky">
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">空軍預測由 Python 抓取</div>GitHub Actions 每天 15:15 執行 <span class="code-tag">main.py</span>；Cloud Scheduler <span class="code-tag">forecast-trigger-test</span>（<span class="code-tag">*/15 12-17 * * *</span>，Asia/Taipei）呼叫測試版 Cloud Run <span class="code-tag">/update_forecast</span>。GAS 沒有 Gmail 權限。</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">Cloud Scheduler 範圍</div>只查了 asia-southeast1、asia-east1、us-central1，僅此一個排程。</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">測試與前端檔案</div>測試版 GAS 為 <span class="code-tag">test_monitor/gs_test.js</span>，會把 Firebase 強制指向 /test。<span class="code-tag">index.html</span>、<span class="code-tag">public/index.html</span>、<span class="code-tag">index_test.html</span> 三份內容相同。</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">歸檔總表結構</div>A 欄日期，每艘船一列，不是每天都有列。M1 已有「值班引水人」；標題建立程式只有 12 欄，需補第 13 欄。</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <div class="card-title-group"><div class="card-icon icon-lav">3</div><h2 class="card-title">Git 與儲存庫</h2></div>
+    <span class="status-pill pill-amber">已設定</span>
+  </div>
+  <table>
+    <thead><tr><th>檔案</th><th>與 GitHub repo 比對</th></tr></thead>
+    <tbody>
+      <tr><td><span class="code-tag">gs_test.js</span>、<span class="code-tag">main.py</span>、<span class="code-tag">data_fusion.py</span></td><td>相同</td></tr>
+      <tr><td><span class="code-tag">index.html</span></td><td>不同：repo 1655 行，本機 2581 行</td></tr>
+      <tr><td><span class="code-tag">email_receiver.py</span>、<span class="code-tag">cv2_parser.py</span></td><td>不同</td></tr>
+      <tr><td><span class="code-tag">manifest.json</span>、<span class="code-tag">data.json</span></td><td>不同；repo 的 data.json 每天被 GitHub Actions 自動 commit</td></tr>
+    </tbody>
+  </table>
+  <div class="callout-box info">
+    已在本機 <span class="code-tag">git init</span>、設定 remote、<span class="code-tag">fetch</span>，並建立分支 <span class="code-tag">demo/pilot-schedule</span>。<strong>沒有 checkout、沒有 commit，本機檔案未被改動。</strong>之後只 <span class="code-tag">git add Demo/</span> 與相關文件，不覆蓋 repo 的 <span class="code-tag">正式版/index.html</span>；將來同步前要先 pull。
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <div class="card-title-group"><div class="card-icon icon-peach">4</div><h2 class="card-title">待你決定（下次先回答）</h2></div>
+    <span class="status-pill pill-peach">待決策</span>
+  </div>
+  <ul class="milestone-list">
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">班表同步的排程方式</div>(a) 新增 GitHub Actions workflow，每天 16:00 一次（建議）；(b) 新增 Cloud Run 端點加 Cloud Scheduler；(c) 複用 <span class="code-tag">forecast-trigger-test</span> 的時段順便抓班表。</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div><div class="item-title">同一天收到多封符合的信</div>處理全部，並用檔案內月份區分？</div></li>
+    <li class="milestone-item new-item"><div class="item-dot"></div><div><div class="item-title"><span class="new-badge">NEW 下次討論</span> 手動上傳班表（新增選項）</div>自己發現有新班表時，可手動上傳到 APP 更新，不用等 16:00 的自動抓信。待討論的點：
+      <ul>
+        <li>入口：APP 內的上傳按鈕（需用密碼保護），或其他方式？</li>
+        <li>由誰解析：前端直接讀 xlsx（需引入函式庫），或上傳後交給後端（GAS 或 Cloud Run）解析？</li>
+        <li>手動上傳與自動抓信如何共存：同一月份以後到者覆蓋？</li>
+        <li>上傳前是否先預覽解析結果，確認後才寫入 Firebase？</li>
+      </ul>
+    </div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <div class="card-title-group"><div class="card-icon icon-amber">5</div><h2 class="card-title">待辦事項（決定後由我執行）</h2></div>
+    <span class="status-pill pill-amber">待執行</span>
+  </div>
+  <ul class="milestone-list dot-amber">
+    <li class="milestone-item"><div class="item-dot"></div><div>寫實作計畫（HTML），存到 <span class="code-tag">plan/2026-10-23/</span> 供審閱</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>建立 <span class="code-tag">Demo/</span>：Python 班表解析、gs_test.js 副本、index_test.html 副本、測試</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>解析程式：去空白比對姓名、跳過空白日期、標題取月份、支援本月與下月</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>前端：船名展開、人名確認、手機判斷與 <span class="code-tag">tel:</span></div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>GAS：歸檔寫 M 欄、補第 13 個標題、歸檔後刪除當天資料</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>Firebase 規則新增 pilot_schedule 唯讀</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>部署前後檢查 Artifact Registry 用量</div></li>
+    <li class="milestone-item"><div class="item-dot"></div><div>測試通過後併入主 APP（<span class="code-tag">clasp push</span> 與 <span class="code-tag">clasp deploy -i</span>），再考慮刪除 Demo/</div></li>
+  </ul>
+</section>
+
+<div class="callout-box">
+  <strong>注意事項</strong><br>
+  專案內容不可隨意變動；新功能先在 Demo 驗證，不可先上線。密鑰一律用環境變數或 Secret Manager，不寫進程式碼。LNG 船夜航限制：POB 只會在 04:00 到 17:00。
+</div>
+
+<footer class="footer">
+  <div>奶昔APP • 引水人班表功能討論總結</div>
+  <div>記錄日期：2026-10-23</div>
+</footer>
+
+</div>
+</body>
+</html>

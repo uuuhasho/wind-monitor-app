@@ -1,44 +1,53 @@
-# 敏感設定與金鑰檔案 (絕不能上傳)
+﻿# === 敏感設定與金鑰 (絕不能上傳) ===
 config.json
+config.json.bak
 service_account.json
+env.json
+.env
+*.secret
+.firebase/
 
-# 暫存資料夾與圖檔
-temp/
+# === Python ===
 __pycache__/
-*.pyc
-*.doc
-*.docx
-*.png
-*.jpg
-*.pdf
-.gas/
+*.py[cod]
+venv/
+.venv/
+env/
+*.bak
+
+# === 暫存 / 外部工具 ===
+temp/
+runtime/
+data.json
+public/
+local_archive/
+.public-previous-*/
+.public-previous/
+lib/
+tessdata/
 test_monitor/
 gas_test_project/
-測試版/
-
-
-# Python 虛擬環境
-venv/
-env/
-.env
-
-# 專案無關檔案
+.gas/
 .antigravitycli/
 diagnostics/
-
-
-# Google Apps Script
-gs_*.js
-!gs_test.js
-
-# Antigravity CLI preferences
+.playwright-cli/
+hosting-stage-*/
 GEMINI.md
+*.log
+.DS_Store
+Thumbs.db
 
-# 其他忽略規則
+# === 原始資料與大型媒體 (不入版控) ===
+空軍原始檔/
+船期日曆更新/
+*.doc
+*.docx
+*.pdf
+*.mp4
+public/presentation/
+
+# === 個人筆記 ===
 6-14修改.md
 大改測試.md
 代碼加入OCR.md
 notes.md
-.agents/
-docs/
-plan/

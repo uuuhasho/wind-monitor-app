@@ -1,0 +1,86 @@
+{
+  "observedDate": "2026-10-26",
+  "project": "newlngship",
+  "cloudRun": {
+    "service": "forecast-api-test",
+    "region": "asia-southeast1",
+    "revision": "forecast-api-test-00057-4tc",
+    "trafficPercent": 100,
+    "timeoutSeconds": 300,
+    "containerConcurrency": 80,
+    "maxInstances": 20,
+    "appPasswordEnvironmentNamePresent": true,
+    "secretValuesRead": false,
+    "secretReferences": {
+      "GEMINI_API_KEY": "gemini_api_key:latest",
+      "LINE_CHANNEL_SECRET": "line_channel_secret:latest",
+      "LINE_CHANNEL_ACCESS_TOKEN": "line_channel_access_token:latest"
+    }
+  },
+  "scheduler": {
+    "job": "forecast-trigger-test",
+    "location": "asia-southeast1",
+    "state": "ENABLED",
+    "schedule": "*/15 12-17 * * *",
+    "timeZone": "Asia/Taipei",
+    "attemptDeadline": "180s"
+  },
+  "hosting": {
+    "site": "newlngship",
+    "channel": "live",
+    "version": "1fcc026f59f9da67",
+    "releaseId": "1784294986819000",
+    "releaseType": "ROLLBACK",
+    "releaseTime": "2026-07-17T13:29:46.819Z",
+    "fileCount": 18
+  },
+  "gas": {
+    "deploymentId": "AKfycbzlLKwqWEWqibSIUYMUYAHamsvT5oxSdVmlSprD6LhaDpCuyUkbXfrjuLB_TequEWF3",
+    "version": 79,
+    "headMatchesVersionAfterNewlineNormalization": true,
+    "headMatchesGitBaselineAfterNewlineNormalization": true,
+    "queriedAtUtc": "2026-10-26T07:13:04.511Z",
+    "actualInstalledTriggersVerified": true,
+    "triggerVerificationSource": "User-provided installed trigger inventory, 2026-10-26; not queried through the API",
+    "installedTriggers": [
+      {
+        "handler": "checkDailySchedule",
+        "type": "timeDriven",
+        "window": "04:00–05:00 daily",
+        "timeZone": "Asia/Taipei"
+      },
+      {
+        "handler": "onCalendarOrSheetChange",
+        "type": "calendarEventUpdated",
+        "calendarId": "89f17p8et94udnavnaqgihrgvg@group.calendar.google.com"
+      },
+      {
+        "handler": "archiveAndClearFirebase",
+        "type": "timeDriven",
+        "window": "23:00–00:00 daily",
+        "timeZone": "Asia/Taipei"
+      },
+      {
+        "handler": "executeMonitor",
+        "type": "timeDriven",
+        "intervalMinutes": 1
+      }
+    ],
+    "triggerMaintenanceNote": "Preserve all four triggers, including the calendar event trigger. The local setupSystemTriggers implementation now creates only missing triggers for the executing account; it preserves existing schedules and unrelated triggers. It has not been deployed or executed remotely. Confirm the maintenance account can manage all installed triggers before the maintenance window.",
+    "scriptPropertyPasswordValueRead": false
+  },
+  "operationPasswordConfiguration": {
+    "confirmedBy": "user",
+    "confirmedDate": "2026-10-26",
+    "configuredInBothServices": true,
+    "cloudRunAppPasswordMatchesGasOpPassword": true,
+    "valuesReadByAgent": false
+  },
+  "cloudWritesPerformed": false,
+  "sourceCommands": [
+    "gcloud run services describe (explicit project and projected metadata only)",
+    "gcloud scheduler jobs list (explicit project and metadata only)",
+    "firebase hosting:channel:list --project newlngship --json",
+    "clasp deployments / versions / projects.getContent (in-memory hash summaries only)"
+  ]
+}

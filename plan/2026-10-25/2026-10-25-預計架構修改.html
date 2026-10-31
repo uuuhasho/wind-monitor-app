@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>預計架構修改</title>
+<style>
+:root{--bg:#FFF9F5;--card:#fff;--ink:#1A202C;--body:#4A5568;--mut:#718096;--bd:#2D3748;--peach:#FFD8D0;--sky:#D6EEFF;--mint:#D4F4E2;--amber:#FEF3C7;--lav:#E6E6FA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--body);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.7;padding:28px 16px}
+.wrap{max-width:1000px;margin:0 auto}
+.hero{background:linear-gradient(135deg,var(--peach),var(--lav));border:3px solid var(--bd);border-radius:20px;box-shadow:6px 6px 0 var(--bd);padding:24px 28px;margin-bottom:24px}
+.badge{display:inline-block;background:#fff;border:2px solid var(--bd);border-radius:99px;box-shadow:2px 2px 0 var(--bd);padding:1px 14px;font-weight:700;font-size:13px;color:var(--ink)}
+h1{margin:10px 0 4px;font-size:28px;color:var(--ink)}
+.date-subtitle{display:block;margin-top:8px;font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:2.5px solid var(--bd);border-radius:16px;box-shadow:4px 4px 0 var(--bd);padding:20px 22px;margin-bottom:22px}
+.hd{display:flex;align-items:center;gap:12px;border-bottom:2px dashed #CBD5E1;padding-bottom:10px;margin-bottom:12px}
+.ic{width:38px;height:38px;border:2px solid var(--bd);border-radius:12px;box-shadow:2px 2px 0 var(--bd);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink)}
+h2{margin:0;font-size:19px;color:var(--ink)}
+table{width:100%;border-collapse:separate;border-spacing:0;border:2px solid var(--bd);border-radius:10px;overflow:hidden;font-size:14px}
+th{background:#F8FAFC;color:var(--ink);text-align:left;padding:9px 12px;border-bottom:2px solid var(--bd)}
+td{padding:8px 12px;border-bottom:1px solid #E2E8F0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+code{background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:0 6px;font-family:Consolas,monospace;font-size:13px;color:var(--ink)}
+.pill{display:inline-block;border:2px solid var(--bd);border-radius:99px;padding:0 10px;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap}
+.p0{background:var(--peach)}.p1{background:var(--amber)}.p2{background:var(--sky)}.p3{background:var(--mint)}
+.callout{background:var(--amber);border:2px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:10px 14px;margin:12px 0;color:var(--ink)}
+.next{background:#FFE14D;border:3px solid var(--bd);border-radius:12px;box-shadow:3px 3px 0 var(--bd);padding:12px 16px;color:var(--ink);font-weight:700}
+.arch{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.node{border:2px solid var(--bd);border-radius:14px;box-shadow:3px 3px 0 var(--bd);padding:10px 12px;font-size:13px}
+.node h3{margin:0 0 4px;font-size:15px;color:var(--ink)}
+.n1{background:var(--sky)}.n2{background:var(--mint)}.n3{background:var(--lav)}.n4{background:var(--amber)}.n5{background:var(--peach)}
+.flow{font-family:Consolas,monospace;font-size:13px;background:#F8FAFC;border:2px solid var(--bd);border-radius:10px;padding:12px 14px;white-space:pre-wrap;color:var(--ink)}
+ul,ol{margin:6px 0;padding-left:22px}
+.footer{border-top:2px solid var(--bd);margin-top:26px;padding-top:10px;font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="badge">預計討論</span>
+  <h1>預計架構修改</h1>
+  <span class="date-subtitle">報告日期：2026-10-25　｜　依據：實際閱讀 app.py、main.py、src/、deploy 腳本、gs_test.js、index.html、前端/GAS 重複檔案</span>
+</header>
+
+<div class="next">Next：下次先挑 P0 的三項（密碼與金鑰、狀態重置路徑、單一來源檔案）逐項決定要不要做。同資料夾的 <code>.md</code> 可直接丟給 AI agent 當討論起點。</div>
+<br>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--sky)">1</div><h2>現況架構</h2></div>
+  <div class="arch">
+    <div class="node n1"><h3>前端 PWA</h3><code>index.html</code>（2581 行單檔）→ Firebase Hosting。讀 RTDB，呼叫 GAS 與 Cloud Run。</div>
+    <div class="node n2"><h3>GAS 後端</h3><code>gs_test.js</code>（約 1480 行）。<code>doGet/doPost</code> API、每分鐘監控、04:00 排程、23:00 歸檔、Calendar／Sheet 事件。</div>
+    <div class="node n3"><h3>Cloud Run</h3><code>forecast-api-test</code>（Flask）。<code>/webhook</code>、<code>/update_forecast</code>、<code>/health</code>。</div>
+    <div class="node n4"><h3>Firebase RTDB</h3>專案 <code>newlngship</code>，目前全部在 <code>test/</code>：forecast_data、forecast_metadata、active_status、daily_records、editing_lock、schedule_list。</div>
+    <div class="node n5"><h3>排程與外部</h3>Cloud Scheduler <code>forecast-trigger-test</code>；GitHub Actions 已停；LINE、Gmail IMAP、Gemini、Open-Meteo、港務公司風速頁。</div>
+  </div>
+  <p></p>
+  <div class="flow">預報流程：Scheduler(*/15 12-17) → Cloud Run /update_forecast
+  → Gmail IMAP 取 .doc → LibreOffice 轉 docx → 抽圖 → cv2/OCR 解析曲線
+  → 與 Open-Meteo 融合 → RTDB PUT test/forecast_data (+ Firestore 備寫，疑似未啟用)
+
+POB 流程：LINE 群組訊息 → Cloud Run /webhook → Gemini 解析時間
+  → GET GAS set_mode(pob_time) → GAS 查風速、寫 pob_info、更新船期、換班
+
+船期流程：Calendar／Sheet → GAS → RTDB test/schedule_list、daily_records → 23:00 歸檔回 Sheet</div>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--peach)">2</div><h2>建議修改（依優先順序）</h2></div>
+  <table>
+    <thead><tr><th style="width:5%">#</th><th style="width:9%">優先</th><th>問題（已查證的位置）</th><th style="width:32%">建議</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><span class="pill p0">P0 安全</span></td><td><code>app.py:118</code> 把密碼 <code>502020</code> 和 GAS 部署 URL 寫死在程式碼；前端用 GET query 傳 <code>pwd=</code>（<code>index.html</code> 多處），會留在網址與日誌。專案根目錄 <code>env.json</code> 內有 LINE 與 Gemini 金鑰（已被 .gitignore 排除）。</td><td>app.py 改讀環境變數 / Secret Manager；GAS 驗證改 POST body；金鑰集中到 Secret Manager，<code>env.json</code> 不放在專案目錄。</td></tr>
+      <tr><td>2</td><td><span class="pill p0">P0 一致性</span></td><td><code>main.py:32</code> 的 <code>reset_rtdb_updating_state</code> 寫 <code>{DbUrl}/active_status.json</code>，不加 <code>FIREBASE_RTDB_PREFIX</code>；而 <code>data_fusion.py:232</code> 有加。前端讀的是 <code>test/active_status</code>。實際寫到哪取決於 <code>DbUrl</code> 值（Cloud Run 環境變數，未驗證）。</td><td>集中成一個 <code>rtdb_url(path)</code> 函式，所有 Python 讀寫都經過它。</td></tr>
+      <tr><td>3</td><td><span class="pill p0">P0 重複</span></td><td><code>index.html</code>、<code>index_test.html</code>、<code>public/index.html</code> 三份雜湊相同；<code>test_monitor/index_test.html</code> 版本不同。<code>gs_test.js</code> 在根目錄與 <code>test_monitor/</code> 各一份（相同）。<code>presentation/</code> 也重複放在 <code>public/presentation/</code>。</td><td>只留一份來源（例如 <code>frontend/index.html</code>、<code>gas/Code.js</code>），其餘由部署腳本產生。</td></tr>
+      <tr><td>4</td><td><span class="pill p1">P1 設定</span></td><td>環境變數名稱不一致：<code>FIREBASE_DB_URL</code> / <code>FIREBASE_RTDB_URL</code>（<code>config.py</code>）、<code>FIREBASE_URL</code>（GAS）。<code>data_fusion.py</code> 自己又讀一次環境變數，繞過 <code>load_config</code>。</td><td>統一一組名稱，設定只由 <code>load_config()</code> 提供。</td></tr>
+      <tr><td>5</td><td><span class="pill p1">P1 命名</span></td><td>主力服務都叫 test：<code>forecast-api-test</code>、<code>gs_test.js</code>、<code>index_test.html</code>、<code>forecast-trigger-test</code>。AGENTS.md 又說本版是未來生產環境。</td><td>先不改 <code>/test</code>。建議只先定義「環境」概念（<code>ENV</code> 與 <code>PREFIX</code> 變數），等你決定何時重命名。</td></tr>
+      <tr><td>6</td><td><span class="pill p1">P1 死碼</span></td><td><code>data_fusion.py</code> 末段 Firestore 備寫需要 <code>service_account.json</code>，部署包不含該檔，雲端應該一律跳過。另有 <code>check_db.py</code>、<code>*.bak</code>（src 內 2 個）、根目錄 <code>data.json</code>（容器內暫存）、<code>test_splice.js</code>。</td><td>確認 Firestore 是否仍使用；不用就移除該段與 <code>firebase-admin</code> 依賴，縮小映像檔。</td></tr>
+      <tr><td>7</td><td><span class="pill p1">P1 部署</span></td><td>根目錄 <code>.gcloudignore</code> 已過時（沒有 <code>env.json</code>）；實際部署由 <code>deploy_clean.py</code> 另外產生精簡版，所以目前沒洩漏。<code>deploy_clean.py</code> 有未使用的 <code>source_dir</code>、寫死 <code>C:\Users\hilla\Desktop\newlngship_clean</code>。<code>deploy_hosting.ps1</code> 把 <code>index_test.html</code> 複製成 <code>public/index.html</code>，並連同 22MB 影片一起上傳 Hosting。</td><td>更新 <code>.gcloudignore</code>；Hosting 排除簡報影片；路徑改成可設定。</td></tr>
+      <tr><td>8</td><td><span class="pill p2">P2 依賴</span></td><td><code>requirements.txt</code> 的 <code>line-bot-sdk</code>、<code>google-generativeai</code> 未釘版本；Dockerfile 裝 LibreOffice 很重（Artifact Registry 500MB 限制）。</td><td>釘版本；評估 LibreOffice 是否可被輕量轉檔取代。</td></tr>
+      <tr><td>9</td><td><span class="pill p2">P2 穩定</span></td><td><code>app.py</code> 的 <code>is_pipeline_running</code> 是行程內變數，只在 <code>--workers 1</code> 才有效；<code>email_receiver.py</code> 先找本機同日 .doc 快取，容器重用時可能拿到舊檔，且只掃最新 15 封。</td><td>改以 Firebase 狀態或 Cloud Run 並行度 1 保證單例；快取加時間戳。</td></tr>
+      <tr><td>10</td><td><span class="pill p2">P2 測試</span></td><td>只有 <code>run_auto_test.py</code>（直接打測試 DB，約 35KB）。解析邏輯（cv2、POB、日期融合）沒有單元測試。</td><td>為解析函式補 pytest，用 <code>REF/</code> 與 <code>temp/</code> 的真實檔做 fixture。</td></tr>
+      <tr><td>11</td><td><span class="pill p3">P3 新功能</span></td><td>引水人班表：GAS 18:00 觸發搜信，POST 附件給 Cloud Run <code>/parse_schedule</code>，用 <code>openpyxl</code> 解析寫 <code>pilot_schedule</code>。</td><td>沿用上述 #1、#2、#4 的清理後再加，避免新功能繼承舊問題。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--peach)">3</div><h2>可刪除或取消追蹤的重複檔案（已用 MD5 雜湊比對）</h2></div>
+  <div class="callout">這一節只是清單，沒有刪除任何檔案。刪除前要先改好依賴它們的部署腳本。</div>
+  <table>
+    <thead><tr><th style="width:4%">#</th><th style="width:27%">檔案</th><th>重複對象與證據</th><th style="width:30%">建議動作</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>index_test.html</code>（根目錄）</td><td>與 <code>index.html</code>、<code>public/index.html</code> 雜湊完全相同。但 <code>deploy_hosting.ps1:12</code> 以它為來源。</td><td>保留 <code>index.html</code> 當唯一來源，腳本改指向它，再刪 <code>index_test.html</code>。</td></tr>
+      <tr><td>2</td><td><code>public/</code> 內的 <code>index.html</code>、<code>logo.png</code>、<code>manifest.json</code>、<code>pwa.png</code>、<code>pwa-192x192.png</code>、<code>fast-forward.png</code>、<code>notification_option_C.mp3</code></td><td>全部與根目錄同名檔案雜湊相同。<code>deploy_hosting.ps1</code> 每次先清空 <code>public\*</code> 再複製，所以這是建置產物，卻被 git 追蹤。其中 <code>pwa-192x192.png</code> 和 <code>pwa.png</code> 內容相同，<code>manifest.json</code> 只引用 <code>pwa.png</code>。</td><td>從 git 取消追蹤（<code>git rm --cached</code>）並把 <code>public/</code> 加進 <code>.gitignore</code>；磁碟上的檔案由腳本重建，不用手刪。</td></tr>
+      <tr><td>3</td><td><code>public/presentation/</code> 的 9 個檔案（<code>index.html</code>、<code>lng_carrier_*.jpg</code>、<code>slide2_bg.jpg</code>、<code>qrcode.png</code>、<code>notification_option_C.mp3</code>）</td><td>與 <code>presentation/</code> 雜湊逐一相同，是同一腳本複製出來的。</td><td>同 #2，當成建置產物處理。</td></tr>
+      <tr><td>4</td><td><code>public/presentation/</code> 內的影片資料夾（2 個 mp4 約 37MB、旁白 mp3、腳本 md）</td><td>不是重複檔，只存在於 <code>public/</code>；<code>.gitignore</code> 排除了 mp4。但 Firebase Hosting 部署會一起上傳。<code>public/presentation</code> 與 <code>presentation</code> 兩個資料夾合計約 44MB，其中大部分是這些影片。</td><td>若網頁不需要線上播放，移出 <code>public/</code> 到不部署的資料夾。<b>需你確認用途。</b></td></tr>
+      <tr><td>5</td><td><code>notification_option_C.mp3</code>（根目錄）</td><td>與 <code>presentation/</code>、<code>public/</code> 兩份相同，共 3 份。根目錄這份在工作區<b>已被刪除（未提交）</b>，所以 <code>deploy_hosting.ps1:18</code> 目前會複製失敗。</td><td>決定唯一來源（建議 <code>assets/</code>），修正腳本；<code>presentation/index.html</code> 用相對路徑載入同層 mp3，要保留或改路徑。</td></tr>
+      <tr><td>6</td><td><code>test_monitor/gs_test.js</code> 或根目錄 <code>gs_test.js</code></td><td>兩份雜湊相同。<code>.clasp.json</code> 在 <code>test_monitor/</code>，clasp 從那裡推送；git 只追蹤根目錄那份（<code>test_monitor/</code> 被 .gitignore 排除）。</td><td>合併成單一 <code>gas/</code> 資料夾（含 <code>.clasp.json</code>、<code>appsscript.json</code>、程式檔）。合併前先確認線上版本等於這份。</td></tr>
+      <tr><td>7</td><td><code>test_monitor/index_test.html</code></td><td>不相同，是舊版（2578 行，根目錄 2581 行）。只在本機，不在 git。</td><td>確認沒有未合併的修改後刪除。</td></tr>
+      <tr><td>8</td><td><code>src/cv2_parser.py.bak</code>、<code>src/data_fusion.py.bak</code></td><td>舊版備份（<code>cv2_parser.py.bak</code> 7KB，現行檔 19KB）。<code>.gitignore</code> 已排除 <code>*.bak</code>，git 歷史另有紀錄。</td><td>可直接刪除。</td></tr>
+      <tr><td>9</td><td><code>test_monitor/test_splice.js</code></td><td>內容是寫死的範例船期陣列，疑似一次性測試腳本。</td><td>確認沒用後刪除。</td></tr>
+      <tr><td>10</td><td><code>data.json</code>（根目錄，23KB，被 git 追蹤）</td><td>管線在容器內寫出的暫存快照，唯一的讀取者是 GAS 手動函式 <code>fixLastRowJson()</code>（抓 GitHub Pages）。GitHub Actions 停用後不再更新。</td><td>決定 <code>fixLastRowJson()</code> 是否保留；不保留就刪除並停止追蹤。</td></tr>
+      <tr><td>11</td><td><code>check_db.py</code></td><td>Firestore 的手動檢查腳本。</td><td>若確認不用 Firestore，與 <code>data_fusion.py</code> 的 Firestore 備寫一起移除。</td></tr>
+      <tr><td>12</td><td><code>REF/Vessel details table.md</code></td><td>與同資料夾的 <code>.xlsx</code> 內容疑似同一份（md 202KB、xlsx 127KB）。<b>內容是否一致未驗證。</b></td><td>確認後保留 xlsx，刪 md。</td></tr>
+      <tr><td>13</td><td><code>正式版/index.html</code></td><td>工作區中已被刪除（未提交），遠端 repo 仍有，且與本機 <code>index.html</code> 內容不同（遠端 1655 行，本機 2581 行）。</td><td>提交前先決定要不要在遠端同步刪除，避免誤刪正式版。</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><b>不是重複，請保留：</b><code>lib/</code>（<code>cv2_parser.py</code> 本機 Windows 用的 tesseract／leptonica DLL）、<code>tessdata/</code>、<code>temp/</code>（9、10 月班表範例，引水人班表要用）、<code>空軍原始檔</code>資料夾（15 個樣本，<code>email_receiver.py</code> 會當本機快取讀取）。另外 <code>cv2_parser.py:44-46</code> 寫死你桌面上其他專案的路徑，建議之後清掉。</div>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--mint)">4</div><h2>目標架構（建議）</h2></div>
+  <div class="flow">repo/
+  frontend/index.html          ← 唯一來源；部署腳本複製到 public/
+  gas/Code.js                  ← 唯一來源；clasp 由此推送
+  backend/ (app.py, main.py, src/)   ← 設定只經 load_config()
+  deploy/ (deploy_clean.py, deploy_hosting.ps1, cleanup_registry.py)
+  tests/ (pytest + 真實 doc/xlsx fixture)
+  docs/ plan/                  ← 依日期分層（已符合規範）</div>
+  <ul>
+    <li>設定：<code>ENV</code>、<code>RTDB_PREFIX</code>、<code>GAS_URL</code>、<code>APP_PASSWORD</code> 全部來自環境變數／Secret Manager。</li>
+    <li>Firebase 讀寫：Python 與前端各一個封裝函式，不在程式內直接拼 <code>test/…</code>。</li>
+    <li>不動：RTDB 仍用 <code>/test</code>；Cloud Run 與 GAS 的分工維持 AGENTS.md 現行規定。</li>
+  </ul>
+</section>
+
+<section class="card">
+  <div class="hd"><div class="ic" style="background:var(--amber)">5</div><h2>下次討論請先回答</h2></div>
+  <ol>
+    <li>P0 的三項要不要都做？做的順序？</li>
+    <li>Firestore <code>wind_forecasts</code> 還有在用嗎？</li>
+    <li>Cloud Run 的 <code>FIREBASE_RTDB_URL</code> / <code>FIREBASE_DB_URL</code> 實際值是否帶 <code>/test</code>？（我無法從本機驗證）</li>
+    <li>頂層資料夾要不要重組（frontend / gas / backend / deploy / tests）？</li>
+    <li>測試密碼 <code>502020</code> 是否繼續沿用，還是改成 Secret Manager 管理？</li>
+    <li>第 3 節的重複檔案：<code>public/presentation</code> 的影片要不要線上保留？<code>fixLastRowJson()</code> 與 <code>data.json</code> 要不要保留？根目錄與 <code>test_monitor/</code> 哪一份是 GAS 的唯一來源？</li>
+  </ol>
+  <div class="callout">未驗證項目：Cloud Run 實際環境變數、Cloud Scheduler 目前設定、GAS 專案上已部署的版本是否等於本機 <code>gs_test.js</code>。</div>
+</section>
+
+<div class="footer">奶昔APP　•　預計架構修改　•　2026-10-25</div>
+</div>
+</body>
+</html>
