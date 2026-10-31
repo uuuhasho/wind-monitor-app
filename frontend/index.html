@@ -1532,6 +1532,9 @@
     function refreshForecastUpdateButton() {
         const button = document.getElementById('forecastUpdateBtn');
         if (!button) return;
+        clearTimeout(forecastLeaseTimer);
+        const remaining = forecastLease && forecastLease.expiresAt * 1000 - Date.now() - serverTimeOffset;
+        if (remaining > 0) forecastLeaseTimer = setTimeout(refreshForecastUpdateButton, remaining);
         const expired = forecastLease && forecastLease.expiresAt * 1000 <= Date.now() + serverTimeOffset;
         const running = forecastUpdateStatus.forecast_updating === true && !expired;
         const wasUpdating = button.disabled;
@@ -1547,14 +1550,10 @@
         // 🌟 新增：取得 Firebase 伺服器時間偏移量 (I12)
         db.ref('.info/serverTimeOffset').on('value', function(snap) {
             serverTimeOffset = snap.val() || 0;
+            refreshForecastUpdateButton();
         });
         db.ref('test/forecast_update_lock').on('value', snapshot => {
             forecastLease = snapshot.val();
-            clearTimeout(forecastLeaseTimer);
-            if (forecastLease && forecastLease.expiresAt) {
-                forecastLeaseTimer = setTimeout(refreshForecastUpdateButton,
-                    Math.max(0, forecastLease.expiresAt * 1000 - Date.now() - serverTimeOffset));
-            }
             refreshForecastUpdateButton();
         });
 
@@ -2135,7 +2134,8 @@
             ]
         };
 
-        forecastChartInstance.setOption(option, true);
+        forecastChartInstance.dispatchAction({ type: 'hideTip' });
+        forecastChartInstance.setOption(option);
 
         // 🚢 UX 新增：選中船期時，自動定位到該船當天預報數據點並顯示 Tooltip (夏季 05:00 / 冬季 06:00)
         try {
