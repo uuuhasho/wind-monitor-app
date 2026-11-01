@@ -1153,8 +1153,8 @@
             } else if (waveExceeded || visibilityLow) {
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
-                const waveWarning = waveExceeded ? '<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 &gt; 2.5 m，無法進港</span>' : '';
-                const visibilityWarning = visibilityLow ? '<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 &lt; 2 浬，無法進港</span>' : '';
+                const waveWarning = waveExceeded ? `<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 ${data.current_wave} &gt; 2.5 m</span>` : '';
+                const visibilityWarning = visibilityLow ? `<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 ${data.current_visibility} &lt; 2 浬</span>` : '';
                 box.innerHTML = `<strong>${shipName} 無法進港</strong>${waveWarning}${visibilityWarning}`;
                 currentStatus = "warning";
             } else {
