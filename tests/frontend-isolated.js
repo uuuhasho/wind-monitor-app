@@ -69,6 +69,47 @@ async page => {
       mask: getComputedStyle(document.querySelector('.wind-icon')).maskImage};
   });
   if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || !icon.mask.includes('wind.svg')) throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
+  const conditions = await page.evaluate(() => {
+    getCurrentTimeHHMM = () => '10:00';
+    isSoundEnabled = true;
+    const cases = [
+      {wind: 10, wave: 2.5, visibility: 2, status: 'safe', reasons: 0},
+      {wind: 10, wave: 2.51, visibility: 2, status: 'warning', reasons: 1},
+      {wind: 10, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 1},
+      {wind: 10, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 2},
+      {wind: 13, wave: 2.5, visibility: 2, status: 'warning', reasons: 0},
+      {wind: 13, wave: 2.51, visibility: 2, status: 'warning', reasons: 0},
+      {wind: 13, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 0},
+      {wind: 13, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 0},
+      {wind: 10, wave: null, visibility: null, status: 'safe', reasons: 0},
+      {wind: 10, wave: '', visibility: 0, status: 'warning', reasons: 1},
+      {wind: 10, wave: 3, visibility: '未知', status: 'warning', reasons: 1},
+    ];
+    const results = cases.map(item => {
+      window.__emit('test/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12,
+        season_time: '06:00', current_wind: item.wind, current_wave: item.wave, current_visibility: item.visibility});
+      const box = document.getElementById('dynamicBox');
+      const reasons = [...box.querySelectorAll('.condition-warning')];
+      return {expected: item, status: currentStatus, text: box.textContent, reasons: reasons.length,
+        images: reasons.map(row => row.querySelector('img')?.getAttribute('src')),
+        highlighted: document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className,
+        soundPlaying: !notificationSound.paused};
+    });
+    isSoundEnabled = false;
+    window.__emit('test/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
+    return results;
+  });
+  for (const result of conditions) {
+    if (result.status !== result.expected.status || result.reasons !== result.expected.reasons ||
+        result.soundPlaying !== (result.status === 'safe') || !result.highlighted.includes(`schedule-row-${result.status}`)) {
+      throw new Error(`Entry conditions: ${JSON.stringify(result)}`);
+    }
+    if (result.expected.wind > 12 && !result.text.includes('風速超標')) throw new Error(`Wind priority: ${JSON.stringify(result)}`);
+    if (result.expected.reasons === 2 && (result.images.join(',') !== '/APP_SVG/wave.svg,/APP_SVG/eye.svg' ||
+        !result.text.includes('浪高 > 2.5 m，無法進港') || !result.text.includes('能見度 < 2 浬，無法進港'))) {
+      throw new Error(`Entry warning details: ${JSON.stringify(result)}`);
+    }
+  }
   await page.locator('#windSpeed').click();
   if (!await page.locator('#forecastModal').isVisible()) throw new Error('Wind speed must open forecast');
   await page.evaluate(async () => {openForecastModal(); await loadForecastData();});

@@ -168,6 +168,14 @@
             border: 1px solid rgba(242, 139, 130, 0.6); 
             animation: breathing-red 2.5s infinite ease-in-out;
         }
+        .condition-warning {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.8em;
+        }
+        .condition-warning img { width: 18px; height: 18px; }
         .status-safe {
             background-color: rgba(200, 235, 210, 0.85); 
             color: var(--safe-color); 
@@ -1123,6 +1131,8 @@
             // 監控中，且該船尚未有 pob_info
             const limitSpeed = parseFloat(data.limit_speed) || 0;
             const currentSpeed = parseFloat(data.current_wind) || 0;
+            const waveExceeded = typeof data.current_wave === 'number' && Number.isFinite(data.current_wave) && data.current_wave > 2.5;
+            const visibilityLow = typeof data.current_visibility === 'number' && Number.isFinite(data.current_visibility) && data.current_visibility < 2;
             const seasonTime = data.season_time || "--:--"; 
             const currentTime = getCurrentTimeHHMM();
             
@@ -1139,6 +1149,13 @@
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
                 box.innerHTML = `<strong>${shipName} 無法進港</strong><br><span style="font-size:0.8em;">(風速超標)</span>`;
+                currentStatus = "warning";
+            } else if (waveExceeded || visibilityLow) {
+                currentStatusClass = 'schedule-row-warning';
+                box.className = "dynamic-box status-warning";
+                const waveWarning = waveExceeded ? '<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 &gt; 2.5 m，無法進港</span>' : '';
+                const visibilityWarning = visibilityLow ? '<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 &lt; 2 浬，無法進港</span>' : '';
+                box.innerHTML = `<strong>${shipName} 無法進港</strong>${waveWarning}${visibilityWarning}`;
                 currentStatus = "warning";
             } else {
                 // 🟢 可進港：恢復綠底白字

@@ -408,6 +408,8 @@ function executeMonitor() {
   // 準備要更新的狀態物件
   const statusUpdate = { 
     "current_wind": data.speed, 
+    "current_wave": data.wave ?? null,
+    "current_visibility": data.visibility ?? null,
     "last_update": data.time, 
     "last_check_time": getTwDateStr(now, "HH:mm:ss")
   };
@@ -1068,6 +1070,13 @@ function fetchWindData() {
 
   try {
     const rawHtml = UrlFetchApp.fetch(TARGET_URL, { "muteHttpExceptions": true }).getContentText();
+    const stationInput = rawHtml.match(/<input\b(?=[^>]*\bid=["']Txt_Station_Data["'])[^>]*>/i);
+    const stationValue = stationInput && stationInput[0].match(/\bvalue=["']([^"']*)["']/i);
+    const stations = stationValue ? stationValue[1].replace(/&amp;/g, '&').split('@').map(row => row.split(',')) : [];
+    const waveStation = stations.find(row => row[0] === 'Observation' && row[1] === 'AWAC' && row[2].split('|')[0] === '臺中港底碇式波流主站');
+    const visibilityStation = stations.find(row => row[0] === 'Observation' && row[1] === 'VISIBILITY' && row[2].split('|')[0] === '臺中港能見度站(北內堤)');
+    const waveMatch = waveStation && waveStation[7] !== '無連線' && (waveStation[8] || '').match(/^(\d+(?:\.\d+)?)(?:\||$)/);
+    const visibilityMatch = visibilityStation && visibilityStation[7] !== '無連線' && (visibilityStation[8] || '').match(/^\s*(\d+(?:\.\d+)?)\s*浬/);
     const match = rawHtml.match(/id="Txt_Station_Data"[^>]*value=["']([^"']*)["']/);
     const realHtml = (match && match[1]) 
       ? match[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ') 
@@ -1087,7 +1096,8 @@ function fetchWindData() {
     
     const speedMatch = cells[21] ? cells[21].match(/WS_AVG=([\d\.]+)/i) : null;
     if (speedMatch) {
-      const result = { valid: true, speed: Math.round(parseFloat(speedMatch[1]) * 10) / 10, time: cells[20] };
+      const result = { valid: true, speed: Math.round(parseFloat(speedMatch[1]) * 10) / 10, time: cells[20],
+        wave: waveMatch ? Number(waveMatch[1]) : null, visibility: visibilityMatch ? Number(visibilityMatch[1]) : null };
       cache.put("cached_wind_data", JSON.stringify(result), 35); // 快取 35 秒
       return result;
     }
