@@ -56,7 +56,7 @@ async page => {
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
   })));
   if (JSON.stringify(badges) !== JSON.stringify([
-    {terminal: 'W12', color: 'rgb(198, 239, 213)'},
+    {terminal: 'W12', color: 'rgb(255, 140, 0)'},
     {terminal: 'W13', color: 'rgb(205, 231, 255)'},
     {terminal: 'W13', color: 'rgb(205, 231, 255)'},
   ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
@@ -65,9 +65,10 @@ async page => {
     const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
     const number = document.getElementById('windSpeed').getBoundingClientRect();
     return {aboveUnit: icon.bottom <= unit.top, rightOfNumber: icon.left >= number.right,
+      alignedBottom: Math.abs(unit.bottom - (number.bottom - 6)) < 1,
       mask: getComputedStyle(document.querySelector('.wind-icon')).maskImage};
   });
-  if (!icon.aboveUnit || !icon.rightOfNumber || !icon.mask.includes('wind.svg')) throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
+  if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || !icon.mask.includes('wind.svg')) throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   await page.locator('#windSpeed').click();
   if (!await page.locator('#forecastModal').isVisible()) throw new Error('Wind speed must open forecast');
   await page.evaluate(async () => {openForecastModal(); await loadForecastData();});
