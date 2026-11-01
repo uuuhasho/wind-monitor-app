@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="claymorphism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>奶昔 APP 發布及回復方案</title>
+<style>
+:root{color-scheme:light;--ink:#1A202C;--muted:#4A5568;--paper:#FFF9F5;--line:#2D3748;--sky:#D6EEFF;--mint:#D4F4E2;--amber:#FEF3C7;--peach:#FFD8D0;--gutter:clamp(16px,4vw,36px);--content-width:1120px;--shadow:4px 4px 0 #2D3748}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--paper);font:16px/1.7 system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif}a{color:#174e7a;text-underline-offset:3px;overflow-wrap:anywhere}:focus-visible{outline:3px solid #bd7415;outline-offset:3px}.shell{width:min(var(--content-width),calc(100% - 2 * var(--gutter)));margin-inline:auto;min-width:0}header{padding:36px 0 28px}.hero{padding:clamp(20px,4vw,40px);border:3px solid var(--line);border-radius:20px;background:linear-gradient(120deg,var(--sky),#fff);box-shadow:6px 6px 0 var(--line)}h1,h2,h3{line-height:1.25;text-wrap:balance;overflow-wrap:anywhere}h1{font-size:clamp(2rem,4.5vw,3.2rem);margin:8px 0 16px}h2{font-size:clamp(1.4rem,3vw,2rem);margin:0 0 14px}h3{font-size:1.1rem;margin:0 0 8px}p{margin:0 0 12px}ul,ol{padding-left:1.35rem}li+li{margin-top:7px}.meta,.note{color:var(--muted);font-size:.9rem}.quick,.callout{padding:16px 19px;border:2px solid var(--line);border-radius:12px;background:var(--mint);box-shadow:3px 3px 0 var(--line);margin-top:16px}.quick h2{font-size:1.15rem;margin-bottom:8px}.quick ul{margin:0}.warning{background:var(--amber)}.danger{background:var(--peach)}nav{border-block:2px solid var(--line);background:var(--paper)}.nav{display:flex;gap:9px;overflow-x:auto;padding-block:10px}.nav a{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:7px 12px;border:2px solid var(--line);border-radius:9px;background:white;color:var(--ink);text-decoration:none}main{padding:30px 0 50px}section{min-width:0;margin-bottom:36px;scroll-margin-top:20px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.panel{padding:19px;border:2.5px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow);min-width:0}.table-wrap{max-width:100%;overflow:auto;border:2px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;background:white}caption{text-align:left;padding:10px;color:var(--muted)}th,td{text-align:left;vertical-align:top;border:1px solid #cbd5e1;padding:11px 12px}th{background:var(--sky)}code{background:#eaf4fc;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{max-width:100%;overflow:auto;padding:15px;background:#202b35;color:#fff;border-radius:10px;font:14px/1.6 Consolas,monospace}pre code{background:none;padding:0;color:inherit}.steps{display:grid;gap:14px}.step{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px}.num{display:grid;place-items:center;width:32px;height:32px;background:var(--peach);border:2px solid var(--line);border-radius:10px;font-weight:800;box-shadow:2px 2px 0 var(--line)}details{margin-top:14px;border:2px solid var(--line);border-radius:12px;background:#fff}summary{padding:12px;min-height:44px;font-weight:700;cursor:pointer}details>div{padding:0 14px 14px}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.flow div{padding:13px;border:2px solid var(--line);border-radius:12px;background:var(--sky);font-weight:750;min-width:0}footer{border-top:2px solid var(--line);padding:22px 0 36px;color:var(--muted)}.sources{display:grid;gap:8px}@media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}.flow{grid-template-columns:minmax(0,1fr)}th,td{padding:9px}.panel{padding:15px}}@media(max-width:420px){.shell{width:calc(100% - 28px)}.hero{padding:18px}.step{grid-template-columns:30px minmax(0,1fr);gap:8px}}@media print{body{background:white}.shell{width:100%}nav{display:none}.hero,.panel,.callout{box-shadow:none}.panel{break-inside:avoid}.flow{grid-template-columns:repeat(4,minmax(0,1fr))}a[href^="http"]::after{content:" (" attr(href) ")";font-size:.8em;overflow-wrap:anywhere}}
+</style>
+</head>
+<body>
+<header><div class="shell hero">
+<p class="meta">2026-11-01｜審閱草案 01｜未授權部署</p>
+<h1>奶昔 APP<br>發布及回復方案</h1>
+<p>先更新 GAS、確認兩項資料自然更新，再發布 APP。Cloud Run 不變；不製造船期、POB 或測試資料。若更新失敗，依核准範圍回復到發布前版本。</p>
+<div class="quick"><h2>30 秒看懂</h2><ul>
+<li>預定發布程式：功能分支 <code>1101_APP-add-function</code>、提交 <code>a2ea863</code>。</li>
+<li>GAS 回復基準為版本 80，程式與設定均已和當時線上 HEAD 比對相符。</li>
+<li>Hosting 回復候選為 <code>4cf8598fda3ae774</code>；發布前仍須確認版本可讀取與回復操作管道。</li>
+<li>本文件只是方案，不代表部署、暫停觸發器、回復或變更授權已獲同意。</li>
+<li>GAS 工具與 Hosting 回復管道尚有待確認項，未排除前不發布。</li>
+</ul></div>
+</div></header>
+<nav aria-label="章節導覽"><div class="shell nav"><a href="#scope">發布範圍</a><a href="#baseline">版本基準</a><a href="#gates">發布關卡</a><a href="#release">發布流程</a><a href="#rollback">回復方式</a><a href="#approval">授權與停止點</a></div></nav>
+<main class="shell">
+<section id="scope"><h2>1. 這次會動到什麼？</h2>
+<div class="table-wrap"><table><caption>發布範圍與明確排除項目</caption><thead><tr><th>服務</th><th>預定操作</th><th>不做的事</th></tr></thead><tbody>
+<tr><td>GAS 既有專案</td><td>更新 <code>monitor</code> 原始碼，新增浪高／北內堤能見度解析；建立本次正式發布用版本，更新原有 Web App 部署。</td><td>不建立新專案、不建立替代 Web App 網址、不修改既有 manifest 的時區或公開存取設定。</td></tr>
+<tr><td>Firebase Hosting</td><td>發布已確認的前端、三個 SVG 及必要既有資源。</td><td>不發布 Firebase Functions、Rules 或其他服務；不手動編輯 <code>public/</code>。</td></tr>
+<tr><td>Firebase RTDB</td><td>由正常每分鐘 GAS 執行，在 <code>/test/active_status</code> 自然寫入 <code>current_wave</code>、<code>current_visibility</code>。</td><td>不人工填值、不改規則、不改船期或 POB、不新增兩項歷史／歸檔。</td></tr>
+<tr><td>Cloud Run／Artifact Registry／Secret Manager／IAM</td><td><strong>不修改。</strong></td><td>不建置容器、不推映像、不增刪 GCP 資源或權限。</td></tr>
+</tbody></table></div>
+<p class="note">Firebase 屬於 Google 雲端服務，但這次不部署 GCP Cloud Run。GAS HEAD 更新後，既有定時觸發器會立即使用新程式，不能把「只上傳程式」當成沒有線上影響。</p>
+</section>
+<section id="baseline"><h2>2. 發布前與回復的版本基準</h2>
+<div class="table-wrap"><table><thead><tr><th>項目</th><th>本次對話已查核結果</th><th>發布當下再確認</th></tr></thead><tbody>
+<tr><td>待發布程式</td><td>本機與 GitHub 功能分支已同步至 <code>a2ea863</code>。</td><td>分支、提交、diff、未追蹤檔皆未產生未核准變更；未追蹤計畫文件不混入發布。</td></tr>
+<tr><td>Hosting 現行版本</td><td><code>4cf8598fda3ae774</code>，2026-10-31 11:15:25（台灣時間），FINALIZED。</td><td>重新讀取 live；若已被其他人更新，停止並重訂回復基準。</td></tr>
+<tr><td>GAS Web App</td><td>原部署 <code>AKfycbzlLKwqWEWqibSIUYMUYAHamsvT5oxSdVmlSprD6LhaDpCuyUkbXfrjuLB_TequEWF3</code> 指向版本 <strong>80</strong>。</td><td>仍使用原部署 ID；保存其設定與目前版本，不誤更新其他歷史部署。</td></tr>
+<tr><td>GAS HEAD</td><td>使用者提供的 <code>gs_v80.js</code> 與 <code>v80_appsscript.json</code> 均已與線上 HEAD、本機 main 比對相符（忽略換行／無意義 JSON 排序）。</td><td>重新讀取全部檔案名與內容，確認無外部新增修改；保留精確的發布前程式與設定。</td></tr>
+</tbody></table></div>
+<div class="callout warning"><strong>資料來源與限制：</strong>GAS 版本 80 的比較檔由使用者匯出提供；已直接讀回 HEAD 比對，但尚未經 API 取得版本 80 快照內容。若要嚴格驗證快照來源，需補足唯讀 API 管道；不以此理由新增不可變版本作探測。</div>
+</section>
+<section id="gates"><h2>3. 發布前必須通過的關卡</h2>
+<div class="grid">
+<article class="panel"><h3>已完成：本機隔離驗收</h3><ul>
+<li>GAS 資料解析與欄位：8 個情境；觸發器：5 個情境；歸檔與操作：21 個情境。</li>
+<li>APP 三條件、邊界、缺值與音效：11 個情境；預報圖表回歸通過。</li>
+<li>43 項 Python 測試、Hosting 素材與路徑檢查通過。</li>
+<li>畫面已由使用者確認：W12 橘底白字、W13 藍底白字、風力圖示與單位位置、警示實際數值。</li>
+</ul><p class="note">以上是本機／模擬結果，不是雲端觸發器或實際低能見度驗收。</p></article>
+<article class="panel"><h3>待完成：發布與回復工具</h3><ul>
+<li>Firebase CLI 重新登入已用唯讀查詢確認可用；Owner 與 Hosting get/update 權限曾確認，發布前須以實際執行管道再查。</li>
+<li>Hosting 歷史清單先前經 gcloud 查詢失敗；需以 Firebase CLI 已授權管道或主控台確認回復目標可選。不能用實際回復測試權限。</li>
+<li>本機 clasp 尚未可用。專案規範指定 clasp push＋更新原 deployment；需先決定恢復 clasp，或另行核准改用 Workspace MCP 等價流程，不能默默切換。</li>
+<li>唯讀成功不代表 MCP 具備寫入／發布權限；若工具需額外授權、安裝或改設定，先說明並取得同意。</li>
+</ul></article>
+</div>
+<div class="callout danger"><strong>安全政策保持不變：</strong>浪高 &gt; 2.5 m 或能見度 &lt; 2 浬阻擋進港；缺值依使用者決定不阻擋。整個港務頁抓取失敗時，既有程式不更新狀態，可能保留前值；本批不另增過期機制。發布前必須接受並知悉此限制。</div>
+</section>
+<section id="release"><h2>4. 建議發布順序與每步停止點</h2>
+<div class="flow" aria-label="四階段發布順序"><div>1. 重新核對與備份</div><div>2. 更新 GAS 並觀察</div><div>3. 發布 Hosting</div><div>4. 唯讀驗收及收尾</div></div>
+<div class="steps">
+<article class="panel step"><span class="num">1</span><div><h3>發布前核對與備份</h3><p><strong>輸入：</strong>提交 a2ea863、既有 GAS 專案、Hosting live。重新核對帳號、專案、原 deployment、HEAD 與回復版本。備份完整 HEAD／manifest、Hosting 版本識別及配置；不把權杖寫入文件或輸出。</p><p><strong>通過：</strong>回復目標仍存在、回復工具可用、沒有並行維護或未核准差異。若不相符，停止，不覆蓋。</p></div></article>
+<article class="panel step"><span class="num">2</span><div><h3>選擇不影響當前船舶操作的發布時段</h3><p>唯讀確認當時是否有進港監控／使用者操作；如有進行中的業務，先請使用者指定維護時段。不自動暫停或刪除觸發器、不執行手動歸檔、不強制停止監控。</p><p><strong>停止點：</strong>若為了安全需要暫停或恢復觸發器，必須另列精確範圍取得同意。本次方案不預先授權該動作；也不呼叫可能寫入 helper 的 MCP「列觸發器」工具。</p></div></article>
+<article class="panel step"><span class="num">3</span><div><h3>更新 GAS HEAD 與原 Web App 部署</h3><p>取得發布授權及工具決策後，只更新本次 monitor 變更，manifest 維持原設定。以發布用快照更新<strong>原 deployment ID</strong>，不建立替代網址。記錄新版本編號、原部署 ID 與讀回結果；新版本編號以服務實際回傳為準，不假定一定是 81。</p><p><strong>風險：</strong>HEAD 一更新，定時器就能執行新程式；Web App 更新尚未完成前兩者可能短暫不同版。更新部署失敗時停止 Hosting 發布，評估核准的回復。</p></div></article>
+<article class="panel step"><span class="num">4</span><div><h3>先觀察資料自然更新，不人工觸發</h3><p>等待並唯讀確認至少兩次不同 <code>last_check_time</code>，即正常每分鐘執行的更新。欄位若有有效來源，<code>current_wave</code> 應為 m 的數字、<code>current_visibility</code> 應為浬的數字，並與同次港務站點值對照；來源觀測時間可以不同，數值也可能相同，不要求每分鐘值改變。</p><p><strong>通過：</strong>風速正常、正確測站與單位、有效資料寫入正確；來源缺值時欄位可不存在（GAS 使用 null 清除）。缺值放行不等於資料解析驗收成功，不能把兩欄消失當成完成。</p><p><strong>失敗：</strong>最多觀察 5 分鐘；若始終沒有可對照的有效來源／正常更新，停止，不捏造數字或改船期，暫不發布 APP。</p></div></article>
+<article class="panel step"><span class="num">5</span><div><h3>發布 APP Hosting</h3><p>使用既有來源 <code>frontend/</code> 建置並確認 SHA-256 staging 預檢與所有圖示通過，才使用專案既定 Hosting 入口發布。不要在 Firebase CLI 全服務 deploy，不發布 Rules、Functions 或 Cloud Run。</p><pre><code># 只有明確取得 Hosting 發布授權後才執行
+.\deploy\deploy_hosting.ps1 -Deploy</code></pre><p><strong>停止點：</strong>腳本呼叫 python；本機先確認實際 Python 指令可用，不在已進入發布後才修改腳本。建置／hash 預檢失敗就停止，不跳過預檢。</p></div></article>
+<article class="panel step"><span class="num">6</span><div><h3>線上唯讀驗收與資源收尾</h3><p>記錄新 Hosting release/version，驗證首頁與 <code>/test/</code> 可讀、W12/W13 正確、三個 SVG HTTP 回應真的是 SVG、風速與資料更新正常。只觀察自然業務；若沒有真實超標事件，標示「超標線上自然事件尚未發生」，不把合成畫面當成線上證據。</p><p>只開一個測試瀏覽器，任務結束立即關閉及確認；不殘留 localhost 伺服器。更新發布紀錄的動作待切換實作代理並依核准檔案範圍處理；合併 main 與 GitHub 寫入另取得同意。</p></div></article>
+</div>
+</section>
+<section id="rollback"><h2>5. 什麼時候回復？怎麼回復？</h2>
+<p>觸發條件：新 GAS 造成正常風速更新／POB 等既有功能異常、抓錯站點或單位、APP 判斷與規格不符、資源缺失或首頁失效。一般資料數值超標不是部署失敗；缺值本身也不是自動回復觸發條件。</p>
+<div class="table-wrap"><table><thead><tr><th>情況</th><th>回復方案</th><th>回復後驗證</th></tr></thead><tbody>
+<tr><td>只更新 GAS，Hosting 尚未發布</td><td>使用發布前保存的 monitor 與 manifest 還原 HEAD；把原 Web App deployment 指回版本 80。兩個動作都要做，不能只改 Web App。</td><td>HEAD 檔案比對符合備份、deployment 仍是原 ID 且指向 80；觀察正常每分鐘更新恢復。</td></tr>
+<tr><td>只有新 APP 有問題，GAS 正常</td><td>將 Hosting live 回復至發布前的 finalized 版本 <code>4cf8598fda3ae774</code>（以發布前重查結果為準）。可暫留新增 GAS 即時欄位，不回復 RTDB。</td><td>新 release 指向舊 version，頁面功能恢復。明確通知：舊版 APP 只看風速，不具新浪高／能見度判斷。</td></tr>
+<tr><td>GAS 與 APP 都須撤回</td><td>協調同一維護時段，先回復 Hosting 為舊 UI，再回復 HEAD 與原 Web App 至版本 80；兩步間不宣稱三條件完整生效。</td><td>三個版本定位都相符，既有功能恢復。向使用者明確回報回到風速單條件版。</td></tr>
+</tbody></table></div>
+<div class="callout warning"><strong>Hosting 回復不是刪除新版本：</strong>平台會新增一筆 release，重新指向舊內容。回復發布也屬於雲端寫入，必須有授權。只有 Owner／權限檢查不能替代實際執行管道及舊 version 存在性核對。</div>
+<div class="callout danger"><strong>不回復整個資料庫：</strong>發布期間仍可能有真實船期、POB 與風速資料。禁止用發布前 RTDB 快照覆蓋現在資料。回復舊 GAS 後，新欄位可能仍留在 active_status；舊 UI 不讀它們，先保留，另行核准後才清理。</div>
+</section>
+<section id="approval"><h2>6. 授權、失敗次數與最終停止點</h2>
+<div class="grid">
+<article class="panel"><h3>本文件沒有授權的操作</h3><ul>
+<li>安裝 clasp、替其他管道重新登入／加 scope、改 IAM。</li>
+<li>GAS 程式上傳、建立發布快照、更新原部署。</li>
+<li>Hosting 發布、Hosting/GAS 回復、刪除歷史版本。</li>
+<li>觸發器暫停／恢復、人工寫入 RTDB、GitHub main 合併。</li>
+</ul></article>
+<article class="panel"><h3>停止與回報原則</h3><ul>
+<li>同一阻塞最多兩種合理方式，或 10 分鐘，以先到者為準。</li>
+<li>明確授權僅適用該操作與目標；讀取成功不推定有部署授權。</li>
+<li>發布後若沒有預先核准的回復授權，只能停止並請示，不自動回復。</li>
+<li>回報最後成功步驟、確切錯誤、已試方式與一個建議下一步；不能繞過 hash 驗證或改測試範圍。</li>
+</ul></article>
+</div>
+<details><summary>正式操作前應記錄的證據欄位</summary><div><p>執行時間、核准文字與範圍、Git commit、帳號／工具通道（不含 token）、GAS script/deployment ID、發布前 HEAD 指紋、舊新 GAS version、舊新 Hosting release/version、自然更新時間與站點對照、驗收結果、是否執行回復、瀏覽器／伺服器關閉狀態。</p><p>不輸出或保存 access_token、refresh_token、登入回呼網址、OAuth 代碼。禁止再次直接輸出 <code>firebase login:list --json</code>；查詢回應必須先篩選成必要非敏感欄位。</p></div></details>
+<div class="callout"><strong>下一步：</strong>先確認本方案；之後切換到可執行代理，處理「GAS 發布工具」與「Hosting 舊版本回復管道」兩項前置關卡。兩項完成後，再逐項請你核准正式發布，不在本輪部署。</div>
+</section>
+</main>
+<footer><div class="shell"><h2 style="font-size:1.1rem">依據與查核範圍</h2><div class="sources">
+<a href="https://developers.google.com/apps-script/api/reference/rest/v1/projects/getContent">Apps Script：讀取 HEAD 與版本內容</a>
+<a href="https://firebase.google.com/docs/hosting/manage-hosting-resources">Firebase Hosting：版本管理及回復</a>
+<a href="https://firebase.google.com/docs/projects/iam/permissions#hosting">Firebase Hosting：IAM 權限</a>
+<span>本機參照：<code>deploy/deploy_hosting.ps1</code>、<code>gas/.clasp.json</code>、維護交接、本次對話的唯讀雲端查核與隔離測試結果。</span>
+<span>本方案未重新進行部署或回復演練；雲端狀態及授權須在正式執行前重查。文件日期：2026-11-01。</span>
+</div></div></footer>
+</body>
+</html>
