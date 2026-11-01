@@ -77,7 +77,7 @@
     <p class="eyebrow">修改計畫｜先審閱，不執行</p>
     <h1>奶昔 APP 新增功能修改計畫</h1>
     <p class="lede">先在功能分支完成船期膠囊與風力圖示，再加入浪高、能見度的即時進港判斷。所有驗收先用本機合成資料；不碰線上 Firebase、不部署、不推送 GitHub。</p>
-    <p class="meta">日期：2026-11-01　｜　預定分支：<code>1101_APP-add-function</code>　｜　基準：本機 <code>main</code></p>
+    <p class="meta">日期：2026-11-01　｜　修訂 01：補充北內堤能見度抓取結果　｜　預定分支：<code>1101_APP-add-function</code>　｜　基準：本機 <code>main</code></p>
     <div class="quick"><h2>30 秒看懂</h2><ul>
       <li>分兩階段、分開驗收與提交：先改畫面，再加每分鐘監測與判斷。</li>
       <li><code>terminal === "W12"</code> 顯示綠色 W12；空白或無 W12 顯示藍色 W13，不改 Firebase 原值。</li>
@@ -140,11 +140,12 @@
 
       <h3 style="margin-top:22px">資料來源解析先做驗證，不直接照搬 querySelector</h3>
       <p>你提供的 selector（<code>#wave_tb_1_td_1</code>、<code>#vis_tb_2_td_1</code>）是瀏覽器 DOM 讀法；GAS 的 <code>UrlFetchApp</code> 取得 HTML 文字，不能呼叫 <code>document.querySelector</code>。已唯讀檢視港務頁來源：頁面會透過 iframe／前端程式建立表格，原始回應另含站點資料；指定 ID 不在目前抓到的伺服器回應文字中。</p>
-      <p>因此先以使用者給的 DOM 值作為「正確顯示值」參照，核對其對應的站名、資料型別、欄位和單位，再從 GAS 已抓取的原始資料解析相同數值。若無法證實來源欄位和值一致，停止該子項實作並回報，不猜站點、不把不同單位直接比較。</p>
+      <div class="callout success"><strong>2026-11-01 唯讀抓取驗證：北內堤能見度已對上。</strong><br>在 GAS 既有抓取的港務資料回應中，從隱藏欄位 <code>Txt_Station_Data</code> 內，定位資料型別 <code>Observation,VISIBILITY</code> 且站名為「臺中港能見度站(北內堤)」的資料。當次資料時間為 <strong>11/01 14:52</strong>，文字為 <strong>10.8浬以上(20公里以上)</strong>；取「浬」前數字得到 <strong>10.8 浬</strong>，與使用者確認的網站畫面一致。此前讀到的 <code>Visibility_Value=32000</code> 是另一個原始欄位，不能直接當作畫面浬數。</div>
+      <p style="margin-top:14px">後續以使用者給的 DOM 顯示值為參照，實作時從 <code>Txt_Station_Data</code> 擷取北內堤的顯示文字，再取「浬」前數字。此次只有一個實際樣本，低能見度、缺測、異常格式與不同觀測時間尚未用真實網站樣本驗證；須以合成案例測試，並在有新樣本時只讀比對。浪高的 DOM 與原始資料映射也須獨立確認。若無法證實來源欄位和值一致，停止該子項實作並回報，不猜站點、不把不同單位直接比較。</p>
       <ul>
         <li>風速沿用現有 <code>fetchWindData()</code> 的北堤綠燈塔站點解析及 35 秒快取。</li>
         <li>浪高確認顯示表第一筆對應資料及原始 <code>Hs</code> 欄位，保留 m 數值。</li>
-        <li>能見度確認「北內堤」站點；原始回應可見 <code>Visibility_Value</code>，需查明它是否以公尺表示，再轉換為浬，或直接解析與 UI 一致的浬值。</li>
+        <li>能見度以 <code>Txt_Station_Data</code> 的「北內堤」觀測資料為來源，解析該站的「浬」前數字；不使用 <code>Visibility_Value=32000</code> 當作浬數，也不自行猜測換算或顯示上限。</li>
         <li>把波高與能見度加入相同快取物件，避免快取風速時另外抓資料造成不一致或多一次外部請求。</li>
       </ul>
 
@@ -174,7 +175,7 @@
       </tbody></table></div>
       <div class="grid" style="margin-top:14px">
         <article class="panel"><h3>GAS 合成資料測試</h3><ul>
-          <li>以合成港務 HTML 驗證風速、浪高及北內堤能見度的站點定位、解析、單位換算和缺值。</li>
+          <li>以合成港務 HTML 驗證風速、浪高及北內堤能見度的站點定位、解析和缺值；能見度涵蓋 <code>10.8浬以上(20公里以上)</code>、低於 2 浬、0、空白及異常文字，不把其他站點或括號內公里數誤當作北內堤浬數。</li>
           <li>邊界確認：浪高 2.5 不觸發、稍大於 2.5 觸發；能見度 2 不觸發、稍低於 2 觸發；0 為有效值。</li>
           <li>確認每次成功更新把兩項寫到 active status、缺值不殘留舊欄位；完全不新增 wind_logs / archive 寫入。</li>
           <li>保留現有每分鐘觸發、快取與無效風速的既有處理。</li>
@@ -210,7 +211,7 @@
     <section id="risks">
       <h2>6. 風險、假設與計畫核准</h2>
       <div class="grid-3">
-        <article class="risk"><h3>來源映射需先證實</h3><p>使用者提供的 DOM selector 不在目前抓取的靜態回應中。需證實其 UI 數值對應原始欄位、站點及單位後才能寫 parser。</p></article>
+        <article class="risk"><h3>來源映射與異常格式</h3><p>北內堤能見度的 10.8 浬已與一次畫面值對上，但低能見度及異常格式尚未實地對照；浪高 DOM 與原始欄位的映射仍需確認。</p></article>
         <article class="risk"><h3>缺值放行是明確政策</h3><p>任何單項缺值不阻擋；兩項都缺值但風速合格也放行。這是依使用者決定，不是代理自行採用的安全預設。</p></article>
         <article class="risk"><h3>工作區素材尚未追蹤</h3><p><code>frontend/APP_SVG/</code> 是目前未追蹤輸入。保留來源內容，功能提交只納入指定圖檔，不清除其他使用者工作。</p></article>
       </div>
@@ -224,7 +225,7 @@
       <a href="https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_2024.html?3">臺灣港務公司商港海氣象資訊系統（臺中港）</a>
       <a href="https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3">港務系統資料回應（臺中港資料）</a>
       <span>本機程式：<code>frontend/index.html</code>、<code>gas/monitor.js</code>、<code>deploy/build_hosting.py</code>、<code>tests/frontend-isolated.js</code>、<code>tests/test_build_hosting.py</code>。</span>
-      <span>外部頁面只做唯讀檢視；頁面數值會變動，實際解析映射仍列為實作前查核關卡。</span>
+      <span>外部頁面只做唯讀檢視；北內堤 11/01 14:52 的 10.8 浬已對上使用者畫面，其餘格式與浪高映射仍列為查核關卡。觀測值與時間可能變動。</span>
     </div>
     <p style="margin-top:16px">文件日期：2026-11-01</p>
   </footer>

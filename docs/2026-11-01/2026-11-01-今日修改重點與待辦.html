@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hant" data-visual-style="claymorphism">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="2026-11-01 奶昔 APP 浪高與能見度功能、GAS v82、APP v1.1 發布及後續待辦摘要。">
+  <title>今日修改重點與待辦｜奶昔 APP</title>
+  <style>
+    :root{color-scheme:light;--ink:#1A202C;--muted:#4A5568;--paper:#FFF9F5;--surface:#fff;--line:#2D3748;--sky:#D6EEFF;--mint:#D4F4E2;--amber:#FEF3C7;--peach:#FFD8D0;--green:#175D38;--red:#8B2E2A;--shadow-hero:6px 6px 0 #2D3748;--shadow-card:4px 4px 0 #2D3748;--shadow-callout:3px 3px 0 #2D3748;--gutter:clamp(16px,4vw,36px);--content:1000px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--paper);font:16px/1.7 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif}a{color:#174e7a;text-underline-offset:3px;overflow-wrap:anywhere}:focus-visible{outline:3px solid #bd7415;outline-offset:3px}.shell{width:min(var(--content),calc(100% - 2 * var(--gutter)));margin-inline:auto}.skip{position:absolute;top:-60px;left:12px;padding:8px 12px;background:#fff;border:2px solid var(--line);z-index:20}.skip:focus{top:12px}.hero-wrap{padding:clamp(30px,6vw,64px) 0 28px}.hero{padding:clamp(22px,5vw,42px);border:3px solid var(--line);border-radius:20px;background:linear-gradient(125deg,var(--sky) 0 60%,#fff 60%);box-shadow:var(--shadow-hero)}.eyebrow{margin:0 0 8px;font-size:.82rem;font-weight:800;letter-spacing:.07em}.hero h1{margin:0 0 12px;font-size:clamp(2rem,5vw,3.25rem);line-height:1.2;text-wrap:balance}.lede{max-width:70ch;margin:0;color:var(--muted);font-size:1.08rem}.meta{margin:14px 0 0;color:var(--muted);font-size:.9rem}.quick{margin-top:20px;padding:16px 19px;border:2.5px solid var(--line);border-radius:12px;background:var(--mint);box-shadow:var(--shadow-card)}.quick h2{margin:0 0 6px;font-size:1.15rem}.quick ul{margin:0;padding-left:1.25rem}.quick li+li{margin-top:4px}.toc{position:sticky;top:0;z-index:5;border-block:2px solid var(--line);background:rgba(255,249,245,.96)}.toc-inner{display:flex;gap:9px;overflow-x:auto;padding:9px 0}.toc a{flex:none;display:inline-flex;align-items:center;min-height:42px;padding:7px 12px;border:2px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);text-decoration:none;box-shadow:2px 2px 0 var(--line)}main{padding:30px 0 54px}section{scroll-margin-top:76px;margin-bottom:34px}.section-head{margin:0 0 14px;font-size:clamp(1.4rem,3vw,1.9rem);line-height:1.25}.intro{max-width:75ch;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card{min-width:0;padding:18px;border:2.5px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-card)}.card h3{margin:0 0 8px;font-size:1.1rem}.card p:last-child{margin-bottom:0}.card ul{margin:0;padding-left:1.2rem}.card li+li{margin-top:6px}.callout{margin-top:14px;padding:15px 17px;border:2px solid var(--line);border-radius:12px;background:var(--amber);box-shadow:var(--shadow-callout)}.callout.success{background:var(--mint)}.callout.risk{background:var(--peach)}.tag{display:inline-block;padding:2px 9px;border:1.5px solid var(--line);border-radius:999px;background:var(--mint);font-size:.82rem;font-weight:800;white-space:nowrap}.tag.pending{background:var(--amber)}.tag.info{background:var(--sky)}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.flow div{padding:12px;border:2px solid var(--line);border-radius:12px;background:#fff;box-shadow:2px 2px 0 var(--line);font-weight:750;text-align:center}.flow div:first-child,.flow div:nth-child(2){background:var(--mint)}.flow div:last-child{background:var(--amber)}.table-wrap{max-width:100%;overflow:auto;border:2px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;background:#fff}caption{text-align:left;padding:10px;color:var(--muted)}th,td{padding:11px 13px;border:1px solid #CBD5E1;text-align:left;vertical-align:top}th{background:var(--sky)}code{padding:2px 5px;border-radius:4px;background:var(--sky);overflow-wrap:anywhere}footer{padding:20px 0 32px;border-top:2px solid var(--line);color:var(--muted);font-size:.9rem}.note{font-size:.92rem;color:var(--muted)}
+    .card.pending{background:var(--amber)}
+    @media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{background:linear-gradient(150deg,var(--sky) 0 47%,#fff 47%)}}
+    @media(max-width:420px){body{font-size:16px}.shell{width:calc(100% - 28px)}.hero{padding:20px}.card{padding:15px}.quick{padding:14px}.flow div{padding:10px 7px;font-size:.92rem}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{body{background:#fff}.toc,.skip{display:none}.shell{width:100%}.hero-wrap{padding:12px 0}.hero{box-shadow:none;background:#fff}.card,.flow div,.quick,.callout{box-shadow:none;break-inside:avoid}main{padding-top:18px}a{color:inherit}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳至主要內容</a>
+  <header class="hero-wrap"><div class="shell hero">
+    <p class="eyebrow">工作摘要｜2026-11-01</p>
+    <h1>今日修改重點<br>與後續待辦</h1>
+    <p class="lede">浪高與能見度進港警示、GAS v82、APP v1.1 均已發布，程式亦已合併至 main。下一項可能的需求是「出港 23.5 m/s」，尚待討論。</p>
+    <p class="meta"><time datetime="2026-11-01">記錄日期：2026-11-01</time></p>
+    <aside class="quick" aria-labelledby="quick-title"><h2 id="quick-title">30 秒看懂</h2><ul>
+      <li>浪高超過 2.5 m 或北內堤能見度低於 2 浬時，APP 顯示無法進港與實際數值。</li>
+      <li>GAS 註解整理已部署至 v82；APP v1.1 已發布，使用者確認畫面檢查正常。</li>
+      <li>功能分支已合併至 main，提交 <code>9b24197</code>。</li>
+      <li>真實超標事件待自然發生；「出港 23.5 m/s」列為下次可能修改事項。</li>
+    </ul></aside>
+  </div></header>
+  <nav class="toc" aria-label="章節導覽"><div class="shell toc-inner"><a href="#done">完成項目</a><a href="#release">發布與版本</a><a href="#pending">待辦</a><a href="#cleanup">本機暫存</a></div></nav>
+  <main id="main" class="shell">
+    <section id="done">
+      <h2 class="section-head">1. 已完成的修改</h2>
+      <p class="intro">以下項目已完成實作、發布與版本同步；自然事件驗收另列為待辦，不以合成資料替代。</p>
+      <div class="grid">
+        <article class="card"><h3>進港警示</h3><ul>
+          <li>浪高 <strong>&gt; 2.5 m</strong> 或北內堤能見度 <strong>&lt; 2 浬</strong>，任一成立即顯示無法進港。</li>
+          <li>警示呈現實際數值與對應圖示；W12 橘底白字、W13 藍底白字。</li>
+          <li>GAS 自港務來源解析浪高與能見度，資料可供 APP 使用。</li>
+        </ul></article>
+        <article class="card"><h3>既有功能與驗收界線</h3><ul>
+          <li>風速超標仍優先顯示既有警示；浪高或能見度缺值不阻擋進港。</li>
+          <li>未新增浪高／能見度歷史歸檔，不人工建立船期或 POB 測試資料。</li>
+          <li>使用者已確認 v1.1 畫面檢查正常。</li>
+        </ul></article>
+      </div>
+      <div class="callout success"><strong>已確認：</strong>本機隔離測試通過；自然資料曾唯讀讀取並與港務來源核對。沒有修改 Cloud Run、Artifact Registry、Secret Manager 或 IAM。</div>
+    </section>
+    <section id="release">
+      <h2 class="section-head">2. 發布與版本記錄</h2>
+      <div class="flow" aria-label="完成的發布順序"><div>GAS 註解整理</div><div>GAS v82</div><div>APP v1.1</div><div>合併 main</div></div>
+      <div class="table-wrap"><table>
+        <caption>已完成項目與可核對識別</caption>
+        <thead><tr><th scope="col">項目</th><th scope="col">結果</th><th scope="col">補充</th></tr></thead>
+        <tbody>
+          <tr><td>GAS</td><td><span class="tag">v82 已部署</span></td><td>原 Web App 部署網址不變；本次調整為註解整理，執行邏輯未變。</td></tr>
+          <tr><td>APP / Hosting</td><td><span class="tag">v1.1 已發布</span></td><td>Hosting 版本 <code>89186c40dd8e1e6a</code>。</td></tr>
+          <tr><td>Git</td><td><span class="tag">已合併 main</span></td><td>提交 <code>9b24197</code>；功能分支保留，未再次部署。</td></tr>
+          <tr><td>畫面檢查</td><td><span class="tag">使用者確認正常</span></td><td>風速、船期與預報等畫面由使用者實際觀察確認。</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+    <section id="pending">
+      <h2 class="section-head">3. 下次可能修改與待驗證</h2>
+      <div class="grid">
+        <article class="card"><h3>下次可能修改：出港 23.5 m/s</h3><p>尚未討論適用對象、觸發條件、警示方式與資料來源，也尚未修改。下次先釐清需求，再決定是否實作。</p><p><span class="tag pending">未討論／未修改</span></p></article>
+        <article class="card pending"><h3>自然事件驗證</h3><p>等待真實浪高或能見度超標事件自然發生，再確認 APP 的警示原因與實際數值。不可製造假船期、POB 或 RTDB 資料。</p><p><span class="tag pending">等待自然事件</span></p></article>
+      </div>
+      <div class="callout risk"><strong>範圍提醒：</strong>缺少真實超標樣本不代表功能已通過線上超標情境驗證；目前沒有因此新增測試資料。</div>
+    </section>
+    <section id="cleanup">
+      <h2 class="section-head">4. 本機暫存與備份</h2>
+      <div class="card"><h3>尚未確認清理完成</h3><ul>
+        <li><code>.playwright-cli/</code> 中 2026-11-01 的驗收日誌與頁面快照仍待清理；工具權限曾拒絕刪除。使用者可手動刪除指定日期檔案。</li>
+        <li>兩個 <code>.public-previous-*</code> 資料夾是部署前保留的舊 Hosting 靜態輸出回復備份。曾說明可刪，但沒有確認已刪除；刪除前可依是否仍需本機備份決定。</li>
+        <li>不要誤刪目前的 <code>public/</code>；用途不明或較早的測試資料本次未清理。</li>
+      </ul></div>
+      <p class="note">線上 Hosting 有已發布版本歷史，但本機舊輸出備份仍可作為額外便利副本；實際回復線上版本仍是另一項需授權的操作。</p>
+    </section>
+  </main>
+  <footer><div class="shell">奶昔 APP 今日工作摘要｜依本次對話中的發布結果與使用者確認整理。未宣稱真實超標事件已驗收。</div></footer>
+</body>
+</html>
