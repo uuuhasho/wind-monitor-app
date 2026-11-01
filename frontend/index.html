@@ -116,10 +116,22 @@
             letter-spacing: -2px;
             line-height: 1;
         }
+        .wind-detail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: 6px;
+        }
+        .wind-icon {
+            width: 30px;
+            height: 30px;
+            background-color: var(--text-blue);
+            -webkit-mask: url('/APP_SVG/wind.svg') center / contain no-repeat;
+            mask: url('/APP_SVG/wind.svg') center / contain no-repeat;
+        }
         .wind-speed-unit { 
             font-size: 1.3em; 
             font-weight: 500; 
-            margin-left: 6px; 
             color: #6B7A90; 
         }
         
@@ -436,6 +448,17 @@
             transform: scale(0.9);
         }
         .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .badge {
+            color: white;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .badge-w12 { background-color: #137333; }
+        .badge-w13 { background-color: #10458c; }
         .schedule-table th, .schedule-table td {
             padding: 12px 6px; 
             border-bottom: 1px solid rgba(16, 69, 140, 0.05); 
@@ -811,7 +834,10 @@
     
     <div class="wind-container">
         <div class="wind-speed-num" id="windSpeed">--</div>
-        <div class="wind-speed-unit">m/s</div>
+        <div class="wind-detail">
+            <span class="wind-icon" aria-hidden="true"></span>
+            <div class="wind-speed-unit">m/s</div>
+        </div>
     </div>
     
     <div class="time-display" id="dataTime">系統連線中...</div>
@@ -1194,10 +1220,8 @@
         let html = '';
         scheduleDataList.forEach(item => {
             if (!item.d) return; // 🌟 核心過濾：日期空白的船期不顯示在主畫面船期表上
-            let badgeHtml = '';
-            if (item.terminal === 'W12') {
-                badgeHtml = '<br><span class="badge badge-w12" style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; vertical-align: middle;">W12</span>';
-            }
+            const terminal = item.terminal === 'W12' ? 'W12' : 'W13';
+            const badgeHtml = `<br><span class="badge badge-${terminal.toLowerCase()}">${terminal}</span>`;
             html += `<tr data-shipname="${item.ship_name}">
                         <td>${item.d}${badgeHtml}</td>
                         <td><span style="vertical-align: middle;">${item.ship_name}</span></td>

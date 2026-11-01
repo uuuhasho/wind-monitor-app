@@ -11,7 +11,11 @@ async page => {
       '.info/serverTimeOffset': 0,
       '.info/connected': true,
       'test/active_status': {app_mode: 'stop', current_wind: 4, last_update: '10:00', forecast_updating: false},
-      'test/schedule_list': [{d: monthDay, ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12'}],
+      'test/schedule_list': [
+        {d: monthDay, ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12'},
+        {d: monthDay, ship_name: 'DEMO-W13', limit_speed: 15, terminal: ''},
+        {d: monthDay, ship_name: 'DEMO-EMPTY', limit_speed: 15},
+      ],
       'test/forecast_data': [
         {timestamp: `${today}T08:00:00+08:00`, cpc_wind_speed: 5, open_meteo_wind_speed: 6},
         {timestamp: `${today}T09:00:00+08:00`, cpc_wind_speed: 7, open_meteo_wind_speed: 8},
@@ -47,6 +51,25 @@ async page => {
   await page.goto('http://127.0.0.1:4177/index.html');
   const initial = await page.evaluate(() => ({wind: document.getElementById('windSpeed').textContent, schedule: document.body.textContent.includes('DEMO-SHIP')}));
   if (initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
+  const badges = await page.evaluate(() => Array.from(document.querySelectorAll('#scheduleBody tr'), row => ({
+    terminal: row.querySelector('.badge')?.textContent,
+    color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
+  })));
+  if (JSON.stringify(badges) !== JSON.stringify([
+    {terminal: 'W12', color: 'rgb(19, 115, 51)'},
+    {terminal: 'W13', color: 'rgb(16, 69, 140)'},
+    {terminal: 'W13', color: 'rgb(16, 69, 140)'},
+  ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
+  const icon = await page.evaluate(() => {
+    const icon = document.querySelector('.wind-icon').getBoundingClientRect();
+    const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
+    const number = document.getElementById('windSpeed').getBoundingClientRect();
+    return {aboveUnit: icon.bottom <= unit.top, rightOfNumber: icon.left >= number.right,
+      mask: getComputedStyle(document.querySelector('.wind-icon')).maskImage};
+  });
+  if (!icon.aboveUnit || !icon.rightOfNumber || !icon.mask.includes('wind.svg')) throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
+  await page.locator('#windSpeed').click();
+  if (!await page.locator('#forecastModal').isVisible()) throw new Error('Wind speed must open forecast');
   await page.evaluate(async () => {openForecastModal(); await loadForecastData();});
   const forecast = await page.evaluate(() => ({drawn: window.__chartOptions.length > 0, status: document.getElementById('forecastStatus').textContent}));
   if (!forecast.drawn || !forecast.status.includes('10:00')) throw new Error(`Forecast UI: ${JSON.stringify(forecast)}`);
