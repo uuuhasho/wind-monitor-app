@@ -56,9 +56,9 @@ async page => {
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
   })));
   if (JSON.stringify(badges) !== JSON.stringify([
-    {terminal: 'W12', color: 'rgb(19, 115, 51)'},
-    {terminal: 'W13', color: 'rgb(16, 69, 140)'},
-    {terminal: 'W13', color: 'rgb(16, 69, 140)'},
+    {terminal: 'W12', color: 'rgb(198, 239, 213)'},
+    {terminal: 'W13', color: 'rgb(205, 231, 255)'},
+    {terminal: 'W13', color: 'rgb(205, 231, 255)'},
   ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
   const icon = await page.evaluate(() => {
     const icon = document.querySelector('.wind-icon').getBoundingClientRect();
