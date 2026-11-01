@@ -57,8 +57,8 @@ async page => {
   })));
   if (JSON.stringify(badges) !== JSON.stringify([
     {terminal: 'W12', color: 'rgb(255, 140, 0)'},
-    {terminal: 'W13', color: 'rgb(205, 231, 255)'},
-    {terminal: 'W13', color: 'rgb(205, 231, 255)'},
+    {terminal: 'W13', color: 'rgb(36, 93, 152)'},
+    {terminal: 'W13', color: 'rgb(36, 93, 152)'},
   ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
   if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
   const icon = await page.evaluate(() => {
