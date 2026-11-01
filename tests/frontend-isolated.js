@@ -60,6 +60,7 @@ async page => {
     {terminal: 'W13', color: 'rgb(205, 231, 255)'},
     {terminal: 'W13', color: 'rgb(205, 231, 255)'},
   ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
+  if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
   const icon = await page.evaluate(() => {
     const icon = document.querySelector('.wind-icon').getBoundingClientRect();
     const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
