@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>奶昔 APP｜2026-11-01 資料夾階層圖</title>
+<style>
+:root{color-scheme:light;--ink:#1a202c;--line:#2d3748;--muted:#4a5568;--paper:#fff9f5;--sky:#d6eeff;--mint:#d4f4e2;--amber:#fef3c7}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 system-ui,"Microsoft JhengHei",sans-serif}main{width:min(1080px,calc(100% - 32px));margin:auto;padding:28px 0 56px}header{padding:clamp(20px,4vw,36px);border:3px solid var(--line);border-radius:20px;background:#e6e6fa;box-shadow:6px 6px 0 var(--line)}h1{font-size:clamp(28px,5vw,42px);line-height:1.2;margin:8px 0 14px}h2{font-size:clamp(23px,3vw,30px);margin:34px 0 12px}h3{margin:0 0 8px}p{margin:0 0 12px}p:last-child{margin-bottom:0}nav{display:flex;flex-wrap:wrap;gap:9px;margin:24px 0}a{color:#224e76;overflow-wrap:anywhere}nav a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;background:white;border:2px solid var(--line);border-radius:10px}a:focus-visible{outline:3px solid #bd7415;outline-offset:3px}.note,.card{padding:18px;border:2.5px solid var(--line);border-radius:14px;background:#fff;box-shadow:4px 4px 0 var(--line);min-width:0}.note{background:var(--mint)}.warning{background:var(--amber)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.tree{padding:clamp(14px,3vw,26px);border:2.5px solid var(--line);border-radius:16px;background:white;box-shadow:4px 4px 0 var(--line)}.tree ul{list-style:none;padding-left:20px;margin:0 0 0 6px;border-left:2px solid #8b94a2}.tree>ul{border:0;padding:0;margin:0}.tree li{position:relative;margin:10px 0;min-width:0}.tree li:before{position:absolute;content:"";width:18px;height:2px;background:#8b94a2;top:20px;left:-20px}.tree>ul>li:before{display:none}.node{display:flex;flex-wrap:wrap;gap:3px 16px;align-items:baseline;padding:8px 12px;border:1px solid #c4cad5;border-radius:8px;background:#f4f5fb;overflow-wrap:anywhere}.node strong{font-family:Consolas,monospace}.node span{color:var(--muted);font-size:.94rem}.root{font-weight:800;font-size:22px}code{overflow-wrap:anywhere;background:var(--sky);padding:2px 4px;border-radius:4px}ul{padding-left:1.3rem}li+li{margin-top:6px}footer{margin-top:36px;padding-top:16px;border-top:2px solid var(--line);color:var(--muted);font-size:.9rem}@media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}}@media(max-width:500px){.tree ul{padding-left:14px;margin-left:2px}.tree li:before{width:12px;left:-14px}.node{padding:8px}}@media print{nav{display:none}header,.card,.note,.tree{box-shadow:none}body{background:#fff}.node{break-inside:avoid}}
+</style></head><body><main id="top">
+<header><small>2026-11-01｜本機目錄盤點</small><h1>奶昔 APP 資料夾階層圖</h1><p>從用途出發辨認程式來源、測試、發布輸出與本機資料；部分項目為 Git 忽略內容，不代表會部署或同步。</p></header>
+<nav aria-label="章節導覽"><a href="#tree">資料夾階層</a><a href="#roles">用途與安全界線</a><a href="#scope">盤點範圍</a></nav>
+<div class="note"><strong>先看這裡：</strong><code>frontend/</code>、<code>gas/</code>、<code>backend/</code> 是程式來源；<code>tests/</code> 是測試原始碼；<code>public/</code> 是建置輸出，不應手動修改。</div>
+<section id="tree"><h2>01｜目前目錄與主要子目錄</h2><div class="tree"><p class="root">奶昔APP/</p><ul>
+<li><div class="node"><strong>frontend/</strong><span>APP 靜態網頁、圖示及呈現素材來源</span></div><ul><li><div class="node"><strong>APP_SVG/</strong><span>wind、wave、eye 三個 SVG 圖示</span></div></li><li><div class="node"><strong>presentation/</strong><span>呈現頁、音效與圖片資源</span></div></li></ul></li>
+<li><div class="node"><strong>gas/</strong><span>Apps Script 來源、manifest 與 clasp 設定</span></div></li>
+<li><div class="node"><strong>backend/</strong><span>Cloud Run Python 後端入口與依賴</span></div><ul><li><div class="node"><strong>src/</strong><span>文件解析、辨識、預報融合與 RTDB 模組</span></div></li></ul></li>
+<li><div class="node"><strong>deploy/</strong><span>Hosting、Cloud Run 建置／預檢與部署工具</span></div></li>
+<li><div class="node"><strong>tests/</strong><span>APP、GAS、後端及 Hosting 測試；__pycache__ 為 Python 快取</span></div></li>
+<li><div class="node"><strong>docs/</strong><span>日期分類的技術與工作紀錄</span></div><ul><li><div class="node"><strong>2026-11-01/</strong><span>今日修改重點與待辦 HTML</span></div></li></ul></li>
+<li><div class="node"><strong>plan/</strong><span>按日期分類的計畫與發布方案</span></div><ul><li><div class="node"><strong>2026-11-01/</strong><span>本次功能及發布規劃；內容以本機實際檔案為準</span></div></li></ul></li>
+<li><div class="node"><strong>架構圖/</strong><span>APP 架構與資料夾階層圖，保留歷史版本</span></div></li>
+<li><div class="node"><strong>public/</strong><span>由 frontend 建置產生的 Hosting 輸出</span></div></li>
+<li><div class="node"><strong>runtime/</strong><span>本機執行、驗收資料與備份；不要視為可整批刪除的空資料夾</span></div></li>
+<li><div class="node"><strong>.playwright-cli/</strong><span>瀏覽器測試產生的日誌、快照及其他既有檔案</span></div></li>
+<li><div class="node"><strong>.public-previous-*/</strong><span>存在時是部署前保留的本機 Hosting 輸出備份；數量可能變動</span></div></li>
+<li><div class="node"><strong>.github/workflows/</strong><span>GitHub workflow 檔案；是否啟用需另行檢查</span></div></li>
+<li><div class="node"><strong>.agents/</strong><span>專案代理指引與技能</span></div></li>
+<li><div class="node"><strong>.git/</strong><span>Git 歷史與分支，內部不展開</span></div></li>
+<li><div class="node"><strong>lib/、tessdata/</strong><span>本機外部工具與辨識資料</span></div></li>
+<li><div class="node"><strong>local_archive/、temp/</strong><span>本機封存與暫存；清理前先確認內容與用途</span></div></li>
+<li><div class="node"><strong>REF/、空軍原始檔/</strong><span>參考與原始資料；不當成產生式暫存刪除</span></div></li>
+</ul></div></section>
+<section id="roles"><h2>02｜容易混淆的目錄</h2><div class="grid"><article class="card"><h3>frontend 與 public</h3><p><code>frontend/</code> 是修改來源；<code>public/</code> 是 Hosting 建置輸出。修改來源後應經既定腳本建置與驗證，不手動改輸出。</p></article><article class="card"><h3>tests 與快取</h3><p><code>tests/</code> 的 JS／Python 測試檔需保留，用來檢查功能與資料安全；<code>__pycache__/</code> 是可重建的 Python 快取。</p></article></div>
+<div class="note warning" style="margin-top:16px"><strong>機密與資料保護：</strong>專案根目錄存在本機設定及憑證檔；其內容未在此盤點或展示。不要將機密、使用中業務資料或用途不明的備份上傳／刪除。<code>.gitignore</code> 記錄了排除項目。</div></section>
+<section id="scope"><h2>03｜盤點範圍</h2><p>依 2026-11-01 本機目錄與 <code>.gitignore</code> 整理，列出主要資料夾及與本次功能相關的子目錄，未列出所有日期、素材、檔案或 Git 內部項目；本機暫存與備份可能隨使用而改變。沒有讀取憑證內容，也沒有更動或清理任何目錄。</p><p>參照：<code>frontend/</code>、<code>gas/</code>、<code>backend/</code>、<code>deploy/README.md</code>、<code>tests/</code>、<code>.gitignore</code> 與本機根目錄。</p></section>
+<footer>2026-11-01｜新版以盤點當時的本機內容為準；10/31 舊版保留。 <a href="#top">回到頂端</a></footer>
+</main></body></html>
