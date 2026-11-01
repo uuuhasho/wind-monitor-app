@@ -1,31 +1,4 @@
-// ========================================================================= _test
-// 🚢 臺中 LNG 船監控系統(測試版) - By Bill Tsai 
-// 更新日期：2026/10/06
-// 更新內容：
-// 1. 23:00 歸檔 JSON 日誌還原為人類易讀格式 {"08:10": 5.2} 並按時間排序，且 app 船期表剃除已 POB 的船。
-// 2. POB 風速: 找出 POB 前10分鐘內的 wind_logs的那筆紀錄。
-// 3. 新增手動輸入 POB 時間結束監控。
-// 4. POB 30分鐘前判斷是否可進港 + 手動模式密碼驗證
-// 5. 04:00 以日曆船期優先監控，即使昨日有預約船，仍會被取消
-// 6.修改風力開始判斷時間點，夏季4:30, 冬季5:00
-// *7.新增Github指令碼屬性
-// *8.新增 17:00 超時防呆警示，同步 Firebase 狀態以控制前端警告 UI。
-// *9. 移除 Gmail 監聽機制的信件收件時間限制（只要日期與主旨符合即可)。
-// *10. 23:00 歸檔預報數據採用與實測相同的 {"HH:mm": speed} 格式。
-// *11. 移除預約隔天監控功能，改為無法進港時將船期移至調整清單首位（日期空白），手動儲存調整或重置時清空此暫存（UNFINISHED_SHIP）。
-// *12. 歸檔重構為 12 欄 (G:碼頭, H:未進港原因, I:備註, J~L:預報JSON)，並實作改期船隻智慧繼承機制，避免其被歸檔過濾。
-// *13.只要包含「台中廠」、「已於」、「POB」及「時間(含未打冒號)」即可擷取LINE訊息。
-// *14. 修復 P0 級錯誤：pobTime 重新賦值崩潰 (C1)、同步反向 for 遍歷 (C2)、歸檔 delete 防資料遺失保護 (C3)、預設 FIREBASE_URL 指向 newlngship 專案 (C5)。
-// *15. 新增動態 Firebase access_token 傳遞認證機制，供 Python E2E 測試與無密鑰模式免 Database Secret 調用。
-// *16. 統一將 GitHub API 請求的 method 轉為大寫，防範 GAS 退化為 GET 請求。
-// *17. 建立 ensureTestEnvironment 檢查，優化 doGet 頻繁寫入屬性問題，並於觸發器與定時排程加入環境防護。
-// *18. 補齊手動結束監控未填寫原因時的空白分支，使其依然能觸發下一艘船的換班接力。
-// *19. 修正 cleanedLogs 下午時間日誌解析，防止無 AM/PM 標識將 13:30 錯誤記為 01:30。
-// *20. fetchWindData 引入 35 秒 CacheService 快取，避免定時刷新刷爆 URL Fetch 每日配額。
-// *21. 將 POB 訊息格式改為: [船名] 已於 [POB時間] 進港，並移除無用的 speedStr 變數。
-// *22. Bug Fix: 延遲進港归檔修復：繼承機制移除 wind_logs 複製（防止風速污染），並於繼承前補寫原日未進港試算表記錄（防止 no_entry_reason 遺失）。
-// *23. 日曆 API 增強與熔斷防護：引入 muteHttpExceptions 與 200 狀態檢查，並在 updateFirebaseScheduleList 加入 Fail-Safe 機制，空資料拒絕覆蓋 Firebase。
-// =========================================================================
+// 臺中 LNG 船監控系統（測試環境）— By Bill Tsai
 
 
 
@@ -60,11 +33,9 @@ function sanitizeKey(str) { return str.replace(/[\.\s\#\$\[\]\/]/g, "_"); }
 function releaseEditingLock() {
   callFirebase("editing_lock", { locked: false, locked_at: 0 }, "put");
 }
-// 新增：安全解析 JSON，避免程式 Crash
 function safeJsonParse(str, fallback = {}) {
   try { return JSON.parse(str) || fallback; } catch (e) { return fallback; }
 }
-// 新增：統一的台灣時間產生器
 function getTwDateStr(date = new Date(), format = "yyyy-MM-dd") {
   return Utilities.formatDate(date, "GMT+8", format);
 }
@@ -114,7 +85,7 @@ function callFirebase(path, data, method = "patch", headers = {}) {
   const fbSecret = dynamicFbToken || getProp('FIREBASE_SECRET', '');
   const baseUrl = fbUrl.endsWith('/') ? fbUrl : `${fbUrl}/`;
   
-  // 🌟 自適應識別驗證金鑰類型：OAuth Token 使用 access_token 參數，傳統 Secret 使用 auth 參數；若金鑰為空則不附加，避免 Firebase 401 錯誤
+  // OAuth Token 與 Database Secret 使用不同的查詢參數。
   let authQuery = "";
   if (fbSecret) {
     if (fbSecret.indexOf("ya29.") === 0) {
@@ -137,7 +108,6 @@ function callFirebase(path, data, method = "patch", headers = {}) {
     const response = UrlFetchApp.fetch(url, options);
     const statusCode = response.getResponseCode();
     
-    // 攔截並紀錄非 2xx (成功) 的異常狀態碼
     if (statusCode < 200 || statusCode >= 300) {
       console.error(`❌ Firebase API 錯誤 [${method.toUpperCase()}] /${path}`);
       console.error(`👉 狀態碼: ${statusCode}`);
@@ -146,10 +116,9 @@ function callFirebase(path, data, method = "patch", headers = {}) {
     return response; // 必須原封不動回傳，確保其他函式呼叫 .getContentText() 正常
     
   } catch (e) {
-    // 捕捉更底層的網路斷線或 DNS 解析失敗 (這種情況連 HTTP 狀態碼都沒有)
     console.error(`🚨 Firebase request failed [${method.toUpperCase()}] /${path}`);
     
-    // 回傳一個安全的 Mock 物件，防止下游邏輯因為找不到 .getContentText() 而引發二次 Crash
+    // 維持回應介面，避免網路錯誤造成下游二次失敗。
     return {
       getContentText: () => "{}",
       getResponseCode: () => 500
@@ -236,8 +205,7 @@ function processPobDirect(shipName, pobTime) {
         } else if (ampm === "上午" && rowH === 12) {
           rowH = 0;   
         } else if (!ampm) {
-          // 如果沒有上午/下午，根據 POB 小時 (已知是 24 小時制) 判斷這筆紀錄是不是下午
-          // 🔴 修正：加入假設驗證，避免 pobH - rowH == 12 時將清晨 AM 日誌誤轉為 PM
+          // 無上午／下午標記時，僅在轉換後接近 POB 才視為下午。
           if (pobH >= 12 && rowH < 12 && (pobH - rowH >= 12)) {
             const hypotheticalRowMins = (rowH + 12) * 60 + rowM;
             const hypotheticalDiff = pobMins - hypotheticalRowMins;
