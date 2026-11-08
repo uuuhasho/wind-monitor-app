@@ -9,6 +9,7 @@
 * **Secret Manager BOM 防護**：程式碼中讀取 Secret Manager 注入的環境變數時，必須一律加上 `.strip().strip("\ufeff")` 防護，避免 Windows UTF-8 BOM 導致 gRPC 層拒絕 API 請求 (503 Error)。
 * **Windows 中文路徑安全部署 (Clean Workspace Deployment)**：Cloud Run 的唯一入口是 `deploy/deploy_cloud_run.py`。它先把 `backend/` 暫存到 `C:\Users\hilla\Desktop\newlngship_clean`；預設只建置，只有明確傳入 `--deploy` 才能執行雲端部署。
 * **Artifact Registry 500 MB 硬上限與清理**：儲存空間必須嚴格低於 500 MB（500,000,000 bytes）。每次建置或推送映像前，先查詢 Repository 目前用量並估算新增映像後的用量；若無法確認低於上限，停止推送與部署，先縮小映像或完成核准的清理。清理須保護目前服務映像，另確認該次維護需要保留的回復映像；使用者核准精確刪除清單後才執行。`deploy/cleanup_registry.py` 僅供人工維護，不得由部署流程自動呼叫。歷史版本與清理完成狀態見維護交接。
+  * **本次 `/test` → `/formal` 遷移的唯一例外**：使用者允許本次遷移於驗收完成前暫時超過 500,000,000 bytes；建置前仍須記錄當前用量、估算增量與費用風險，並保護現用及回復映像。此例外不構成建置、部署或刪除授權，也不適用其他工作。驗收通過後，先列出精確刪除清單取得使用者核准，清理後讀回實際用量並恢復低於 500,000,000 bytes；若無法達成，保留所需回復映像並回報，不得宣稱結案。
 * **單一權威部署源 (Single Source of Truth)**：後端位於 `backend/`，前端位於 `frontend/`，GAS 位於 `gas/`；`public/` 是 `deploy/build_hosting.py` 產生的 Hosting 輸出，不可手動編輯。Hosting 預設僅建置，須以 `deploy/deploy_hosting.ps1 -Deploy` 明確部署。
 * **Cloud Run POB Webhook 架構分工**：LINE Webhook 指向 Cloud Run `/webhook`，Cloud Run 僅負責用 Gemini 解析 POB 時間，解析成功後委託 GAS `set_mode?pob_time=HH:MM` 完成後續全流程（風速查找、`pob_info` 寫入、船期更新、換班接力）。Cloud Run 不直接寫入 `daily_records`。
 
