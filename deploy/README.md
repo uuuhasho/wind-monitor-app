@@ -6,6 +6,8 @@
 
 `deploy_cloud_run.py` 會在固定 ASCII 父目錄 `C:\Users\hilla\Desktop\newlngship_clean` 下建立唯一的 `backend-stage-*` 子目錄。成功暫存會保留供檢查；失敗時只清除本次建立且通過路徑檢查的子目錄。加上 `--deploy` 才會呼叫 Cloud Run。部署會以 `codex-preflight` tag 建立 revision，並使用 `--no-traffic` 保持現有 revision 的流量設定不變；新版同時設定 `/formal` 及 `MAINTENANCE_MODE=true`，解除維護須另經授權。Tag 網址仍可直接存取，舊 revision 與在途工作不受新版開關保護。
 
+取得解除維護的部署授權後，`--deploy --resume` 建立 `MAINTENANCE_MODE=false` 的無流量 revision，且不設定公開預檢 tag；核對 revision 設定後才經授權切換流量。正式網址的 HTTP 驗證必須在流量切換後進行。若既有 tag 未解除，仍可能指向之前的維護版。
+
 部署後先透過 `codex-preflight` tag 檢查新 revision。只有檢查通過後，才另外執行下列命令，把流量切到該 revision（將 `REVISION_NAME` 換成部署產生的 revision 名稱）：
 
 本機來源預定使用 `/formal`；正式遷移前線上仍使用 `/test`。GAS 的 `FIREBASE_URL` 必須先於恢復觸發器前明確設為 `/formal`，並核對 HEAD 與既有 Web App deployment；所有雲端變更須事先取得授權。

@@ -88,6 +88,7 @@ def stage_backend(project: Path, staging_parent: Path) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--deploy", action="store_true")
+    parser.add_argument("--resume", action="store_true", help="deploy without maintenance, with no public preflight tag")
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
     staging_parent = DEFAULT_STAGING_PARENT
@@ -99,8 +100,8 @@ def main() -> int:
         print(f"Deploying {SERVICE_NAME} to project {PROJECT_ID}, region {REGION}.")
         subprocess.run(
             [gcloud, "run", "deploy", SERVICE_NAME, "--project", PROJECT_ID, "--source", ".", "--region", REGION,
-             "--tag", PREFLIGHT_TAG, "--no-traffic", "--allow-unauthenticated", "--execution-environment", "gen2",
-             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal,MAINTENANCE_MODE=true"],
+             *([] if args.resume else ["--tag", PREFLIGHT_TAG]), "--no-traffic", "--allow-unauthenticated", "--execution-environment", "gen2",
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal,MAINTENANCE_MODE=" + ("false" if args.resume else "true")],
             cwd=clean_dir,
             check=True,
         )

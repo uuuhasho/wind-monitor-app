@@ -235,6 +235,18 @@ class CloudRunStagingTests(unittest.TestCase):
         self.assertIn("--no-traffic", command)
         self.assertEqual(command[command.index("--tag") + 1], "codex-preflight")
 
+    def test_resume_deploy_is_untagged_and_has_no_traffic(self):
+        with patch.object(sys, "argv", ["deploy_cloud_run.py", "--deploy", "--resume"]), patch.object(
+            cloud_run, "stage_backend"
+        ), patch.object(cloud_run.shutil, "which", return_value="gcloud"), patch.object(
+            cloud_run.subprocess, "run"
+        ) as run, patch("builtins.print"):
+            self.assertEqual(cloud_run.main(), 0)
+        command = run.call_args.args[0]
+        self.assertIn("--no-traffic", command)
+        self.assertNotIn("--tag", command)
+        self.assertIn("--update-env-vars=FIREBASE_RTDB_PREFIX=/formal,MAINTENANCE_MODE=false", command)
+
     def test_missing_gcloud_stops_before_staging_or_deploy(self):
         with patch.object(sys, "argv", ["deploy_cloud_run.py", "--deploy"]), patch.object(
             cloud_run.shutil, "which", return_value=None
