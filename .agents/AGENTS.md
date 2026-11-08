@@ -29,7 +29,7 @@
 
 - 本機驗收只用 tests/ 的模擬服務及合成憑證，不讀本機機密設定，不寫 /test。
 - 操作密碼從環境變數或 GAS Script Properties 取得，禁止在測試及文件中明文寫入。
-- 使用者指定 `/formal` 遷移正式驗收後清除本批新建的臨時測試程式：`tests/temp_gas_formal_cutover.js`、`tests/formal_emulator_cases.py`、`tests/run_formal_emulator.py`、`tests/migration_rehearsal.py`、`tests/test_migration_rehearsal.py`、`tests/test_formal_migration.py`；一併移除其已失效的文件引用及本批可辨識暫存。驗收前保留；既有測試、必要證據及回復備份不屬此清理範圍。
+- 使用者指定 `/formal` 遷移正式驗收後清除本批新建的臨時測試程式：`tests/temp_gas_formal_cutover.js`、`tests/temp_maintenance_gate.js`、`tests/temp_maintenance_gate.py`、`tests/formal_emulator_cases.py`、`tests/run_formal_emulator.py`、`tests/migration_rehearsal.py`、`tests/test_migration_rehearsal.py`、`tests/test_formal_migration.py`；一併移除其已失效的文件引用及本批可辨識暫存。驗收前保留；既有測試、必要證據及回復備份不屬此清理範圍。
 
 ## 領域知識與限制 (Domain Knowledge)
 * **LNG 船夜航限制**：LNG 船禁止夜航，因此船舶進港 (POB) 時間只會落在 **04:00 ~ 17:00** 之間。在進行系統排程、時間推算或邏輯防呆時，應將此物理限制考慮在內。

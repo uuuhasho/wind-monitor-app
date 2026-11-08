@@ -32,6 +32,8 @@ CORS(app)
 
 @app.route("/webhook", methods=['POST'])
 def webhook():
+    if (get_env("MAINTENANCE_MODE") or "false").lower() != "false":
+        return jsonify({"status": "error", "msg": "System maintenance"}), 503
     signature = request.headers.get('X-Line-Signature', '')
     body = request.get_data(as_text=True)
 
@@ -149,6 +151,8 @@ def _process_pob_async(user_msg: str):
 
 @app.route('/update_forecast', methods=['GET', 'POST'])
 def update_forecast():
+    if (get_env("MAINTENANCE_MODE") or "false").lower() != "false":
+        return jsonify({"status": "error", "msg": "System maintenance"}), 503
     force = request.args.get('force', 'false').lower() == 'true'
     target_date = request.args.get('date', None)
     pwd = request.args.get('pwd', '')

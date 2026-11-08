@@ -44,8 +44,15 @@ function getTodaySeasonTime() {
   return (SEASONS_CONFIG.summer_months.includes(m)) ? SEASONS_CONFIG.summer_forecast_time : SEASONS_CONFIG.winter_forecast_time;
 }
 
+function assertNotInMaintenance() {
+  if ((props.getProperty('MAINTENANCE_MODE') || 'false').trim().toLowerCase() !== 'false') {
+    throw new Error('System maintenance');
+  }
+}
+
 // 驗證正式資料路徑，避免將資料寫入舊命名空間。
 function ensureFirebaseEnvironment() {
+  assertNotInMaintenance();
   const props = PropertiesService.getScriptProperties();
   const fbUrl = props.getProperty("FIREBASE_URL");
   if (!fbUrl || !/^https:\/\/[^/]+\/formal\/?$/i.test(fbUrl)) {
@@ -69,6 +76,7 @@ function ensureFirebaseEnvironment() {
 // 1. Firebase 核心通訊模組 (加入錯誤回報與防護機制) 
 // ==========================================
 function callFirebase(path, data, method = "patch", headers = {}) {
+  assertNotInMaintenance();
   const fbUrl = getProp('FIREBASE_URL', '');
   const fbSecret = dynamicFbToken || getProp('FIREBASE_SECRET', '');
   const baseUrl = fbUrl.endsWith('/') ? fbUrl : `${fbUrl}/`;
@@ -1367,6 +1375,7 @@ function onCalendarOrSheetChange() {
 
 
 function setupProperties() {
+  assertNotInMaintenance();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty("FIREBASE_URL")) {
     props.setProperty("FIREBASE_URL", "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/formal");
