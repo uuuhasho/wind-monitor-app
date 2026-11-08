@@ -1,9 +1,15 @@
 """Synthetic data only; all requests are pinned to the local emulator."""
 
 from copy import deepcopy
+import sys
+import tempfile
+from pathlib import Path
 
 import requests
 from migration_rehearsal import copy_once
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from deploy.migrate_formal import migrate
 
 
 BASE = "http://127.0.0.1:19090"
@@ -83,6 +89,40 @@ def main():
         raise AssertionError("existing target must stop retry")
     except ValueError as error:
         assert "target already exists" in str(error)
+    assert request("PUT", "", admin=True, json=root).status_code == 200
+    def admin_request(method, path, **kwargs):
+        return request(method, path, admin=True, **kwargs)
+    with tempfile.TemporaryDirectory() as directory:
+        backup = Path(directory) / "synthetic-backup.json"
+        assert migrate(admin_request) == sorted(source)
+        assert request("GET", "formal", admin=True).json() is None
+        assert migrate(admin_request, apply=True, backup_path=backup) == sorted(source)
+        assert backup.is_file()
+        assert request("GET", "formal", admin=True).json() == source
+        assert request("GET", "test", admin=True).json() == source
+        assert request("GET", "active_status", admin=True).json() == root["active_status"]
+    assert request("PUT", "", admin=True, json=root).status_code == 200
+    with tempfile.TemporaryDirectory() as directory:
+        backup = Path(directory) / "interrupted-backup.json"
+        def interrupted_production(method, path, **kwargs):
+            response = admin_request(method, path, **kwargs)
+            if method == "PUT":
+                raise requests.Timeout("synthetic response loss")
+            return response
+        try:
+            migrate(interrupted_production, apply=True, backup_path=backup)
+            raise AssertionError("timeout must stop the production migration")
+        except requests.Timeout:
+            pass
+        assert backup.is_file()
+        assert request("GET", "formal", admin=True).json() == source
+        assert request("GET", "test", admin=True).json() == source
+        try:
+            migrate(admin_request, apply=True, backup_path=Path(directory) / "retry.json")
+            raise AssertionError("existing target must stop the production retry")
+        except ValueError as error:
+            assert "target already exists" in str(error)
+        assert not (Path(directory) / "retry.json").exists()
     print("RTDB emulator: rules, copy, collisions, ETag and interrupted-write checks passed")
 
 
