@@ -12,7 +12,7 @@ async page => {
     const nextDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1));
     const nextDay = `${nextDate.getUTCMonth() + 1}/${nextDate.getUTCDate()}`;
     const data = Array.from({length: 193}, (_, i) => ({timestamp: new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), i - 8)).toISOString(), cpc_wind_speed: 5, open_meteo_wind_speed: 6}));
-    const records = {'test/schedule_list': [{d: day, ship_name: 'ONE', limit_speed: 12}, {d: nextDay, ship_name: 'TWO', limit_speed: 15}], 'test/forecast_data': data, 'test/forecast_metadata': {}, 'test/active_status': {app_mode: 'stop'}, '.info/connected': true};
+    const records = {'formal/schedule_list': [{d: day, ship_name: 'ONE', limit_speed: 12}, {d: nextDay, ship_name: 'TWO', limit_speed: 15}], 'formal/forecast_data': data, 'formal/forecast_metadata': {}, 'formal/active_status': {app_mode: 'stop'}, '.info/connected': true};
     const snapshot = path => ({val: () => records[path] ?? null, exists: () => records[path] != null});
     window.firebase = {apps: [], initializeApp() {this.apps.push({});}, database: () => ({ref: path => ({on(_event, cb) {cb(snapshot(path));}, off() {}, once: async () => snapshot(path)})})};
     window.Audio = class {play() {return Promise.resolve();} pause() {} addEventListener() {}};

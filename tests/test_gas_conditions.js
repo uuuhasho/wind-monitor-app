@@ -22,7 +22,17 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../gas/monitor.js'), 'utf8'), context);
-context.ensureTestEnvironment = () => {};
+properties.set('FIREBASE_URL', 'https://example.test/formal/');
+properties.set('SPREADSHEET_ID', 'kept');
+context.ensureFirebaseEnvironment();
+assert.equal(properties.get('FIREBASE_URL'), 'https://example.test/formal/');
+assert.equal(properties.get('SPREADSHEET_ID'), 'kept');
+for (const url of ['', 'https://example.test/test', 'https://example.test/test/formal', 'https://example.test/formal/test']) {
+  properties.set('FIREBASE_URL', url);
+  assert.throws(() => context.ensureFirebaseEnvironment(), /formal namespace/);
+  assert.equal(properties.get('FIREBASE_URL'), url);
+}
+context.ensureFirebaseEnvironment = () => {};
 context.callFirebase = (key, value, method) => {
   calls.push({key, value, method});
   return {getContentText: () => JSON.stringify(activeStatus), getResponseCode: () => 200};

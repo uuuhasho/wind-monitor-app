@@ -66,13 +66,22 @@ class ForecastRtdbTests(unittest.TestCase):
             request_session=memory,
         ), memory
 
-    def test_url_normalizes_root_and_test_prefix(self):
+    def test_url_normalizes_root_and_formal_prefix(self):
         client, _ = self.make_client({})
-        self.assertEqual(client.root_url, "https://db.example/test.json")
-        embedded = ForecastRtdb({"DbUrl": "https://db.example/test/", "DbSecret": "test-token"})
-        self.assertEqual(embedded.root_url, "https://db.example/test.json")
-        with patch.dict(os.environ, {"FIREBASE_RTDB_PREFIX": ""}, clear=False):
-            self.assertEqual(self.make_client({})[0].root_url, "https://db.example/.json")
+        self.assertEqual(client.root_url, "https://db.example/formal.json")
+        embedded = ForecastRtdb({"DbUrl": "https://db.example/formal/", "DbSecret": "test-token"})
+        self.assertEqual(embedded.root_url, "https://db.example/formal.json")
+        with patch.dict(os.environ, {"FIREBASE_RTDB_PREFIX": "\ufeff/formal"}, clear=False):
+            self.assertEqual(self.make_client({})[0].root_url, "https://db.example/formal.json")
+
+    def test_legacy_test_namespace_is_rejected(self):
+        for url in ("https://db.example/test/", "https://db.example/test/formal"):
+            with self.subTest(url=url), self.assertRaises(RtdbError):
+                ForecastRtdb({"DbUrl": url, "DbSecret": "synthetic"})
+        for prefix in ("", "/test", "/formal/formal"):
+            with self.subTest(prefix=prefix), patch.dict(os.environ, {"FIREBASE_RTDB_PREFIX": prefix}, clear=False):
+                with self.assertRaises(RtdbError):
+                    self.make_client({})
 
     def test_publish_preserves_other_namespace_data_and_metadata(self):
         root = {

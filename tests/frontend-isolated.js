@@ -10,17 +10,17 @@ async page => {
     const records = {
       '.info/serverTimeOffset': 0,
       '.info/connected': true,
-      'test/active_status': {app_mode: 'stop', current_wind: 4, last_update: '10:00', forecast_updating: false},
-      'test/schedule_list': [
+      'formal/active_status': {app_mode: 'stop', current_wind: 4, last_update: '10:00', forecast_updating: false},
+      'formal/schedule_list': [
         {d: monthDay, ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12'},
         {d: monthDay, ship_name: 'DEMO-W13', limit_speed: 15, terminal: ''},
         {d: monthDay, ship_name: 'DEMO-EMPTY', limit_speed: 15},
       ],
-      'test/forecast_data': [
+      'formal/forecast_data': [
         {timestamp: `${today}T08:00:00+08:00`, cpc_wind_speed: 5, open_meteo_wind_speed: 6},
         {timestamp: `${today}T09:00:00+08:00`, cpc_wind_speed: 7, open_meteo_wind_speed: 8},
       ],
-      'test/forecast_metadata': {updatedAt: `${today}T02:00:00Z`},
+      'formal/forecast_metadata': {updatedAt: `${today}T02:00:00Z`},
     };
     const listeners = {};
     const snapshot = path => ({val: () => records[path] ?? null, exists: () => records[path] != null});
@@ -30,10 +30,13 @@ async page => {
     window.__today = today;
     window.firebase = {
       apps: [], initializeApp() { this.apps.push({}); },
-      database: () => ({ref: path => ({
-        on(_event, callback) { (listeners[path] ||= []).push(callback); callback(snapshot(path)); },
-        off() { listeners[path] = []; }, once: async () => snapshot(path),
-      })}),
+      database: () => ({ref: path => {
+        if (!path.startsWith('formal/') && !path.startsWith('.info/')) throw new Error(`Unexpected Firebase path: ${path}`);
+        return {
+          on(_event, callback) { (listeners[path] ||= []).push(callback); callback(snapshot(path)); },
+          off() { listeners[path] = []; }, once: async () => snapshot(path),
+        };
+      }}),
     };
     window.echarts = {graphic: {LinearGradient: class {}}, init: () => ({resize() {}, setOption(value) { window.__chartOptions.push(value); }, dispatchAction() {}, dispose() {}})};
     window.Audio = class {constructor() {this.paused = true;} play() {this.paused = false; return Promise.resolve();} pause() {this.paused = true;} addEventListener() {}};
@@ -87,7 +90,7 @@ async page => {
       {wind: 10, wave: 3, visibility: '未知', status: 'warning', reasons: 1},
     ];
     const results = cases.map(item => {
-      window.__emit('test/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12,
+      window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12,
         season_time: '06:00', current_wind: item.wind, current_wave: item.wave, current_visibility: item.visibility});
       const box = document.getElementById('dynamicBox');
       const reasons = [...box.querySelectorAll('.condition-warning')];
@@ -97,7 +100,7 @@ async page => {
         soundPlaying: !notificationSound.paused};
     });
     isSoundEnabled = false;
-    window.__emit('test/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
     return results;
   });
   for (const result of conditions) {
@@ -121,26 +124,26 @@ async page => {
   const forecast = await page.evaluate(() => ({drawn: window.__chartOptions.length > 0, status: document.getElementById('forecastStatus').textContent}));
   if (!forecast.drawn || !forecast.status.includes('10:00')) throw new Error(`Forecast UI: ${JSON.stringify(forecast)}`);
   await page.evaluate(() => {
-    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10});
-    window.__emit('test/active_status', {app_mode: 'stop', current_wind: 4, forecast_updating: true});
+    window.__emit('formal/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10});
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, forecast_updating: true});
   });
   if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Live lease must disable update');
   await page.clock.fastForward(5000);
   if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Valid lease must remain disabled');
-  await page.evaluate(() => window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10}));
+  await page.evaluate(() => window.__emit('formal/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 10}));
   await page.clock.fastForward(5000);
   if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Renewed lease must remain disabled');
   await page.evaluate(() => window.__emit('.info/serverTimeOffset', 6000));
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Server offset must expire lease immediately');
   await page.evaluate(() => {
     window.__emit('.info/serverTimeOffset', 0);
-    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+    window.__emit('formal/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
   });
   if (!await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('New lease must disable update');
   await page.clock.fastForward(5000);
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Expired lease must restore update');
   await page.evaluate(() => {
-    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+    window.__emit('formal/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
     window.__emit('.info/serverTimeOffset', -5000);
   });
   await page.clock.fastForward(5000);
@@ -149,21 +152,21 @@ async page => {
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Lease must expire after negative offset');
   await page.evaluate(() => {
     window.__emit('.info/serverTimeOffset', 0);
-    window.__emit('test/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
-    window.__emit('test/active_status', {app_mode: 'stop', forecast_updating: false});
+    window.__emit('formal/forecast_update_lock', {owner: 'synthetic', expiresAt: Date.now() / 1000 + 5});
+    window.__emit('formal/active_status', {app_mode: 'stop', forecast_updating: false});
   });
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Completed update must restore button');
-  await page.evaluate(() => window.__emit('test/active_status', {app_mode: 'stop', forecast_updating: false, forecast_auto_failed: true}));
+  await page.evaluate(() => window.__emit('formal/active_status', {app_mode: 'stop', forecast_updating: false, forecast_auto_failed: true}));
   if (!await page.locator('#forecastUpdateBtn').textContent().then(text => text.includes('請手動更新'))) throw new Error('Failed update must show manual retry');
-  await page.evaluate(() => window.__emit('test/forecast_update_lock', null));
+  await page.evaluate(() => window.__emit('formal/forecast_update_lock', null));
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Completed update with missing lease must remain enabled');
   await page.evaluate(() => {
-    window.__emit('test/active_status', {app_mode: 'start', target_key: 'synthetic', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12', current_wind: 4});
-    window.__emit(`test/daily_records/${window.__today}`, {synthetic: {config: {ship_name: 'DEMO-SHIP'}, pob_info: {pob_time: '10:00', formatted_msg: '示意 POB'}}});
+    window.__emit('formal/active_status', {app_mode: 'start', target_key: 'synthetic', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12', current_wind: 4});
+    window.__emit(`formal/daily_records/${window.__today}`, {synthetic: {config: {ship_name: 'DEMO-SHIP'}, pob_info: {pob_time: '10:00', formatted_msg: '示意 POB'}}});
   });
   const operations = await page.evaluate(() => ({monitor: document.getElementById('shipName').disabled, pob: document.getElementById('pobList').textContent.includes('DEMO-SHIP 已於 10:00 進港')}));
   if (!operations.monitor || !operations.pob || errors.length) throw new Error(JSON.stringify({operations, errors}));
-  await page.evaluate(() => {window.__emit('test/active_status', {app_mode: 'stop', current_wind: 4});});
+  await page.evaluate(() => {window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4});});
   if (await page.locator('#shipName').isDisabled()) throw new Error('Stop must unlock monitor inputs');
   const commands = await page.evaluate(async () => {
     cachedSessionPassword = 'synthetic';

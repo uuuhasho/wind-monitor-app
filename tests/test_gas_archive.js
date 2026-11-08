@@ -25,7 +25,7 @@ function createSheet(name) {
 function createHarness({records, schedule = [], failDeleteOnce = false, failMoveOnce = false, fetchHook, sheetHook, flushHook, lockBusy = false, opPassword = "test"}) {
   const db = {daily_records: records, forecast_data: [{timestamp: "2026-10-26T08:00:00+08:00", cpc_wind_speed: 5, open_meteo_wind_speed: 7}]};
   const props = new Map([
-    ["FIREBASE_URL", "https://example.test/test"], ["SPREADSHEET_ID", "sheet"],
+    ["FIREBASE_URL", "https://example.test/formal"], ["SPREADSHEET_ID", "sheet"],
   ]);
   if (opPassword !== null) props.set("OP_PASSWORD", opPassword);
   const sheets = new Map();
@@ -66,7 +66,7 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
       insertSheet: name => { const sheet = createSheet(name); if (sheetHook) sheetHook(sheet); sheets.set(name, sheet); return sheet; },
     })},
     UrlFetchApp: {fetch: (url, options) => {
-      const path = decodeURIComponent(url.match(/\/test\/(.*)\.json/)[1]).split("?")[0];
+      const path = decodeURIComponent(url.match(/\/formal\/(.*)\.json/)[1]).split("?")[0];
       const method = options.method;
       calls.push({path, method, headers: options.headers || {}});
       const hookResponse = fetchHook && fetchHook({path, method, db, putAt, response});
@@ -88,7 +88,7 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
   };
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../gas/monitor.js"), "utf8"), context);
-  context.ensureTestEnvironment = () => {};
+  context.ensureFirebaseEnvironment = () => {};
   context.getScheduleList = () => schedule;
   context.updateFirebaseScheduleList = () => {};
   return {context, db, sheets, calls};

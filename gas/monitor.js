@@ -44,8 +44,8 @@ function getTodaySeasonTime() {
   return (SEASONS_CONFIG.summer_months.includes(m)) ? SEASONS_CONFIG.summer_forecast_time : SEASONS_CONFIG.winter_forecast_time;
 }
 
-// 🌟 確保測試環境設定正確 (避免 Script Properties 頻繁寫入且提供 Trigger 環境防護)
-function ensureTestEnvironment() {
+// 驗證正式資料路徑，避免將資料寫入舊命名空間。
+function ensureFirebaseEnvironment() {
   const props = PropertiesService.getScriptProperties();
   
   // 🧹 自動清除殘留的過期臨時 Token，避免影響後續 callFirebase 運作
@@ -56,24 +56,13 @@ function ensureTestEnvironment() {
   }
 
   const fbUrl = props.getProperty("FIREBASE_URL");
-  if (!fbUrl || !fbUrl.includes("/test")) {
-    props.setProperty("FIREBASE_URL", "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test");
+  if (!fbUrl || !/^https:\/\/[^/]+\/formal\/?$/i.test(fbUrl)) {
+    throw new Error("FIREBASE_URL must point to the formal namespace.");
   }
   
   const targetUrl = props.getProperty("TARGET_URL");
   if (!targetUrl || !targetUrl.includes("Realtime_Panel_Port_GatData")) {
     props.setProperty("TARGET_URL", "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3");
-  }
-  
-  if (!props.getProperty('FIREBASE_SECRET')) {
-    props.setProperties({
-      "FIREBASE_URL": "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test",
-      "FIREBASE_SECRET": "", 
-      "SPREADSHEET_ID": "1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po",
-      "TARGET_URL": "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3",
-      "STATION_NAME": "北堤綠燈塔",
-      "SHIP_SCHEDULE_API_URL": "https://script.google.com/macros/s/AKfycbz55eDn5hQaRsYqGu0VPSQbvlTgVY6WPEc0hKe9OMeLNtzNhxtzwJbN_IAgk46-B7rh/exec?mode=api&port=%E5%8F%B0%E4%B8%AD"
-    });
   }
 }
 
@@ -130,7 +119,7 @@ function callFirebase(path, data, method = "patch", headers = {}) {
 // 2. 💬 LINE Bot Webhook 接收端 (零延遲核心)
 // ==========================================
 function doPost(e) {
-  ensureTestEnvironment();
+  ensureFirebaseEnvironment();
   if (e && e.parameter && e.parameter.fb_token) {
     dynamicFbToken = e.parameter.fb_token;
   }
@@ -313,7 +302,7 @@ function startMonitoring(shipName, limitSpeed, isAutoRun = "true", terminal = ""
 }
 
 function checkDailySchedule() {
-  ensureTestEnvironment();
+  ensureFirebaseEnvironment();
   props.deleteProperty('ARCHIVED_SHIPS_TODAY');
   const now = new Date();
   const dateStr = getTwDateStr(now);
@@ -363,7 +352,7 @@ function checkDailySchedule() {
 // 5. ⏱️ 核心監控：每分鐘抓取風速與智慧採樣
 // ==========================================
 function executeMonitor() {
-  ensureTestEnvironment();
+  ensureFirebaseEnvironment();
   const now = new Date();
   const dateStr = getTwDateStr(now);
   const data = fetchWindData();
@@ -543,7 +532,7 @@ function rescheduledDate(targetMD, now) {
 // Per-card receipts make retry safe after a timeout or partial archive failure.
 function archiveAndClearFirebase(simDate = null) {
   if (typeof simDate !== "string") simDate = null;
-  ensureTestEnvironment();
+  ensureFirebaseEnvironment();
   const archiveLock = LockService.getScriptLock();
   if (!archiveLock.tryLock(1000)) throw new Error("archive already running");
   try {
@@ -701,7 +690,7 @@ function archiveAndClearFirebase(simDate = null) {
 // 7. 🌐 App 端 API 接口 (雙效合一版)
 // ==========================================
 function doGet(e) {
-  ensureTestEnvironment();
+  ensureFirebaseEnvironment();
   if (e && e.parameter && e.parameter.fb_token) {
     dynamicFbToken = e.parameter.fb_token;
   }
@@ -1378,7 +1367,7 @@ function updateFirebaseScheduleList() {
 
 // 🌟 新增：日曆變更時的觸發器
 function onCalendarOrSheetChange() {
-  ensureTestEnvironment(); // 🌟 確保觸發時先載入/校正測試環境屬性，並清除殘留過期 Token
+  ensureFirebaseEnvironment();
   console.log("📅 偵測到內容變更，啟動同步...");
   updateFirebaseScheduleList();
 }

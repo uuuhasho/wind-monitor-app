@@ -8,6 +8,8 @@
 
 部署後先透過 `codex-preflight` tag 檢查新 revision。只有檢查通過後，才另外執行下列命令，把流量切到該 revision（將 `REVISION_NAME` 換成部署產生的 revision 名稱）：
 
+本機來源預定使用 `/formal`；正式遷移前線上仍使用 `/test`。GAS 的 `FIREBASE_URL` 必須先於恢復觸發器前明確設為 `/formal`，並核對 HEAD 與既有 Web App deployment；所有雲端變更須事先取得授權。
+
 ```powershell
 gcloud run services update-traffic forecast-api-test --project=newlngship --region=asia-southeast1 --to-revisions=REVISION_NAME=100
 ```

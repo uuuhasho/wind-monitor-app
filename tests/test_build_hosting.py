@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -21,6 +22,13 @@ cloud_run = load_module("deploy_cloud_run", ROOT / "deploy" / "deploy_cloud_run.
 
 
 class HostingBuildTests(unittest.TestCase):
+    def test_production_manifest_name_and_identity(self):
+        manifest = json.loads((ROOT / "frontend" / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["name"], "臺中LNG船監控")
+        self.assertEqual(manifest["short_name"], "LNG監控")
+        self.assertEqual(manifest["description"], "臺中LNG船進港風速監控")
+        self.assertEqual(manifest["start_url"], "index.html")
+
     def make_project(self, root):
         frontend = root / "frontend"
         frontend.mkdir()
@@ -209,7 +217,7 @@ class CloudRunStagingTests(unittest.TestCase):
             ["C:/synthetic/gcloud.cmd", "run", "deploy", "forecast-api-test", "--project", "newlngship", "--source", ".",
              "--region", "asia-southeast1", "--tag", "codex-preflight", "--no-traffic", "--allow-unauthenticated",
              "--execution-environment", "gen2",
-             "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal"],
             cwd=stage.return_value,
             check=True,
         )

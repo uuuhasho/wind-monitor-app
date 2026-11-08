@@ -100,7 +100,7 @@ def main() -> int:
         subprocess.run(
             [gcloud, "run", "deploy", SERVICE_NAME, "--project", PROJECT_ID, "--source", ".", "--region", REGION,
              "--tag", PREFLIGHT_TAG, "--no-traffic", "--allow-unauthenticated", "--execution-environment", "gen2",
-             "--update-env-vars=FIREBASE_RTDB_PREFIX=/test"],
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal"],
             cwd=clean_dir,
             check=True,
         )

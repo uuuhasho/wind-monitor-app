@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(v1.1)</title>
+    <title>臺中LNG船監控(v1.2)</title>
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="apple-touch-icon" href="logo.png">
 
@@ -1497,7 +1497,7 @@
         }
         
         currentListenerDateStr = dateStr;
-        dailyRecordsRef = db.ref('test/daily_records/' + dateStr);
+        dailyRecordsRef = db.ref('formal/daily_records/' + dateStr);
         
         dailyRecordsRef.on('value', (snapshot) => {
             const records = snapshot.val();
@@ -1595,7 +1595,7 @@
             serverTimeOffset = snap.val() || 0;
             refreshForecastUpdateButton();
         });
-        db.ref('test/forecast_update_lock').on('value', snapshot => {
+        db.ref('formal/forecast_update_lock').on('value', snapshot => {
             forecastLease = snapshot.val();
             refreshForecastUpdateButton();
         });
@@ -1621,13 +1621,13 @@
         });
 
         // 🌟 新增：悲觀鎖狀態監控 (C5)
-        db.ref('test/editing_lock').on('value', (snap) => {
+        db.ref('formal/editing_lock').on('value', (snap) => {
             currentLockState = snap.val();
             updateLockUI();
         });
 
         // 1. 監聽【系統狀態與即時風速】(毫秒級更新)
-        db.ref('test/active_status').on('value', (snapshot) => {
+        db.ref('formal/active_status').on('value', (snapshot) => {
             // 🌟 每次狀態更新時檢查日期是否跨日，確保動態切換 POB 監聽日節點
             listenToDailyRecords();
 
@@ -1690,7 +1690,7 @@
 
 
         // 2. 監聽【未來船期表】(實時同步，秒速渲染)
-        db.ref('test/schedule_list').on('value', (snapshot) => {
+        db.ref('formal/schedule_list').on('value', (snapshot) => {
             scheduleDataList = snapshot.val() || [];
             renderScheduleTable();
         }, (error) => {
@@ -1961,7 +1961,7 @@
         statusEl.style.color = "#58a6ff";
 
         try {
-            const snapshot = await db.ref('test/forecast_data').once('value');
+            const snapshot = await db.ref('formal/forecast_data').once('value');
             if (!snapshot.exists()) {
                 statusEl.innerText = "資料庫無預報數據";
                 statusEl.style.color = "#ff7b72";
@@ -1978,7 +1978,7 @@
             renderForecastChart(data);
             
             // 從另外的節點讀取最後更新時間
-            const metaSnapshot = await db.ref('test/forecast_metadata').once('value');
+            const metaSnapshot = await db.ref('formal/forecast_metadata').once('value');
             let latestUpdatedAt = null;
             if (metaSnapshot.exists() && metaSnapshot.val().updatedAt) {
                 latestUpdatedAt = new Date(metaSnapshot.val().updatedAt);

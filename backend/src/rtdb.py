@@ -17,10 +17,12 @@ class PipelineBusyError(RtdbError):
 
 class ForecastRtdb:
     def __init__(self, settings, now=time.time, request_session=requests):
-        prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "/test").strip().strip("/")
+        prefix = os.environ.get("FIREBASE_RTDB_PREFIX", "/formal").strip().strip("\ufeff").strip().strip("/")
         raw_url = (os.environ.get("FIREBASE_RTDB_URL") or settings.get("DbUrl") or "").strip().strip("\ufeff")
         parsed_url = urlsplit(raw_url)
         path = parsed_url.path.rstrip("/")
+        if prefix != "formal" or path not in ("", "/formal"):
+            raise RtdbError("RTDB must target the formal namespace.")
         if prefix and path.endswith(f"/{prefix}"):
             path = path[: -len(prefix) - 1]
         self.base_url = urlunsplit((parsed_url.scheme, parsed_url.netloc, path, "", ""))

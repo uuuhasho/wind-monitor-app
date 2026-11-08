@@ -1,11 +1,11 @@
 {
-  "name": "臺中LNG船監控 (測試版)",
-  "short_name": "LNG監控(測)",
+  "name": "臺中LNG船監控",
+  "short_name": "LNG監控",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0b0f19",
-  "description": "臺中LNG船進港風速監控 (測試版)",
+  "description": "臺中LNG船進港風速監控",
   "icons": [
     {
       "src": "pwa.png",
