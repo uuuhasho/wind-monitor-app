@@ -1,4 +1,4 @@
-// 臺中 LNG 船監控系統（測試環境）— By Bill Tsai
+// 臺中 LNG 船監控系統 — By Bill Tsai
 
 
 
@@ -47,7 +47,11 @@ function getTodaySeasonTime() {
 // 驗證正式資料路徑，避免將資料寫入舊命名空間。
 function ensureFirebaseEnvironment() {
   const props = PropertiesService.getScriptProperties();
-  
+  const fbUrl = props.getProperty("FIREBASE_URL");
+  if (!fbUrl || !/^https:\/\/[^/]+\/formal\/?$/i.test(fbUrl)) {
+    throw new Error("FIREBASE_URL must point to the formal namespace.");
+  }
+
   // 🧹 自動清除殘留的過期臨時 Token，避免影響後續 callFirebase 運作
   const currentSecret = props.getProperty("FIREBASE_SECRET");
   if (currentSecret && currentSecret.indexOf("ya29.") === 0) {
@@ -55,11 +59,6 @@ function ensureFirebaseEnvironment() {
     props.setProperty("FIREBASE_SECRET", "");
   }
 
-  const fbUrl = props.getProperty("FIREBASE_URL");
-  if (!fbUrl || !/^https:\/\/[^/]+\/formal\/?$/i.test(fbUrl)) {
-    throw new Error("FIREBASE_URL must point to the formal namespace.");
-  }
-  
   const targetUrl = props.getProperty("TARGET_URL");
   if (!targetUrl || !targetUrl.includes("Realtime_Panel_Port_GatData")) {
     props.setProperty("TARGET_URL", "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3");
@@ -826,15 +825,8 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({status: "success", msg: "已成功手動執行 checkDailySchedule 自動排程！"})).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // 📝 新增：手動觸發測試歸檔 (ToDo #9 測試工具，支援 sim_date 模擬日期)
+  // 📝 手動觸發歸檔（保留既有 action 以相容前端）
   if (action === 'archive_test') {
-    // 🌟 強制將測試環境的 FIREBASE_URL 指向 /test，並設置 SHIP_SCHEDULE_API_URL，防止污染正式環境並能正確下載船期
-    props.setProperties({
-      "FIREBASE_URL": "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test",
-      "SHIP_SCHEDULE_API_URL": "https://script.google.com/macros/s/AKfycbz55eDn5hQaRsYqGu0VPSQbvlTgVY6WPEc0hKe9OMeLNtzNhxtzwJbN_IAgk46-B7rh/exec?mode=api&port=%E5%8F%B0%E4%B8%AD",
-      "SPREADSHEET_ID": "1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po"
-    });
-    
     // 🌟 動態設定/更新臨時的 Firebase 認證 Token，供當次及後續的 callFirebase 調用 (改用記憶體全域變數，防寫入 properties 過期)
     if (e.parameter.fb_token) {
       dynamicFbToken = e.parameter.fb_token;
@@ -853,7 +845,7 @@ function doGet(e) {
       }, "put");
       return ContentService.createTextOutput(JSON.stringify({
         status: "success", 
-        msg: "歸檔已成功手動觸發，請前往測試紀錄表 (歸檔總表) 驗收 J 欄與 K 欄！"
+        msg: "歸檔已成功手動觸發，請前往歸檔總表確認。"
       })).setMimeType(ContentService.MimeType.JSON);
     } catch(err) {
       return ContentService.createTextOutput(JSON.stringify({
@@ -1376,18 +1368,23 @@ function onCalendarOrSheetChange() {
 
 function setupProperties() {
   const props = PropertiesService.getScriptProperties();
-  props.setProperties({
-    "FIREBASE_URL": "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/test",
-    "FIREBASE_SECRET": "",
+  if (!props.getProperty("FIREBASE_URL")) {
+    props.setProperty("FIREBASE_URL", "https://newlngship-default-rtdb.asia-southeast1.firebasedatabase.app/formal");
+  }
+  ensureFirebaseEnvironment();
+  const defaults = {
     "SPREADSHEET_ID": "1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po",
     "TARGET_URL": "https://wwtf.twport.com.tw/twport/display/Realtime_Panel_Port_GatData_2024.aspx?3",
     "STATION_NAME": "北堤綠燈塔"
+  };
+  Object.keys(defaults).forEach(key => {
+    if (!props.getProperty(key)) props.setProperty(key, defaults[key]);
   });
   
   // 💡 為了強迫 Google Apps Script 偵測到本專案需要「讀寫 Google Sheets」與「發送網路請求」權限，
   // 並在使用者手動執行 setupProperties 時彈出授權視窗，我們加入此主動存取測試代碼：
   try {
-    const ss = SpreadsheetApp.openById("1829HCrinCxHYOUcgvlAGrsv2mH-bKwp3Rst90pzV3po");
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     console.log("📊 成功連結測試試算表，標題為：" + ss.getName());
     const testFetch = UrlFetchApp.fetch("https://www.google.com", {muteHttpExceptions: true});
     console.log("🌐 成功驗證網路請求權限，狀態碼：" + testFetch.getResponseCode());
