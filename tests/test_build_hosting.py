@@ -217,7 +217,7 @@ class CloudRunStagingTests(unittest.TestCase):
             ["C:/synthetic/gcloud.cmd", "run", "deploy", "forecast-api-test", "--project", "newlngship", "--source", ".",
              "--region", "asia-southeast1", "--tag", "codex-preflight", "--no-traffic", "--allow-unauthenticated",
              "--execution-environment", "gen2",
-             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal"],
+             "--update-env-vars=FIREBASE_RTDB_PREFIX=/formal,MAINTENANCE_MODE=true"],
             cwd=stage.return_value,
             check=True,
         )

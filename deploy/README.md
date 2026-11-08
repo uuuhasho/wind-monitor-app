@@ -4,7 +4,7 @@
 
 `deploy_hosting.ps1` 預設只建置。需要雲端權限與人工審閱時才使用 `-Deploy`。
 
-`deploy_cloud_run.py` 會在固定 ASCII 父目錄 `C:\Users\hilla\Desktop\newlngship_clean` 下建立唯一的 `backend-stage-*` 子目錄。成功暫存會保留供檢查；失敗時只清除本次建立且通過路徑檢查的子目錄。加上 `--deploy` 才會呼叫 Cloud Run。部署會以 `codex-preflight` tag 建立 revision，並使用 `--no-traffic` 保持現有 revision 的流量設定不變。
+`deploy_cloud_run.py` 會在固定 ASCII 父目錄 `C:\Users\hilla\Desktop\newlngship_clean` 下建立唯一的 `backend-stage-*` 子目錄。成功暫存會保留供檢查；失敗時只清除本次建立且通過路徑檢查的子目錄。加上 `--deploy` 才會呼叫 Cloud Run。部署會以 `codex-preflight` tag 建立 revision，並使用 `--no-traffic` 保持現有 revision 的流量設定不變；新版同時設定 `/formal` 及 `MAINTENANCE_MODE=true`，解除維護須另經授權。Tag 網址仍可直接存取，舊 revision 與在途工作不受新版開關保護。
 
 部署後先透過 `codex-preflight` tag 檢查新 revision。只有檢查通過後，才另外執行下列命令，把流量切到該 revision（將 `REVISION_NAME` 換成部署產生的 revision 名稱）：
 
