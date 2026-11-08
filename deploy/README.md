@@ -12,6 +12,8 @@
 
 `python -B tests/run_formal_emulator.py` 使用 `demo-formal-rtdb`、本機 19090 埠及合成資料執行 Rules、複製和 ETag 測試；需 Firebase CLI 與 JDK。測試使用臨時規則，不會發布或代表已檢查正式 Rules。可用 `JAVA_HOME` 指定 JDK，未指定時使用專案內的 portable JDK。
 
+`tests/migration_rehearsal.py` 僅供隔離演練，不是正式遷移工具。複製前必須確保所有寫入者已停止：讀取來源 ETag 後再次比對仍無法防止最後檢查與寫入之間發生更新。寫入逾時時須停止、讀回兩邊並對帳，不可自動覆蓋或刪除。
+
 ```powershell
 gcloud run services update-traffic forecast-api-test --project=newlngship --region=asia-southeast1 --to-revisions=REVISION_NAME=100
 ```

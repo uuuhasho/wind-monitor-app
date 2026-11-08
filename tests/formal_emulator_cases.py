@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import requests
+from migration_rehearsal import copy_once
 
 
 BASE = "http://127.0.0.1:19090"
@@ -43,8 +44,7 @@ def main():
     assert before.status_code == 200 and before.json() is None
     etag = before.headers.get("ETag")
     assert etag
-    copied = request("PUT", "formal", admin=True, headers={"if-match": etag}, json=source)
-    assert copied.status_code == 200
+    assert copy_once(request) == source
     assert request("GET", "formal", admin=True).json() == source
     assert request("GET", "test", admin=True).json() == source
     assert request("GET", "active_status", admin=True).json() == root["active_status"]
@@ -60,7 +60,30 @@ def main():
     assert stale.status_code == 412
     assert request("GET", "formal", admin=True).json() == changed
     assert request("GET", "test", admin=True).json() == source
-    print("RTDB emulator: rules, migration copy, collision and ETag checks passed")
+
+    assert request("PUT", "", admin=True, json=root).status_code == 200
+    writes = []
+    def interrupted(method, path, **kwargs):
+        response = request(method, path, **kwargs)
+        if method == "PUT":
+            writes.append(path)
+            raise requests.Timeout("synthetic response loss")
+        return response
+
+    try:
+        copy_once(interrupted)
+        raise AssertionError("timeout must stop the copy")
+    except requests.Timeout:
+        pass
+    assert writes == ["formal"]
+    assert request("GET", "formal", admin=True).json() == source
+    assert request("GET", "test", admin=True).json() == source
+    try:
+        copy_once(request)
+        raise AssertionError("existing target must stop retry")
+    except ValueError as error:
+        assert "target already exists" in str(error)
+    print("RTDB emulator: rules, copy, collisions, ETag and interrupted-write checks passed")
 
 
 if __name__ == "__main__":
