@@ -2,7 +2,7 @@
 
 ## 專案定位與架構演進 (Architecture Direction)
 * **主力生產環境地位**：本版（架設於 Google 平台、使用 Python/GCP/Firebase）為**未來主力生產環境**。
-* **正式資料與測試隔離**：本機來源預定使用 `newlngship` RTDB 的 `/formal` 命名空間；正式環境完成授權遷移前仍使用 `/test`。本機驗收只用 tests/ 模擬服務及合成憑證，不連正式資料庫。
+* **正式資料與測試隔離**：2026-11-08 已完成授權遷移，`newlngship` 正式 APP、GAS 與 Cloud Run 使用 `/formal`；`/test` 保留為舊資料，不作為回退寫入路徑，刪除須另行授權。本機驗收只用 tests/ 模擬服務及合成憑證，不連正式資料庫。
 
 ## GCP / Cloud Run / Secret Manager 部署與安全規範
 * **雲端金鑰安全管理 (Secrets Management)**：部署 GCP Cloud Run 或 Google 雲端服務時，所有敏感密鑰（如 Firebase RTDB DbSecret、Service Account 金鑰等）必須全面改用 **GCP Secret Manager** 存放或設定為 Cloud Run 環境變數。絕對不可將 `config.json` 或 `service_account.json` 等實體設定檔隨容器映像檔打包上傳，必須確實將它們加入 `.gcloudignore` 中。
@@ -42,4 +42,5 @@
 * 每次修改本專案的程式、測試、設定、規範或文件後，主動詢問使用者是否同步更新 GitHub repo `uuuhasho/wind-monitor-app`。取得該批變更的明確授權後才推送；已授權的範圍直接完成，不重複詢問。回報時明確區分「本機提交」與「GitHub 已更新」，推送後讀回遠端分支與檔案確認結果。
 
 ## 維護交接入口
-* 接續驗收、部署或清理工作前，先讀 `plan/2026-10-31/2026-10-31-維護交接_handoff.md`；歷史雲端狀態須重新查核後才能當成目前狀態。換班接力依使用者決定暫不觀察，恢復觀察須由使用者提出。
+* 接續驗收、部署或清理工作前，先讀 `plan/2026-11-08/2026-11-08-formal-cutover-report.html`。2026-11-08 交接時維護已解除、四個 GAS 觸發器及 Scheduler 已恢復，自然監控與預報有成功證據；歸檔、實船 POB、驗收後清理與合併主線仍待完成。歷史雲端狀態須重新查核後才能當成目前狀態。
+* 先前維護歷史保留於 `plan/2026-10-31/2026-10-31-維護交接_handoff.md`。換班接力依使用者決定暫不觀察，恢復觀察須由使用者提出。

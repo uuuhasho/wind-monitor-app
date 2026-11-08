@@ -8,15 +8,15 @@
 
 取得解除維護的部署授權後，`--deploy --resume` 建立 `MAINTENANCE_MODE=false` 的無流量 revision，且不設定公開預檢 tag；核對 revision 設定後才經授權切換流量。正式網址的 HTTP 驗證必須在流量切換後進行。若既有 tag 未解除，仍可能指向之前的維護版。
 
-部署後先透過 `codex-preflight` tag 檢查新 revision。只有檢查通過後，才另外執行下列命令，把流量切到該 revision（將 `REVISION_NAME` 換成部署產生的 revision 名稱）：
+預設維護版部署後，透過 `codex-preflight` tag 檢查新 revision；`--resume` 版不新增 tag，先核對指定 revision 設定。流量切換需另行授權，命令範例見本文末；不可把仍指向維護版的 tag 當成解除維護版的驗證網址。
 
-本機來源預定使用 `/formal`；正式遷移前線上仍使用 `/test`。GAS 的 `FIREBASE_URL` 必須先於恢復觸發器前明確設為 `/formal`，並核對 HEAD 與既有 Web App deployment；所有雲端變更須事先取得授權。
+2026-11-08 已完成 `/test` → `/formal` 授權切換，APP v1.2 已發布，兩端維護已解除，四個 GAS 觸發器與 Scheduler 已恢復。`/test` 保留，不回退寫入；`/formal` 已有新業務資料，不可重新套用遷移指令或覆寫舊快照。最新交接與驗收待辦見 [今日報告](../plan/2026-11-08/2026-11-08-formal-cutover-report.html)；實際部署前仍須讀回線上狀態。所有雲端變更須事先取得授權。
 
 `python -B tests/run_formal_emulator.py` 使用 `demo-formal-rtdb`、本機 19090 埠及合成資料執行 Rules、複製和 ETag 測試；需 Firebase CLI 與 JDK。測試使用臨時規則，不會發布或代表已檢查正式 Rules。可用 `JAVA_HOME` 指定 JDK，未指定時使用專案內的 portable JDK。
 
 `tests/migration_rehearsal.py` 僅供隔離演練，不是正式遷移工具。複製前必須確保所有寫入者已停止：讀取來源 ETag 後再次比對仍無法防止最後檢查與寫入之間發生更新。寫入逾時時須停止、讀回兩邊並對帳，不可自動覆蓋或刪除。
 
-`deploy/migrate_formal.py` 固定目標為 `newlngship` 的 `/test` 與 `/formal`。預設只讀取並檢查；`FIREBASE_RTDB_SECRET` 必須由環境安全提供，不放在命令列。執行 `python -B deploy/migrate_formal.py` 不會寫入資料庫。部署前應另行備份 Rules、現行版本及設定，本工具只備份 `/test` 資料。
+`deploy/migrate_formal.py` 固定目標為 `newlngship` 的 `/test` 與 `/formal`，保留供歷史流程追溯，不是日常部署步驟。預設只讀取並檢查；目標已存在時會拒絕，這是目前正式環境的預期保護，不是需要刪除目標才能修復的錯誤。`FIREBASE_RTDB_SECRET` 必須由環境安全提供，不放在命令列。工具只備份 `/test` 資料；Rules、現行版本及設定需另外備份。
 
 正式複製須先取得使用者明確授權，並確認所有寫入來源已停止、在途工作已完成。檢查 `/formal` 不存在後，才可使用 `--apply --writers-stopped --confirm-project newlngship --backup <絕對檔案路徑>`。備份路徑必須位於專案根目錄 `backups/` 或專案外的既有目錄，且檔案不可已存在。`backups/` 已排除一般 Git 及部署；禁止強制加入 Git。備份是未加密 JSON；Windows 會繼承目錄 ACL，操作前須由人員確認目錄權限及保管方式，不得存入 Git 或公開位置。
 
@@ -26,11 +26,11 @@
 
 ### 本次切換的維護開關
 
-本機新版提供 GAS Script Property 及 Cloud Run 環境變數 `MAINTENANCE_MODE`；兩者需分別設為 `true`，其他非空且非 `false` 的值也會阻擋。缺少屬性或值為 `false` 表示不啟用。GAS 在初始化及 RTDB 存取前停止；Cloud Run 的 `/webhook` 與 `/update_forecast` 回應 503，`/health` 維持可用。這只是本機實作；未發布前線上仍無此保護。
+已發布的版本提供 GAS Script Property 及 Cloud Run 環境變數 `MAINTENANCE_MODE`；維護時兩者需分別設為 `true`，其他非空且非 `false` 的值也會阻擋。缺少屬性或值為 `false` 表示不啟用。GAS 在初始化及 RTDB 存取前停止；Cloud Run 的 `/webhook` 與 `/update_forecast` 回應 503，`/health` 維持可用。2026-11-08 已驗證維護阻擋並解除，未來維護仍須重新核對兩端狀態。
 
 舊 GAS Web App deployment、舊 Cloud Run revision 和不經過這些入口的其他寫入者不受新開關保護。正式切換前須逐一確認及停用或隔離所有舊入口，通知所有使用者不要操作，並停用排程；維護開關不會取消已開始的工作。等待 GAS 執行、預報及 LINE 背景作業確實結束，不能只根據鎖過期判定安全。只在能證明全面停寫時複製資料。
 
-GAS Web App 對拋出錯誤的實際 HTTP 狀態尚未在線上驗證；舊版前端使用 `no-cors`，仍可能顯示成功。維護期間不得依靠畫面或 HTTP 回應推斷資料已寫入。LINE Webhook 503 也不保證重送；依使用者目前船期資訊，在無船期間維護，若出現臨時訊息須人工記錄及對帳，不得自行模擬 POB。
+GAS Web App v83 的維護錯誤頁已實測回傳 HTTP 200 並含 `System maintenance`；前端使用 `no-cors` 的操作仍可能顯示成功。維護期間不得依靠畫面或 HTTP 狀態推斷資料已寫入。LINE Webhook 503 也不保證重送；未來維護前重新確認船期，若出現臨時訊息須人工記錄及對帳，不得自行模擬 POB。
 
 Cloud Run 環境變數變更會產生新 revision；確認流量、tag 和在途工作後才可切換。GAS HEAD 與現有 Web App deployment 須分別核對。兩端都部署新開關、舊入口完成隔離且在途工作結束後，才進行備份與遷移；兩端資料、Rules 和版本一致並完成唯讀驗證後，才經授權解除維護並恢復排程。失敗時保留停寫狀態並依回復順序處理。
 
