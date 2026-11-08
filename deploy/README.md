@@ -16,7 +16,7 @@
 
 `deploy/migrate_formal.py` 固定目標為 `newlngship` 的 `/test` 與 `/formal`。預設只讀取並檢查；`FIREBASE_RTDB_SECRET` 必須由環境安全提供，不放在命令列。執行 `python -B deploy/migrate_formal.py` 不會寫入資料庫。部署前應另行備份 Rules、現行版本及設定，本工具只備份 `/test` 資料。
 
-正式複製須先取得使用者明確授權，並確認所有寫入來源已停止、在途工作已完成。檢查 `/formal` 不存在後，才可使用 `--apply --writers-stopped --confirm-project newlngship --backup <絕對檔案路徑>`。備份路徑必須位於專案外的既有目錄，且檔案不可已存在。備份是未加密 JSON；Windows 會繼承目錄 ACL，操作前須由人員確認目錄權限及保管方式，不得存入 Git 或公開位置。
+正式複製須先取得使用者明確授權，並確認所有寫入來源已停止、在途工作已完成。檢查 `/formal` 不存在後，才可使用 `--apply --writers-stopped --confirm-project newlngship --backup <絕對檔案路徑>`。備份路徑必須位於專案根目錄 `backups/` 或專案外的既有目錄，且檔案不可已存在。`backups/` 已排除一般 Git 及部署；禁止強制加入 Git。備份是未加密 JSON；Windows 會繼承目錄 ACL，操作前須由人員確認目錄權限及保管方式，不得存入 Git 或公開位置。
 
 工具在寫入前建立及讀回備份，並對來源與目標使用 ETag；資料寫入後逐節點比較並再次檢查來源。這些檢查不能取代停寫。錯誤、超時、ETag 衝突或來源改變時停止，不自動重試、刪除或回復；保留備份並在停寫狀態下對帳。若 `/formal` 已有新業務資料，必須先備份兩邊及對帳增量，禁止直接覆寫舊資料。備份不包含 Rules、試算表與其他服務狀態，不能單獨視為完整回復方案。
 

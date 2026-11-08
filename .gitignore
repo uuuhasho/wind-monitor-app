@@ -18,6 +18,7 @@ env/
 # === 暫存 / 外部工具 ===
 temp/
 runtime/
+backups/
 data.json
 public/
 local_archive/

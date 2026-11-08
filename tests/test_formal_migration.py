@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import requests
 
@@ -69,6 +69,25 @@ class FormalMigrationTests(unittest.TestCase):
             self.assertEqual(json.loads(backup.read_text(encoding="utf-8")), self.source)
         with self.assertRaises(ValueError):
             write_backup(Path(__file__).resolve().parent / "backup.json", self.source)
+
+    def test_project_backup_only_in_dedicated_directory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder) / "project"
+            backup_dir = project / "backups"
+            backup_dir.mkdir(parents=True)
+            with patch("deploy.migrate_formal.PROJECT_ROOT", project):
+                backup = backup_dir / "backup.json"
+                write_backup(backup, self.source)
+                self.assertEqual(json.loads(backup.read_text(encoding="utf-8")), self.source)
+                with self.assertRaises(ValueError):
+                    write_backup(project / "other.json", self.source)
+                subdir = backup_dir / "subdir"
+                subdir.mkdir()
+                with self.assertRaises(ValueError):
+                    write_backup(subdir / "other.json", self.source)
+                with patch.object(Path, "is_symlink", return_value=True):
+                    with self.assertRaises(ValueError):
+                        write_backup(backup_dir / "linked.json", self.source)
 
     def test_source_change_and_timeout_retain_backup_without_retry(self):
         for last in (Response(self.source, "changed"), requests.Timeout("unknown")):

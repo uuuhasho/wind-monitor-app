@@ -52,8 +52,11 @@ def write_backup(path, snapshot):
     path = Path(path)
     if not path.is_absolute() or not path.parent.is_dir():
         raise ValueError("backup must be an absolute path in an existing directory")
-    if path.resolve().is_relative_to(PROJECT_ROOT.resolve()):
-        raise ValueError("backup must be stored outside the project")
+    project = PROJECT_ROOT.resolve()
+    if Path(os.path.abspath(path)).is_relative_to(project) or path.resolve().is_relative_to(project):
+        backup_dir = project / "backups"
+        if backup_dir.is_symlink() or backup_dir.resolve() != backup_dir or Path(os.path.abspath(path.parent)) != backup_dir:
+            raise ValueError("project backups must be direct files in the non-linked backups directory")
     data = json.dumps(snapshot, ensure_ascii=False, sort_keys=True).encode("utf-8")
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "wb") as output:
@@ -94,7 +97,7 @@ def main():
     parser.add_argument("--apply", action="store_true", help="write to /formal after explicit approval")
     parser.add_argument("--writers-stopped", action="store_true", help="confirm all writers are stopped")
     parser.add_argument("--confirm-project", choices=["newlngship"])
-    parser.add_argument("--backup", help="new absolute backup file outside the repository")
+    parser.add_argument("--backup", help="new absolute backup file outside the repository or in its backups directory")
     args = parser.parse_args()
     if args.apply and (not args.writers_stopped or args.confirm_project != "newlngship" or not args.backup):
         parser.error("--apply requires --writers-stopped, --confirm-project newlngship and --backup")
