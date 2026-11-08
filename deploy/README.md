@@ -10,6 +10,8 @@
 
 本機來源預定使用 `/formal`；正式遷移前線上仍使用 `/test`。GAS 的 `FIREBASE_URL` 必須先於恢復觸發器前明確設為 `/formal`，並核對 HEAD 與既有 Web App deployment；所有雲端變更須事先取得授權。
 
+`python -B tests/run_formal_emulator.py` 使用 `demo-formal-rtdb`、本機 19090 埠及合成資料執行 Rules、複製和 ETag 測試；需 Firebase CLI 與 JDK。測試使用臨時規則，不會發布或代表已檢查正式 Rules。可用 `JAVA_HOME` 指定 JDK，未指定時使用專案內的 portable JDK。
+
 ```powershell
 gcloud run services update-traffic forecast-api-test --project=newlngship --region=asia-southeast1 --to-revisions=REVISION_NAME=100
 ```
