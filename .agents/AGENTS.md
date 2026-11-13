@@ -2,7 +2,7 @@
 
 ## 專案定位與架構演進 (Architecture Direction)
 * **主力生產環境地位**：本版（架設於 Google 平台、使用 Python/GCP/Firebase）為**未來主力生產環境**。
-* **正式資料與測試隔離**：2026-11-08 已完成授權遷移，`newlngship` 正式 APP、GAS 與 Cloud Run 使用 `/formal`；`/test` 保留為舊資料，不作為回退寫入路徑，刪除須另行授權。本機驗收只用 tests/ 模擬服務及合成憑證，不連正式資料庫。
+* **正式資料與測試隔離**：2026-11-08 已完成授權遷移，`newlngship` 正式 APP、GAS 與 Cloud Run 使用 `/formal`；`/test` 節點已於 2026-11-13 經使用者明確授權刪除（切換前快照保留於 `backups/rtdb-test-before-formal-20261108-164715.json`）。本機驗收只用 tests/ 模擬服務及合成憑證，不連正式資料庫。
 
 ## GCP / Cloud Run / Secret Manager 部署與安全規範
 * **雲端金鑰安全管理 (Secrets Management)**：部署 GCP Cloud Run 或 Google 雲端服務時，所有敏感密鑰（如 Firebase RTDB DbSecret、Service Account 金鑰等）必須全面改用 **GCP Secret Manager** 存放或設定為 Cloud Run 環境變數。絕對不可將 `config.json` 或 `service_account.json` 等實體設定檔隨容器映像檔打包上傳，必須確實將它們加入 `.gcloudignore` 中。
