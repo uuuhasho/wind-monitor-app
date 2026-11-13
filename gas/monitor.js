@@ -123,7 +123,7 @@ function callFirebase(path, data, method = "patch", headers = {}) {
 }
 
 // ==========================================
-// 2. 💬 LINE Bot Webhook 接收端 (零延遲核心)
+// 2. 🌐 App 端 POST 接口 (轉發 action 至 doGet)
 // ==========================================
 function doPost(e) {
   ensureFirebaseEnvironment();
@@ -132,37 +132,11 @@ function doPost(e) {
   }
   
   // 🌟 處理所有來自前端的 POST action (避免 GET URL 長度與 CORS 攔截)
-  if (e.parameter && e.parameter.action) {
+  if (e && e.parameter && e.parameter.action) {
     return doGet(e);
   }
   
-  try {
-    const eventData = safeJsonParse(e.postData.contents);
-    const events = eventData.events || [];
-    
-    for (let event of events) {
-      if (event.type === 'message' && event.message.type === 'text') {
-        const userMessage = event.message.text;
-
-        //**瞬間解析：高度容錯，只要包含「台中廠」、「已於」、「POB」及「時間(含未打冒號)」即可擷取
-        const match = userMessage.match(/台中廠[^\w\u4e00-\u9fa5]*(.*?)\s*已於.*?(\d{2}[:：]?\d{2}).*?POB/i);
-        if (match) {
-          const shipName = match[1].replace(/LNG船/g, "").trim();
-          let pobTime = match[2].replace("：", ":").trim();
-
-        // 如果時間格式只有 4 個數字且沒有冒號 (例如 "0722")，自動在中間補上冒號
-          if (pobTime.length === 4 && !pobTime.includes(":")) {
-            pobTime = pobTime.substring(0, 2) + ":" + pobTime.substring(2, 4);
-          }
-
-          processPobDirect(shipName, pobTime);
-        }
-      }
-    }
-  } catch (err) { 
-    console.error(`LINE Webhook 處理失敗: ${err}`); 
-  }
-  return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  return ContentService.createTextOutput(JSON.stringify({status: "error", msg: "Unsupported POST request"})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // ==========================================
@@ -704,7 +678,7 @@ function doGet(e) {
   const action = e.parameter.action || 'display';
   
   // 🔒 1. 權限驗證 (適用於寫入指令)
-  const isWriteAction = ['set_mode', 'reserve_next', 'trigger_update', 'archive_test', 'update_schedule', 'execute_monitor', 'check_daily_schedule', 'get_last_sheet_row', 'release_lock', 'verify_password'].includes(action);
+  const isWriteAction = ['set_mode', 'reserve_next', 'trigger_update', 'update_schedule', 'execute_monitor', 'check_daily_schedule', 'release_lock', 'verify_password'].includes(action);
   if (isWriteAction) {
     const inputPwd = e.parameter.pwd || "";
     const correctPwd = (props.getProperty('OP_PASSWORD') || "").trim();
@@ -713,8 +687,8 @@ function doGet(e) {
     }
     
     // 🛡️ I6: 密碼防暴力破解 (失敗 5 次鎖定 5 分鐘)
-    const lockKey = 'TEST_LOGIN_LOCK_TIME';
-    const failsKey = 'TEST_LOGIN_FAILS';
+    const lockKey = 'LOGIN_LOCK_TIME';
+    const failsKey = 'LOGIN_FAILS';
     const lockTime = parseInt(props.getProperty(lockKey) || "0", 10);
     const nowTime = new Date().getTime();
     if (nowTime < lockTime) {
@@ -831,66 +805,6 @@ function doGet(e) {
   if (action === 'check_daily_schedule') {
     checkDailySchedule();
     return ContentService.createTextOutput(JSON.stringify({status: "success", msg: "已成功手動執行 checkDailySchedule 自動排程！"})).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 📝 手動觸發歸檔（保留既有 action 以相容前端）
-  if (action === 'archive_test') {
-    // 🌟 動態設定/更新臨時的 Firebase 認證 Token，供當次及後續的 callFirebase 調用 (改用記憶體全域變數，防寫入 properties 過期)
-    if (e.parameter.fb_token) {
-      dynamicFbToken = e.parameter.fb_token;
-    }
-    
-    try {
-      const simDate = e.parameter.sim_date || null;
-      archiveAndClearFirebase(simDate);
-      props.deleteProperty('ARCHIVED_SHIPS_TODAY'); // 🌟 核心修正：清除今日已歸檔船隻快取，避免重複測試時船隻被過濾
-      props.deleteProperty('UNFINISHED_SHIP'); // 🌟 清除無法進港暫存，防止歸檔後殘留
-      
-      // 🌟 新增：測試重置時，一併強制解除殘留的編輯鎖
-      callFirebase("editing_lock", {
-        locked: false,
-        locked_at: 0
-      }, "put");
-      return ContentService.createTextOutput(JSON.stringify({
-        status: "success", 
-        msg: "歸檔已成功手動觸發，請前往歸檔總表確認。"
-      })).setMimeType(ContentService.MimeType.JSON);
-    } catch(err) {
-      return ContentService.createTextOutput(JSON.stringify({
-        status: "error",
-        msg: "測試歸檔執行失敗: " + err.toString()
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-
-  // 📝 新增：讀取試算表最後一列數據 (自動測試驗證智慧延遲繼承機制用)
-  if (action === 'get_last_sheet_row') {
-    try {
-      const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-      const sheet = ss.getSheetByName("歸檔總表");
-      if (!sheet) {
-        return ContentService.createTextOutput(JSON.stringify({status: "error", msg: "找不到歸檔總表分頁"})).setMimeType(ContentService.MimeType.JSON);
-      }
-      const lastRow = sheet.getLastRow();
-      if (lastRow <= 1) {
-        return ContentService.createTextOutput(JSON.stringify({status: "success", row: []})).setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      // 讀取 A~L 欄 (1~12) 的值
-      const values = sheet.getRange(lastRow, 1, 1, 12).getValues()[0];
-      
-      // 格式化 Date 為字串
-      if (values[0] instanceof Date) {
-        values[0] = Utilities.formatDate(values[0], "GMT+8", "yyyy-MM-dd");
-      }
-      if (values[3] instanceof Date) {
-        values[3] = Utilities.formatDate(values[3], "GMT+8", "HH:mm");
-      }
-      
-      return ContentService.createTextOutput(JSON.stringify({status: "success", row: values})).setMimeType(ContentService.MimeType.JSON);
-    } catch(err) {
-      return ContentService.createTextOutput(JSON.stringify({status: "error", msg: err.toString()})).setMimeType(ContentService.MimeType.JSON);
-    }
   }
 
   // 📝 2. 處理預約隔天監控
@@ -1394,7 +1308,7 @@ function setupProperties() {
   // 並在使用者手動執行 setupProperties 時彈出授權視窗，我們加入此主動存取測試代碼：
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    console.log("📊 成功連結測試試算表，標題為：" + ss.getName());
+    console.log("📊 成功連結試算表，標題為：" + ss.getName());
     const testFetch = UrlFetchApp.fetch("https://www.google.com", {muteHttpExceptions: true});
     console.log("🌐 成功驗證網路請求權限，狀態碼：" + testFetch.getResponseCode());
   } catch (e) {

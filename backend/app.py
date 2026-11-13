@@ -11,7 +11,7 @@ from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
-# Fully decoupled test version: main and src are in the same directory.
+# Main and src modules are in the backend directory.
 from src.config import get_env, load_config
 from main import run_pipeline
 from src.rtdb import PipelineBusyError

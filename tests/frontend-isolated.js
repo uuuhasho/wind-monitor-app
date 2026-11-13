@@ -177,11 +177,10 @@ async page => {
     cachedSessionPassword = 'synthetic';
     document.getElementById('pobTime').value = '10:00';
     await setMode('reset');
-    await triggerManualArchive();
-    return {commands: window.__requests.filter(item => item.action === 'set_mode' || item.action === 'archive_test'), alerts: window.__alerts,
+    return {commands: window.__requests.filter(item => item.action === 'set_mode'), alerts: window.__alerts,
       pob: document.getElementById('pobTime').value, reason: document.getElementById('noEntryReason').value};
   });
-  if (!commands.commands.some(item => item.mode === 'start') || !commands.commands.some(item => item.mode === 'reset' && item.pobTime === '10:00') || !commands.commands.some(item => item.action === 'archive_test')) throw new Error(`Commands: ${JSON.stringify(commands)}`);
+  if (!commands.commands.some(item => item.mode === 'start') || !commands.commands.some(item => item.mode === 'reset' && item.pobTime === '10:00')) throw new Error(`Commands: ${JSON.stringify(commands)}`);
   if (errors.length) throw new Error(JSON.stringify(errors));
   return {externalServices: 'mocked', initial, forecast, operations, commands, expiredLeaseRecovered: true, errors};
 }
