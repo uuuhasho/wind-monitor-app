@@ -9,7 +9,7 @@
 * **Secret Manager BOM 防護**：程式碼中讀取 Secret Manager 注入的環境變數時，必須一律加上 `.strip().strip("\ufeff")` 防護，避免 Windows UTF-8 BOM 導致 gRPC 層拒絕 API 請求 (503 Error)。
 * **Windows 中文路徑安全部署 (Clean Workspace Deployment)**：Cloud Run 的唯一入口是 `deploy/deploy_cloud_run.py`。它先把 `backend/` 暫存到 `C:\Users\hilla\Desktop\newlngship_clean`；預設只建置，只有明確傳入 `--deploy` 才能執行雲端部署。
 * **Artifact Registry 500 MB 硬上限與清理**：儲存空間必須嚴格低於 500 MB（500,000,000 bytes）。每次建置或推送映像前，先查詢 Repository 目前用量並估算新增映像後的用量；若無法確認低於上限，停止推送與部署，先縮小映像或完成核准的清理。清理須保護目前服務映像，另確認該次維護需要保留的回復映像；使用者核准精確刪除清單後才執行。`deploy/cleanup_registry.py` 僅供人工維護，不得由部署流程自動呼叫。歷史版本與清理完成狀態見維護交接。
-  * **本次 `/test` → `/formal` 遷移的唯一例外**：使用者允許本次遷移於驗收完成前暫時超過 500,000,000 bytes；建置前仍須記錄當前用量、估算增量與費用風險，並保護現用及回復映像。此例外不構成建置、部署或刪除授權，也不適用其他工作。驗收通過後，先列出精確刪除清單取得使用者核准，清理後讀回實際用量並恢復低於 500,000,000 bytes；若無法達成，保留所需回復映像並回報，不得宣稱結案。
+  * **本次 `/test` → `/formal` 遷移例外已結束（2026-11-13）**：2026-11-12 測試完成且 2026-11-13 正式驗收通過後，已依核准清單移除 `codex-preflight` tag、刪除 `00060-zil` 及維護版映像，僅保留現行正式版映像，Artifact Registry 容量已恢復低於 `500,000,000` bytes 硬上限，臨時超額例外正式結束。
 * **單一權威部署源 (Single Source of Truth)**：後端位於 `backend/`，前端位於 `frontend/`，GAS 位於 `gas/`；`public/` 是 `deploy/build_hosting.py` 產生的 Hosting 輸出，不可手動編輯。Hosting 預設僅建置，須以 `deploy/deploy_hosting.ps1 -Deploy` 明確部署。
 * **Cloud Run POB Webhook 架構分工**：LINE Webhook 指向 Cloud Run `/webhook`，Cloud Run 僅負責用 Gemini 解析 POB 時間，解析成功後委託 GAS `set_mode?pob_time=HH:MM` 完成後續全流程（風速查找、`pob_info` 寫入、船期更新、換班接力）。Cloud Run 不直接寫入 `daily_records`。
 
@@ -29,7 +29,7 @@
 
 - 本機驗收只用 tests/ 的模擬服務及合成憑證，不讀本機機密設定，不寫 /test。
 - 操作密碼從環境變數或 GAS Script Properties 取得，禁止在測試及文件中明文寫入。
-- 使用者指定 `/formal` 遷移正式驗收後清除本批新建的臨時測試程式：`tests/temp_gas_formal_cutover.js`、`tests/temp_maintenance_gate.js`、`tests/temp_maintenance_gate.py`、`tests/formal_emulator_cases.py`、`tests/run_formal_emulator.py`、`tests/migration_rehearsal.py`、`tests/test_migration_rehearsal.py`、`tests/test_formal_migration.py`；一併移除其已失效的文件引用及本批可辨識暫存。驗收前保留；既有測試、必要證據及回復備份不屬此清理範圍。
+- 本批 `/formal` 遷移臨時測試程式（`tests/temp_gas_formal_cutover.js`、`tests/temp_maintenance_gate.js`、`tests/temp_maintenance_gate.py`、`tests/formal_emulator_cases.py`、`tests/run_formal_emulator.py`、`tests/migration_rehearsal.py`、`tests/test_migration_rehearsal.py`、`tests/test_formal_migration.py`）、已失效文件引用與 2026-11-08 批次暫存已於 2026-11-13 正式驗收通過後清除完成；既有測試、正式報告證據與回復備份保留。
 
 ## 領域知識與限制 (Domain Knowledge)
 * **LNG 船夜航限制**：LNG 船禁止夜航，因此船舶進港 (POB) 時間只會落在 **04:00 ~ 17:00** 之間。在進行系統排程、時間推算或邏輯防呆時，應將此物理限制考慮在內。
@@ -42,5 +42,5 @@
 * 每次修改本專案的程式、測試、設定、規範或文件後，主動詢問使用者是否同步更新 GitHub repo `uuuhasho/wind-monitor-app`。取得該批變更的明確授權後才推送；已授權的範圍直接完成，不重複詢問。回報時明確區分「本機提交」與「GitHub 已更新」，推送後讀回遠端分支與檔案確認結果。
 
 ## 維護交接入口
-* 接續驗收、部署或清理工作前，先讀 `plan/2026-11-08/2026-11-08-formal-cutover-report.html`。2026-11-08 交接時維護已解除、四個 GAS 觸發器及 Scheduler 已恢復，自然監控與預報有成功證據；歸檔、實船 POB、驗收後清理與合併主線仍待完成。歷史雲端狀態須重新查核後才能當成目前狀態。
-* 先前維護歷史保留於 `plan/2026-10-31/2026-10-31-維護交接_handoff.md`。換班接力依使用者決定暫不觀察，恢復觀察須由使用者提出。
+* 接續日常維護或查核前，先讀 `plan/2026-11-13/2026-11-13-formal-acceptance-cleanup-report.html`。2026-11-12 實船 POB 與夜間歸檔測試完成後，`/formal` 正式版整體驗收通過；2026-11-13 已完成臨時測試與暫存清理、移除 `codex-preflight` 與 `00060-zil` 並使 Artifact Registry 恢復低於 500,000,000 bytes，功能分支 `feat/formal-rtdb-pwa` 已合併 `main` 並同步 GitHub。歷史雲端狀態須重新查核後才能當成目前狀態。
+* 先前切換與維護歷史保留於 `plan/2026-11-08/2026-11-08-formal-cutover-report.html` 與 `plan/2026-10-31/2026-10-31-維護交接_handoff.md`。換班接力依使用者決定暫不觀察，恢復觀察須由使用者提出。

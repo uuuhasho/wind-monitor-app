@@ -10,11 +10,7 @@
 
 預設維護版部署後，透過 `codex-preflight` tag 檢查新 revision；`--resume` 版不新增 tag，先核對指定 revision 設定。流量切換需另行授權，命令範例見本文末；不可把仍指向維護版的 tag 當成解除維護版的驗證網址。
 
-2026-11-08 已完成 `/test` → `/formal` 授權切換，APP v1.2 已發布，兩端維護已解除，四個 GAS 觸發器與 Scheduler 已恢復。`/test` 保留，不回退寫入；`/formal` 已有新業務資料，不可重新套用遷移指令或覆寫舊快照。最新交接與驗收待辦見 [今日報告](../plan/2026-11-08/2026-11-08-formal-cutover-report.html)；實際部署前仍須讀回線上狀態。所有雲端變更須事先取得授權。
-
-`python -B tests/run_formal_emulator.py` 使用 `demo-formal-rtdb`、本機 19090 埠及合成資料執行 Rules、複製和 ETag 測試；需 Firebase CLI 與 JDK。測試使用臨時規則，不會發布或代表已檢查正式 Rules。可用 `JAVA_HOME` 指定 JDK，未指定時使用專案內的 portable JDK。
-
-`tests/migration_rehearsal.py` 僅供隔離演練，不是正式遷移工具。複製前必須確保所有寫入者已停止：讀取來源 ETag 後再次比對仍無法防止最後檢查與寫入之間發生更新。寫入逾時時須停止、讀回兩邊並對帳，不可自動覆蓋或刪除。
+2026-11-08 已完成 `/test` → `/formal` 授權切換，APP v1.2 已發布，兩端維護已解除，四個 GAS 觸發器與 Scheduler 已恢復；2026-11-12 實船 POB 與夜間歸檔驗收通過後，2026-11-13 已完成驗收後臨時測試清理與 Artifact Registry 降載（低於 500 MB 硬上限）。`/test` 保留，不回退寫入；`/formal` 已有新業務資料，不可重新套用遷移指令或覆寫舊快照。最新驗收結案與交接見 [2026-11-13 驗收結案與清理報告](../plan/2026-11-13/2026-11-13-formal-acceptance-cleanup-report.html) 與 [2026-11-08 切換報告](../plan/2026-11-08/2026-11-08-formal-cutover-report.html)；實際部署前仍須讀回線上狀態。所有雲端變更須事先取得授權。
 
 `deploy/migrate_formal.py` 固定目標為 `newlngship` 的 `/test` 與 `/formal`，保留供歷史流程追溯，不是日常部署步驟。預設只讀取並檢查；目標已存在時會拒絕，這是目前正式環境的預期保護，不是需要刪除目標才能修復的錯誤。`FIREBASE_RTDB_SECRET` 必須由環境安全提供，不放在命令列。工具只備份 `/test` 資料；Rules、現行版本及設定需另外備份。
 
