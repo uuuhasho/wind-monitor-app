@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(v1.2)</title>
+    <title>臺中LNG船監控(v1.2.1)</title>
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="apple-touch-icon" href="logo.png">
 
@@ -154,8 +154,27 @@
         .wind-container.is-animating .pulso-wind-3 {
             animation: pulso-slide-right 0.5s ease-in-out 0.12s 1;
         }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-part-arrow {
-            animation: pulso-slide-up 0.5s ease-in-out 0.1s 1;
+        .pulso-msg-bubble {
+            transform-box: view-box;
+            transform-origin: 12px 12.498px;
+        }
+        .pulso-msg-line-1,
+        .pulso-msg-line-2,
+        .pulso-msg-line-3 {
+            transform-box: view-box;
+            transform-origin: 7px 11px;
+        }
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-bubble {
+            animation: pulso-press 0.4s ease-in-out 0s 1;
+        }
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-1 {
+            animation: pulso-grow-x 0.45s ease-in-out 0.1s 1 backwards;
+        }
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-2 {
+            animation: pulso-grow-x 0.45s ease-in-out 0.16s 1 backwards;
+        }
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-3 {
+            animation: pulso-grow-x 0.45s ease-in-out 0.22s 1 backwards;
         }
         .pulso-gear-group {
             transform-box: view-box;
@@ -169,10 +188,15 @@
             50% { transform: translateX(1.5px); }
             100% { transform: translateX(0); }
         }
-        @keyframes pulso-slide-up {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-2px); }
-            100% { transform: translateY(0); }
+        @keyframes pulso-press {
+            0% { transform: scale(1); }
+            35% { transform: scale(0.96); }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes pulso-grow-x {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
         }
         @keyframes pulso-spin-180 {
             0% { transform: rotate(0deg); }
@@ -182,7 +206,10 @@
             .wind-container.is-animating .pulso-wind-1,
             .wind-container.is-animating .pulso-wind-2,
             .wind-container.is-animating .pulso-wind-3,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-part-arrow,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-bubble,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-1,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-2,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-3,
             .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group {
                 animation: none !important;
             }
@@ -499,13 +526,11 @@
             font-size: 1.15em; 
             color: var(--text-blue); 
             font-weight: 600;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            cursor: default;
+            transition: opacity 0.2s ease;
         }
-        .schedule-header h3:not(.locked-btn):hover {
+        .schedule-header h3:hover {
             opacity: 0.85;
-        }
-        .schedule-header h3:not(.locked-btn):active {
-            transform: scale(0.92);
         }
         .cpc-btn {
             width: 32px;
@@ -549,6 +574,21 @@
         .schedule-table th:last-child {
             border-top-right-radius: 10px;
             border-bottom-right-radius: 10px;
+        }
+        .schedule-table thead tr,
+        .schedule-table thead th {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        #scheduleHeaderRow.locked-btn {
+            opacity: 1;
+            cursor: not-allowed;
+        }
+        #scheduleHeaderRow.locked-btn th {
+            color: rgba(16, 69, 140, 0.45);
+            background-color: #f3f7fc;
+            cursor: not-allowed;
         }
         
         /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行 */
@@ -927,15 +967,12 @@
     <!-- 船期表區塊 -->
     <div class="schedule-section">
         <div class="schedule-header">
-            <h3 onclick="triggerOpenScheduleAdjustModal()" tabindex="0" role="button" aria-label="船期表" style="cursor: pointer; display: flex; align-items: center;" title="點擊調整船期">
-                <svg class="pulso-icon pulso-table-import" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
-                    <path d="M12 21h-7a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v8"/>
-                    <path d="M3 10h18"/>
-                    <path d="M10 3v18"/>
-                    <g class="pulso-part-arrow">
-                        <path d="M19 22v-6"/>
-                        <path d="M22 19l-3 -3l-3 3"/>
-                    </g>
+            <h3 tabindex="0" aria-label="對話訊息（尚未開放）" style="display: flex; align-items: center;">
+                <svg class="pulso-icon pulso-message-square-text" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
+                    <path class="pulso-msg-bubble" d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>
+                    <path class="pulso-msg-line-1" d="M7 7h8"/>
+                    <path class="pulso-msg-line-2" d="M7 11h10"/>
+                    <path class="pulso-msg-line-3" d="M7 15h6"/>
                 </svg>
             </h3>
             <span id="soundToggle" onclick="toggleSound()" style="cursor: pointer; font-size: 1.4em; transition: transform 0.2s; user-select: none; display: none;" title="提醒音效">🔕</span>
@@ -949,7 +986,7 @@
         <div class="table-wrapper">
             <table class="schedule-table">
                 <thead>
-                    <tr><th>日期</th><th>船名</th><th>速限</th></tr>
+                    <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限</th></tr>
                 </thead>
                 <tbody id="scheduleBody">
                     <tr><td colspan="3" style="text-align:center; color:#888888;">載入中...</td></tr>
@@ -1395,7 +1432,7 @@
     });
 
     function updateLockUI() {
-        const h3 = document.querySelector('.schedule-header h3');
+        const scheduleHeaderRow = document.getElementById('scheduleHeaderRow');
         const svg = document.querySelector('.cpc-btn');
         const now = new Date().getTime() + serverTimeOffset; // I12: 使用伺服器時間
         let isLocked = currentLockState && currentLockState.locked && (now - currentLockState.locked_at < 180000);
@@ -1406,18 +1443,18 @@
         }
         
         if (isLocked) {
-            if (h3) {
-                h3.classList.add('locked-btn');
-                h3.title = "🔒 目前有其他使用者正在編輯";
+            if (scheduleHeaderRow) {
+                scheduleHeaderRow.classList.add('locked-btn');
+                scheduleHeaderRow.title = "🔒 目前有其他使用者正在編輯";
             }
             if (svg) {
                 svg.classList.add('locked-btn');
                 svg.title = "🔒 目前有其他使用者正在編輯";
             }
         } else {
-            if (h3) {
-                h3.classList.remove('locked-btn');
-                h3.title = "點擊調整船期";
+            if (scheduleHeaderRow) {
+                scheduleHeaderRow.classList.remove('locked-btn');
+                scheduleHeaderRow.removeAttribute('title');
             }
             if (svg) {
                 svg.classList.remove('locked-btn');
@@ -1797,7 +1834,7 @@
     function bindPulsoIconTriggers() {
         const targets = [
             { selector: '.wind-container', duration: 680 },
-            { selector: '.schedule-header h3', duration: 660 },
+            { selector: '.schedule-header h3', duration: 700 },
             { selector: '.cpc-btn', duration: 840 }
         ];
         targets.forEach(({ selector, duration }) => {
@@ -1809,11 +1846,85 @@
         });
     }
 
+    function bindScheduleHeaderDoubleActivate() {
+        const headerRow = document.getElementById('scheduleHeaderRow');
+        if (!headerRow) return;
+
+        const MODAL_IDS = ['pwdModal', 'scheduleAdjustModal', 'manualModal', 'forecastModal'];
+        const isAnyModalOpen = () => MODAL_IDS.some(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display === 'flex';
+        });
+
+        let lastTriggerAt = 0;
+        let lastTap = { time: 0, x: 0, y: 0 };
+        let touchTracking = { active: false, startX: 0, startY: 0, moved: false };
+
+        const tryOpenScheduleAdjust = (now) => {
+            if (isAnyModalOpen()) return;
+            if (now - lastTriggerAt < 500) return;
+            lastTriggerAt = now;
+            triggerOpenScheduleAdjustModal();
+            lastTriggerAt = Date.now();
+        };
+
+        headerRow.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            tryOpenScheduleAdjust(Date.now());
+        });
+
+        headerRow.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches.length === 1) {
+                const t = e.touches[0];
+                touchTracking = { active: true, startX: t.clientX, startY: t.clientY, moved: false };
+            } else {
+                touchTracking.active = false;
+            }
+        }, { passive: true });
+
+        headerRow.addEventListener('touchmove', (e) => {
+            if (!touchTracking.active || !e.touches || e.touches.length !== 1) {
+                touchTracking.active = false;
+                return;
+            }
+            const t = e.touches[0];
+            if (Math.hypot(t.clientX - touchTracking.startX, t.clientY - touchTracking.startY) > 12) {
+                touchTracking.moved = true;
+            }
+        }, { passive: true });
+
+        headerRow.addEventListener('touchcancel', () => {
+            touchTracking = { active: false, startX: 0, startY: 0, moved: false };
+        }, { passive: true });
+
+        headerRow.addEventListener('touchend', (e) => {
+            const remainingTouches = e.touches ? e.touches.length : 0;
+            const changedTouches = e.changedTouches ? e.changedTouches.length : 0;
+            if (remainingTouches !== 0 || changedTouches !== 1 || !touchTracking.active || touchTracking.moved) {
+                touchTracking.active = false;
+                return;
+            }
+            touchTracking.active = false;
+            const t = e.changedTouches[0];
+            const now = Date.now();
+            const delta = now - lastTap.time;
+            const dist = Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y);
+            if (lastTap.time > 0 && delta >= 0 && delta <= 350 && dist <= 40) {
+                lastTap = { time: 0, x: 0, y: 0 };
+                e.preventDefault();
+                tryOpenScheduleAdjust(now);
+            } else {
+                lastTap = { time: now, x: t.clientX, y: t.clientY };
+            }
+        }, { passive: false });
+    }
+
     // 🌟 優化：移除 GAS 初始化等待，網頁載入直接啟動 Firebase 即時監聽
     function initSystem() {
         document.getElementById('loading').innerText = "連線中...";
         startFirebaseListeners();
         bindPulsoIconTriggers();
+        bindScheduleHeaderDoubleActivate();
         
         // 🌟 點擊即時風速數字，開啟天氣預報視窗
         document.getElementById('windSpeed').addEventListener('click', openForecastModal);
