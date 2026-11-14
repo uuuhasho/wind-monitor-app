@@ -126,9 +126,66 @@
         .wind-icon {
             width: 30px;
             height: 30px;
-            background-color: var(--text-blue);
-            -webkit-mask: url('/APP_SVG/wind.svg') center / contain no-repeat;
-            mask: url('/APP_SVG/wind.svg') center / contain no-repeat;
+            display: block;
+        }
+        .pulso-icon {
+            color: var(--text-blue);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            overflow: visible;
+            display: block;
+        }
+        .wind-container:focus-visible,
+        .schedule-header h3:focus-visible,
+        .cpc-btn:focus-visible {
+            outline: 2px solid rgba(16, 69, 140, 0.35);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+        .wind-container.is-animating .pulso-wind-1 {
+            animation: pulso-slide-right 0.5s ease-in-out 0s 1;
+        }
+        .wind-container.is-animating .pulso-wind-2 {
+            animation: pulso-slide-right 0.5s ease-in-out 0.06s 1;
+        }
+        .wind-container.is-animating .pulso-wind-3 {
+            animation: pulso-slide-right 0.5s ease-in-out 0.12s 1;
+        }
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-part-arrow {
+            animation: pulso-slide-up 0.5s ease-in-out 0.1s 1;
+        }
+        .pulso-gear-group {
+            transform-box: view-box;
+            transform-origin: 12px 12px;
+        }
+        .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group {
+            animation: pulso-spin-180 0.8s ease-in-out 0s 1;
+        }
+        @keyframes pulso-slide-right {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(1.5px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes pulso-slide-up {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes pulso-spin-180 {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(180deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .wind-container.is-animating .pulso-wind-1,
+            .wind-container.is-animating .pulso-wind-2,
+            .wind-container.is-animating .pulso-wind-3,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-part-arrow,
+            .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group {
+                animation: none !important;
+            }
         }
         .wind-speed-unit { 
             font-size: 1.3em; 
@@ -442,20 +499,26 @@
             font-size: 1.15em; 
             color: var(--text-blue); 
             font-weight: 600;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .schedule-header h3:not(.locked-btn):hover {
+            opacity: 0.85;
+        }
+        .schedule-header h3:not(.locked-btn):active {
+            transform: scale(0.92);
         }
         .cpc-btn {
             width: 32px;
             height: 32px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease;
             object-fit: contain;
         }
-        .cpc-btn:hover {
-            opacity: 0.8;
-            transform: scale(1.05);
+        .cpc-btn:not(.locked-btn):hover {
+            opacity: 0.85;
         }
-        .cpc-btn:active {
-            transform: scale(0.9);
+        .cpc-btn:not(.locked-btn):active {
+            transform: scale(0.92);
         }
         .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
         .badge {
@@ -842,10 +905,14 @@
         </a>
     </div>
     
-    <div class="wind-container">
+    <div class="wind-container" tabindex="0">
         <div class="wind-speed-num" id="windSpeed">--</div>
         <div class="wind-detail">
-            <span class="wind-icon" aria-hidden="true"></span>
+            <svg class="wind-icon pulso-icon pulso-wind" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+                <path class="pulso-wind-1" d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
+                <path class="pulso-wind-2" d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
+                <path class="pulso-wind-3" d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
+            </svg>
             <div class="wind-speed-unit">m/s</div>
         </div>
     </div>
@@ -860,11 +927,23 @@
     <!-- 船期表區塊 -->
     <div class="schedule-section">
         <div class="schedule-header">
-            <h3 onclick="triggerOpenScheduleAdjustModal()" style="cursor: pointer; display: flex; align-items: center; gap: 5px;" title="點擊調整船期">船期表</h3>
+            <h3 onclick="triggerOpenScheduleAdjustModal()" tabindex="0" role="button" aria-label="船期表" style="cursor: pointer; display: flex; align-items: center;" title="點擊調整船期">
+                <svg class="pulso-icon pulso-table-import" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
+                    <path d="M12 21h-7a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v8"/>
+                    <path d="M3 10h18"/>
+                    <path d="M10 3v18"/>
+                    <g class="pulso-part-arrow">
+                        <path d="M19 22v-6"/>
+                        <path d="M22 19l-3 -3l-3 3"/>
+                    </g>
+                </svg>
+            </h3>
             <span id="soundToggle" onclick="toggleSound()" style="cursor: pointer; font-size: 1.4em; transition: transform 0.2s; user-select: none; display: none;" title="提醒音效">🔕</span>
-            <svg class="cpc-btn" onclick="triggerOpenManualModal()" viewBox="0 0 24 24" fill="none" stroke="#10458c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" title="手動設定" style="padding: 4px; box-sizing: border-box;">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            <svg class="cpc-btn pulso-icon pulso-settings" onclick="triggerOpenManualModal()" tabindex="0" role="button" aria-label="手動設定" width="32" height="32" viewBox="0 0 24 24" title="手動設定" style="padding: 4px; box-sizing: border-box;">
+                <g class="pulso-gear-group">
+                    <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </g>
             </svg>
         </div>
         <div class="table-wrapper">
@@ -1699,10 +1778,42 @@
         });
     }
 
+    function triggerPulsoAnimation(el, durationMs) {
+        if (!el || el.classList.contains('locked-btn')) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (el.__pulsoTimer) {
+            clearTimeout(el.__pulsoTimer);
+            el.__pulsoTimer = null;
+        }
+        el.classList.remove('is-animating');
+        void el.getBoundingClientRect();
+        el.classList.add('is-animating');
+        el.__pulsoTimer = setTimeout(() => {
+            el.classList.remove('is-animating');
+            el.__pulsoTimer = null;
+        }, durationMs);
+    }
+
+    function bindPulsoIconTriggers() {
+        const targets = [
+            { selector: '.wind-container', duration: 680 },
+            { selector: '.schedule-header h3', duration: 660 },
+            { selector: '.cpc-btn', duration: 840 }
+        ];
+        targets.forEach(({ selector, duration }) => {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            ['pointerenter', 'pointerdown', 'touchstart', 'focusin'].forEach(evt => {
+                el.addEventListener(evt, () => triggerPulsoAnimation(el, duration), { passive: true });
+            });
+        });
+    }
+
     // 🌟 優化：移除 GAS 初始化等待，網頁載入直接啟動 Firebase 即時監聽
     function initSystem() {
         document.getElementById('loading').innerText = "連線中...";
         startFirebaseListeners();
+        bindPulsoIconTriggers();
         
         // 🌟 點擊即時風速數字，開啟天氣預報視窗
         document.getElementById('windSpeed').addEventListener('click', openForecastModal);

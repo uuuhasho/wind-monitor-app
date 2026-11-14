@@ -65,14 +65,96 @@ async page => {
   ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
   if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
   const icon = await page.evaluate(() => {
-    const icon = document.querySelector('.wind-icon').getBoundingClientRect();
+    const svg = document.querySelector('.wind-icon');
+    const iconRect = svg.getBoundingClientRect();
     const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
     const number = document.getElementById('windSpeed').getBoundingClientRect();
-    return {aboveUnit: icon.bottom <= unit.top, rightOfNumber: icon.left >= number.right,
+    const tableHeading = document.querySelector('.schedule-header h3');
+    const tableSvg = tableHeading.querySelector('svg.pulso-table-import');
+    const tableRect = tableSvg.getBoundingClientRect();
+    const gearSvg = document.querySelector('.cpc-btn.pulso-settings');
+    const gearRect = gearSvg.getBoundingClientRect();
+    return {
+      aboveUnit: iconRect.bottom <= unit.top,
+      rightOfNumber: iconRect.left >= number.right,
       alignedBottom: Math.abs(unit.bottom - (number.bottom - 6)) < 1,
-      mask: getComputedStyle(document.querySelector('.wind-icon')).maskImage};
+      windTag: svg.tagName.toLowerCase(),
+      mask: getComputedStyle(svg).maskImage,
+      windBg: getComputedStyle(svg).backgroundColor,
+      windColor: getComputedStyle(svg).color,
+      windPaths: svg.querySelectorAll('path.pulso-wind-1, path.pulso-wind-2, path.pulso-wind-3').length,
+      tableText: tableHeading.textContent.trim(),
+      tableSvgWidth: Math.round(tableRect.width),
+      tableSvgHeight: Math.round(tableRect.height),
+      tableColor: getComputedStyle(tableSvg).color,
+      tableArrow: Boolean(tableSvg.querySelector('.pulso-part-arrow')),
+      gearWidth: Math.round(gearRect.width),
+      gearHeight: Math.round(gearRect.height),
+      gearColor: getComputedStyle(gearSvg).color,
+      gearGroup: Boolean(gearSvg.querySelector('.pulso-gear-group')),
+    };
   });
-  if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || !icon.mask.includes('wind.svg')) throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
+  if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || icon.windTag !== 'svg' ||
+      icon.mask !== 'none' || icon.windBg !== 'rgba(0, 0, 0, 0)' || icon.windColor !== 'rgb(16, 69, 140)' ||
+      icon.windPaths !== 3) {
+    throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
+  }
+  if (icon.tableText !== '' || icon.tableSvgWidth !== 32 || icon.tableSvgHeight !== 32 ||
+      icon.tableColor !== 'rgb(16, 69, 140)' || !icon.tableArrow) {
+    throw new Error(`Schedule icon: ${JSON.stringify(icon)}`);
+  }
+  if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(16, 69, 140)' || !icon.gearGroup) {
+    throw new Error(`Gear icon: ${JSON.stringify(icon)}`);
+  }
+  const animStart = await page.evaluate(() => {
+    const windContainer = document.querySelector('.wind-container');
+    const windNum = document.getElementById('windSpeed');
+    const tableHeading = document.querySelector('.schedule-header h3');
+    const gearSvg = document.querySelector('.cpc-btn');
+    windNum.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+    tableHeading.dispatchEvent(new Event('pointerenter'));
+    gearSvg.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
+    return {
+      windActive: windContainer.classList.contains('is-animating'),
+      windAnim1: getComputedStyle(windContainer.querySelector('.pulso-wind-1')).animationName,
+      windAnim2: getComputedStyle(windContainer.querySelector('.pulso-wind-2')).animationName,
+      windAnim3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationName,
+      windDelay3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationDelay,
+      tableActive: tableHeading.classList.contains('is-animating'),
+      tableAnim: getComputedStyle(tableHeading.querySelector('.pulso-part-arrow')).animationName,
+      gearActive: gearSvg.classList.contains('is-animating'),
+      gearAnim: getComputedStyle(gearSvg.querySelector('.pulso-gear-group')).animationName,
+    };
+  });
+  if (!animStart.windActive || animStart.windAnim1 !== 'pulso-slide-right' || animStart.windAnim2 !== 'pulso-slide-right' ||
+      animStart.windAnim3 !== 'pulso-slide-right' || animStart.windDelay3 !== '0.12s' ||
+      !animStart.tableActive || animStart.tableAnim !== 'pulso-slide-up' ||
+      !animStart.gearActive || animStart.gearAnim !== 'pulso-spin-180') {
+    throw new Error(`Icon animation start: ${JSON.stringify(animStart)}`);
+  }
+  await page.clock.fastForward(900);
+  const animReplayAndLock = await page.evaluate(() => {
+    const windContainer = document.querySelector('.wind-container');
+    const tableHeading = document.querySelector('.schedule-header h3');
+    const gearSvg = document.querySelector('.cpc-btn');
+    const cleared = !windContainer.classList.contains('is-animating') &&
+      !tableHeading.classList.contains('is-animating') &&
+      !gearSvg.classList.contains('is-animating');
+    windContainer.dispatchEvent(new Event('pointerenter'));
+    const replayed = windContainer.classList.contains('is-animating');
+    tableHeading.classList.add('locked-btn');
+    gearSvg.classList.add('locked-btn');
+    tableHeading.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+    gearSvg.dispatchEvent(new Event('pointerenter'));
+    const blockedWhenLocked = !tableHeading.classList.contains('is-animating') && !gearSvg.classList.contains('is-animating');
+    tableHeading.classList.remove('locked-btn');
+    gearSvg.classList.remove('locked-btn');
+    return {cleared, replayed, blockedWhenLocked};
+  });
+  if (!animReplayAndLock.cleared || !animReplayAndLock.replayed || !animReplayAndLock.blockedWhenLocked) {
+    throw new Error(`Icon replay/lock: ${JSON.stringify(animReplayAndLock)}`);
+  }
+  await page.clock.fastForward(900);
   const conditions = await page.evaluate(() => {
     getCurrentTimeHHMM = () => '10:00';
     isSoundEnabled = true;
