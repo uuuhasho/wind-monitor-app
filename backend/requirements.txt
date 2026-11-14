@@ -5,5 +5,4 @@ opencv-python-headless==4.10.0.84
 numpy==1.26.4
 pytesseract==0.3.10
 line-bot-sdk>=3.0.0
-google-generativeai>=0.5.2
 gunicorn==22.0.0
