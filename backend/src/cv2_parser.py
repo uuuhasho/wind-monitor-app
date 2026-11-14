@@ -4,6 +4,8 @@ import os
 import re
 import shutil
 import base64
+import hashlib
+import time
 import requests
 import pytesseract
 from datetime import datetime, timedelta
@@ -130,10 +132,91 @@ class TesseractCAPI:
         tess.TessDeleteText(text_ptr)
         return text
 
+_GEMINI_MODELS_CACHE = {}
+_GEMINI_MODELS_CACHE_TTL_SECONDS = 6 * 3600
+_GEMINI_EXCLUDED_KEYWORDS = ("tts", "embedding", "imagen", "veo", "aqa", "robotics", "computer-use")
+_GEMINI_TIER_SCORES = (
+    ("hydrogen", 7),
+    ("flash-lite", 6),
+    ("flash", 5),
+    ("lite", 4),
+    ("argon", 3),
+    ("pro", 2),
+    ("carbon", 1),
+)
+
+
+def clear_gemini_model_cache():
+    """Clear cached ListModels results (used for test isolation)."""
+    _GEMINI_MODELS_CACHE.clear()
+
+
+def _score_gemini_model(model_id: str) -> tuple:
+    lower = model_id.lower()
+    is_stable = 0 if any(tag in lower for tag in ("preview", "exp", "experimental")) else 1
+    tier_score = 0
+    for keyword, score in _GEMINI_TIER_SCORES:
+        if keyword in lower:
+            tier_score = score
+            break
+    version_nums = tuple(int(n) for n in re.findall(r"\d+", lower))
+    return (is_stable, tier_score, version_nums, lower)
+
+
+def _is_model_invalid_response(resp) -> bool:
+    if resp.status_code == 404:
+        return True
+    if resp.status_code == 400:
+        body = (getattr(resp, "text", "") or "").lower()
+        return "model" in body or "not_found" in body or "not found" in body
+    return False
+
+
+def _discover_fallback_gemini_model(api_key: str, failed_model: str, now_fn=time.time):
+    """Query ListModels for generateContent-capable lightweight models; cache only non-empty successes."""
+    cache_key = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    now_ts = now_fn()
+    cached = _GEMINI_MODELS_CACHE.get(cache_key)
+    candidates = None
+    if cached and (now_ts - cached[0]) < _GEMINI_MODELS_CACHE_TTL_SECONDS:
+        candidates = cached[1]
+    else:
+        list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+        resp = requests.get(list_url, timeout=8)
+        if resp.status_code != 200:
+            print(f"[Gemini ListModels Notice] HTTP {resp.status_code}")
+            return None
+        raw_models = resp.json().get("models", []) if isinstance(resp.json(), dict) else []
+        filtered = []
+        for item in raw_models:
+            if not isinstance(item, dict):
+                continue
+            methods = item.get("supportedGenerationMethods") or []
+            if "generateContent" not in methods:
+                continue
+            name = str(item.get("name") or "").strip()
+            if name.startswith("models/"):
+                name = name[len("models/"):]
+            if not name or any(bad in name.lower() for bad in _GEMINI_EXCLUDED_KEYWORDS):
+                continue
+            filtered.append(name)
+        if filtered:
+            candidates = sorted(set(filtered), key=_score_gemini_model, reverse=True)
+            _GEMINI_MODELS_CACHE[cache_key] = (now_ts, candidates)
+
+    if not candidates:
+        return None
+    for candidate in candidates:
+        if candidate != failed_model:
+            return candidate
+    return None
+
+
 def get_initial_time_via_gemini_vision(crop_img):
     """
-    Uses Gemini 2.5 Flash via REST API (requests + base64) to OCR
+    Uses Gemini Vision via REST API (requests + base64) to OCR
     the initial forecast time (e.g. '00Z25SEP', '12Z24SEP').
+    Falls back to ListModels discovery if the configured model returns 404/invalid-model.
     Returns string tag if matched, else None.
     """
     try:
@@ -146,8 +229,7 @@ def get_initial_time_via_gemini_vision(crop_img):
         _, buf = cv2.imencode(".png", crop_img)
         b64_img = base64.b64encode(buf.tobytes()).decode("utf-8")
         
-        model_name = config.get("Algorithm", {}).get("GeminiModelName", "gemini-2.5-flash").strip()
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        model_name = (config.get("Algorithm", {}).get("GeminiModelName") or "gemini-4-hydrogen").strip()
         payload = {
             "contents": [{
                 "parts": [
@@ -161,7 +243,18 @@ def get_initial_time_via_gemini_vision(crop_img):
                 ]
             }]
         }
-        resp = requests.post(url, json=payload, timeout=8)
+
+        def _post_generate(target_model: str):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={api_key}"
+            return requests.post(url, json=payload, timeout=8)
+
+        resp = _post_generate(model_name)
+        if _is_model_invalid_response(resp):
+            fallback_model = _discover_fallback_gemini_model(api_key, model_name)
+            if fallback_model:
+                print(f"[Gemini Vision OCR Notice] Model '{model_name}' unavailable, retrying with '{fallback_model}'.")
+                resp = _post_generate(fallback_model)
+
         if resp.status_code == 200:
             res_data = resp.json()
             cand = res_data.get("candidates", [])

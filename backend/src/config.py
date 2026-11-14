@@ -60,6 +60,10 @@ def load_config():
             config["Algorithm"]["WindRatio"] = float(wind_ratio)
         except ValueError:
             pass
+    if gemini_model := get_env("GEMINI_MODEL_NAME"):
+        config["Algorithm"]["GeminiModelName"] = gemini_model
+    elif not str(config["Algorithm"].get("GeminiModelName") or "").strip():
+        config["Algorithm"]["GeminiModelName"] = "gemini-4-hydrogen"
 
     # Gemini API Key
     if gemini_key := get_env("GEMINI_API_KEY"):

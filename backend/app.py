@@ -1,10 +1,6 @@
 import os
-import sys
-import json
-import re
 import threading
 import requests
-import google.generativeai as genai
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from linebot.v3 import WebhookHandler
@@ -13,6 +9,7 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 # Main and src modules are in the backend directory.
 from src.config import get_env, load_config
+from src.pob_parser import parse_pob_message
 from main import run_pipeline
 from src.rtdb import PipelineBusyError
 
@@ -21,11 +18,6 @@ line_config = config.get("line_bot", {})
 # 防禦性 .strip()：去除 Secret Manager 值可能含有的 BOM / 換行字元
 _channel_secret = line_config.get("channel_secret", "dummy").strip()
 handler = WebhookHandler(_channel_secret)
-
-# 防禦性 .strip()：去除 Secret Manager 值可能含有的 BOM / 換行字元
-gemini_api_key = config.get("GeminiApiKey", "").strip().strip("\ufeff")
-if gemini_api_key:
-    genai.configure(api_key=gemini_api_key)
 
 app = Flask(__name__)
 CORS(app)
@@ -49,76 +41,43 @@ def webhook():
 def handle_message(event):
     user_msg = event.message.text
 
-    # 粗篩：必須要有「台中廠」、「已於」與「POB」才送給 Gemini 處理
-    # 注意：中文字不需要 .upper()，但 POB 可能小寫，故保留 .upper() 只對英文有效
-    if not all(keyword in user_msg for keyword in ["台中廠", "已於"]) or "POB" not in user_msg.upper():
+    # 粗篩：必須要有「台中廠／臺中廠」、「已於」與「POB」才進入背景解析
+    if (
+        ("台中廠" not in user_msg and "臺中廠" not in user_msg)
+        or "已於" not in user_msg
+        or "POB" not in user_msg.upper()
+    ):
         return
+
+    event_timestamp_ms = getattr(event, "timestamp", None)
 
     # ⚡ 立即啟動 background thread，讓 handle_message 在 ~0ms 返回
     # 確保 LINE 平台在 1 秒內收到 200 OK，避免 timeout
-    t = threading.Thread(target=_process_pob_async, args=(user_msg,), daemon=False)
+    t = threading.Thread(
+        target=_process_pob_async,
+        args=(user_msg, event_timestamp_ms),
+        daemon=False,
+    )
     t.start()
 
 
-def _process_pob_async(user_msg: str):
-    """在 background thread 中執行 Gemini 解析，再委託 GAS 完成 POB 全流程。
-    
+def _process_pob_async(user_msg: str, event_timestamp_ms=None):
+    """在 background thread 中執行本地 Regex POB 解析，再委託 GAS 完成全流程。
+
     架構分工：
-    - Cloud Run (本函式)：負責 Gemini 智慧解析 POB 時間
+    - Cloud Run (本函式)：負責本地嚴格 Regex 與日期/時間邊界驗證
     - GAS (set_mode endpoint)：負責風速查找、pob_info 寫入、船期更新、換班接力
-    
-    避免雙重寫入，確保單一職責與資料一致性。
+
+    避免雙重寫入與外部 AI 依賴，確保單一職責與資料一致性。
     """
-    if not gemini_api_key:
-        print("[POB] Gemini API Key missing, skipping smart parse.")
-        return
-
-    # Gemini 嚴格解析：只抓取成功進港的時間
-    prompt = f"""
-    請判斷以下訊息是否包含 LNG 船進台中廠的明確 POB 動態。
-    如果訊息中明確指出成功的 POB 動作與具體時間，
-    請回傳純 JSON 格式： {{"status": "SUCCESS", "time": "HH:MM"}}
-    
-    注意事項：
-    - 時間格式為 HH:MM（24小時制，例如 04:55 或 13:30）
-    - POB 可能與時間黏連（例如「04:55POB」），請仍正確提取時間
-    - 日期可能為民國年份（例如 115/07/06），請忽略年份只提取時間
-    - 如果沒有具體時間，或因為天氣等因素無法進港，請回傳 {{"status": "IGNORE"}}
-
-    不要輸出任何說明與 markdown，只要回傳 JSON 字串。
-    訊息內容：{user_msg}
-    """
-
     try:
-        model_name = config.get("Algorithm", {}).get("GeminiModelName", "gemini-flash-latest").strip()
-        model = genai.GenerativeModel(
-            model_name,
-            generation_config={"response_mime_type": "application/json"}
-        )
-        response = model.generate_content(prompt)
-
-        # 防禦性 JSON 解析：去除 Gemini 偶爾包裹的 markdown fence
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            parts = raw.split("```")
-            raw = parts[1] if len(parts) > 1 else raw
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw.strip())
-
-        if data.get("status") != "SUCCESS":
-            print(f"[POB] Gemini 判斷為 IGNORE，訊息不符合條件")
+        parsed = parse_pob_message(user_msg, event_timestamp_ms=event_timestamp_ms)
+        if not parsed:
+            print("[POB] 訊息未通過本地 Regex 解析或時間驗證，略過。")
             return
 
-        pob_time = data.get("time")
-        if (
-            not isinstance(pob_time, str)
-            or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", pob_time)
-            or not "04:00" <= pob_time <= "17:00"
-        ):
-            print("[POB] Invalid POB time, skipping GAS delegation.")
-            return
-        print(f"✅ [POB] Gemini 解析 POB 時間成功: {pob_time}")
+        pob_time = parsed["time"]
+        print(f"✅ [POB] Regex 解析 POB 時間成功: {pob_time} (ship={parsed['ship_name']})")
 
         app_password = get_env("APP_PASSWORD")
         if not app_password:
