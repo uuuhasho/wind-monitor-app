@@ -121,7 +121,7 @@ async page => {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://127.0.0.1:4177/index.html');
   const initial = await page.evaluate(() => ({title: document.title, wind: document.getElementById('windSpeed').textContent, schedule: document.body.textContent.includes('DEMO-SHIP')}));
-  if (initial.title !== '臺中LNG船監控(v1.3)' || initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
+  if (initial.title !== '臺中LNG船監控(v1.4)' || initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
   const badges = await page.evaluate(() => Array.from(document.querySelectorAll('#scheduleBody tr'), row => ({
     terminal: row.querySelector('.badge')?.textContent,
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
@@ -852,11 +852,17 @@ async page => {
     input.files = dt.files;
     input.dispatchEvent(new Event('change'));
   });
-  await page.waitForFunction(() => document.querySelectorAll('.chat-att-file-card').length > 0);
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(
+      c => c.textContent.includes('plan.pdf') && Boolean(c.querySelector('button.chat-att-file-btn'))
+    )
+  );
   const fileCardUi = await page.evaluate(() => {
-    const card = document.querySelector('.chat-att-file-card');
-    const icon = card.querySelector('img.chat-att-file-icon');
-    const btn = card.querySelector('button.chat-att-file-btn');
+    const card = Array.from(document.querySelectorAll('.chat-att-file-card')).find(
+      c => c.textContent.includes('plan.pdf') && Boolean(c.querySelector('button.chat-att-file-btn'))
+    );
+    const icon = card ? card.querySelector('img.chat-att-file-icon') : null;
+    const btn = card ? card.querySelector('button.chat-att-file-btn') : null;
     const dlImg = btn && btn.querySelector('img.chat-att-download-img');
     return {
       iconSrc: icon ? icon.getAttribute('src') : '',
@@ -907,7 +913,9 @@ async page => {
     input.dispatchEvent(new Event('change'));
   });
   await page.waitForFunction(() =>
-    Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes('notes.csv'))
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(
+      c => c.textContent.includes('notes.csv') && Boolean(c.querySelector('button.chat-att-file-btn'))
+    )
   );
   await page.locator('.chat-att-file-card', {hasText: 'notes.csv'}).locator('.chat-att-file-btn').click();
   await page.waitForFunction(() =>
@@ -922,7 +930,9 @@ async page => {
     input.dispatchEvent(new Event('change'));
   });
   await page.waitForFunction(() =>
-    Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes('octet.csv'))
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(
+      c => c.textContent.includes('octet.csv') && Boolean(c.querySelector('button.chat-att-file-btn'))
+    )
   );
   await page.locator('.chat-att-file-card', {hasText: 'octet.csv'}).locator('.chat-att-file-btn').click();
   await page.waitForFunction(() =>
