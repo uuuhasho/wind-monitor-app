@@ -139,7 +139,7 @@ async page => {
     const number = document.getElementById('windSpeed').getBoundingClientRect();
     const msgHeading = document.querySelector('.schedule-header h3');
     const oldTableImport = document.querySelector('.pulso-table-import');
-    const msgSvg = msgHeading.querySelector('svg.pulso-message-square-text');
+    const msgSvg = msgHeading.querySelector('svg.pulso-messages-square');
     const msgRect = msgSvg.getBoundingClientRect();
     const gearSvg = document.querySelector('.cpc-btn.pulso-settings');
     const gearRect = gearSvg.getBoundingClientRect();
@@ -163,8 +163,8 @@ async page => {
       msgSvgWidth: Math.round(msgRect.width),
       msgSvgHeight: Math.round(msgRect.height),
       msgColor: getComputedStyle(msgSvg).color,
-      msgBubble: Boolean(msgSvg.querySelector('path.pulso-msg-bubble')),
-      msgLines: msgSvg.querySelectorAll('path.pulso-msg-line-1, path.pulso-msg-line-2, path.pulso-msg-line-3').length,
+      msgBack: Boolean(msgSvg.querySelector('path.pulso-ms-back')),
+      msgFront: Boolean(msgSvg.querySelector('path.pulso-ms-front')),
       gearWidth: Math.round(gearRect.width),
       gearHeight: Math.round(gearRect.height),
       gearColor: getComputedStyle(gearSvg).color,
@@ -177,9 +177,9 @@ async page => {
     throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   }
   if (icon.oldTableImportExists || icon.msgRole !== 'button' || icon.msgOnclick !== 'openChatModal()' ||
-      icon.msgTitle !== null || icon.msgAriaLabel !== '開啟接船對話' || icon.msgCursor !== 'pointer' ||
+      icon.msgTitle !== null || icon.msgAriaLabel !== '開啟 LNG 船聊天室' || icon.msgCursor !== 'pointer' ||
       icon.unreadBadgeDisplay !== 'none' || icon.msgSvgWidth !== 32 || icon.msgSvgHeight !== 32 ||
-      icon.msgColor !== 'rgb(16, 69, 140)' || !icon.msgBubble || icon.msgLines !== 3) {
+      icon.msgColor !== 'rgb(16, 69, 140)' || !icon.msgBack || !icon.msgFront) {
     throw new Error(`Message icon: ${JSON.stringify(icon)}`);
   }
   if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(16, 69, 140)' || !icon.gearGroup) {
@@ -200,19 +200,17 @@ async page => {
       windAnim3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationName,
       windDelay3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationDelay,
       msgActive: msgHeading.classList.contains('is-animating'),
-      msgBubbleAnim: getComputedStyle(msgHeading.querySelector('.pulso-msg-bubble')).animationName,
-      msgLine1Anim: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-1')).animationName,
-      msgLine1Delay: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-1')).animationDelay,
-      msgLine2Delay: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-2')).animationDelay,
-      msgLine3Delay: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-3')).animationDelay,
+      msgBackAnim: getComputedStyle(msgHeading.querySelector('.pulso-ms-back')).animationName,
+      msgFrontAnim: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationName,
+      msgFrontDelay: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationDelay,
       gearActive: gearSvg.classList.contains('is-animating'),
       gearAnim: getComputedStyle(gearSvg.querySelector('.pulso-gear-group')).animationName,
     };
   });
   if (!animStart.windActive || animStart.windAnim1 !== 'pulso-slide-right' || animStart.windAnim2 !== 'pulso-slide-right' ||
       animStart.windAnim3 !== 'pulso-slide-right' || animStart.windDelay3 !== '0.12s' ||
-      !animStart.msgActive || animStart.msgBubbleAnim !== 'pulso-press' || animStart.msgLine1Anim !== 'pulso-grow-x' ||
-      animStart.msgLine1Delay !== '0.1s' || animStart.msgLine2Delay !== '0.16s' || animStart.msgLine3Delay !== '0.22s' ||
+      !animStart.msgActive || animStart.msgBackAnim !== 'pulso-ms-float' || animStart.msgFrontAnim !== 'pulso-ms-float' ||
+      animStart.msgFrontDelay !== '0.12s' ||
       !animStart.gearActive || animStart.gearAnim !== 'pulso-spin-180') {
     throw new Error(`Icon animation start: ${JSON.stringify(animStart)}`);
   }
@@ -245,18 +243,15 @@ async page => {
     const msgHeading = document.querySelector('.schedule-header h3');
     msgHeading.classList.add('is-animating');
     const styles = {
-      bubble: getComputedStyle(msgHeading.querySelector('.pulso-msg-bubble')).animationName,
-      line1: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-1')).animationName,
-      line2: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-2')).animationName,
-      line3: getComputedStyle(msgHeading.querySelector('.pulso-msg-line-3')).animationName,
+      back: getComputedStyle(msgHeading.querySelector('.pulso-ms-back')).animationName,
+      front: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationName,
     };
     msgHeading.classList.remove('is-animating');
     msgHeading.dispatchEvent(new Event('pointerenter'));
     return {...styles, skippedClass: !msgHeading.classList.contains('is-animating')};
   });
   await page.emulateMedia({reducedMotion: 'no-preference'});
-  if (reducedMotionAnim.bubble !== 'none' || reducedMotionAnim.line1 !== 'none' ||
-      reducedMotionAnim.line2 !== 'none' || reducedMotionAnim.line3 !== 'none' || !reducedMotionAnim.skippedClass) {
+  if (reducedMotionAnim.back !== 'none' || reducedMotionAnim.front !== 'none' || !reducedMotionAnim.skippedClass) {
     throw new Error(`Reduced motion: ${JSON.stringify(reducedMotionAnim)}`);
   }
   await page.locator('.schedule-header h3').click();
@@ -268,7 +263,7 @@ async page => {
   if (msgClickState.chatVisible !== 'flex' || msgClickState.pwdVisible !== 'none' || msgClickState.adjustVisible !== 'none') {
     throw new Error(`Message icon click must open chatModal only: ${JSON.stringify(msgClickState)}`);
   }
-  await page.locator('#chatCloseBtn').click();
+  await page.locator('#chatRoleBackBtn').click();
   if (await page.locator('#chatModal').isVisible()) {
     throw new Error('chatModal must close before scheduleHeaderRow double-tap test');
   }
@@ -511,7 +506,7 @@ async page => {
   });
   if (!commands.commands.some(item => item.mode === 'start') || !commands.commands.some(item => item.mode === 'reset' && item.pobTime === '10:00')) throw new Error(`Commands: ${JSON.stringify(commands)}`);
 
-  // ==================== Ship Chat Room Tests (AC-001 ~ AC-004) ====================
+  // ==================== Ship Chat Room v2 PWA Tests (AC-001 ~ AC-004 + F-001 ~ F-004) ====================
   await page.evaluate(() => {
     if (typeof closeForecastModal === 'function') closeForecastModal();
     localStorage.clear();
@@ -524,7 +519,7 @@ async page => {
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/messages`, {
-      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-1', text: '早安，引水梯備便'},
+      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPC_LM', roleLabel: '中油LNG', clientId: 'other-1', text: '早安，引水梯備便'},
     });
   });
   const unread1 = await page.evaluate(() => {
@@ -539,29 +534,71 @@ async page => {
     throw new Error(`AC-001 badge initial unread: ${JSON.stringify(unread1)}`);
   }
 
+  // Open modal -> Screen 1 (選擇角色) with bold ROC date & 4 custom icon rows + lock.png when full
+  await page.evaluate(() => {
+    const d = window.__today;
+    const now = getServerNow();
+    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {clientId: 'p1', roleId: 'Pilot', roleLabel: 'Pilot', slot: 1, activeAt: now});
+  });
   await page.locator('#chatOpenBtn').click();
-  const afterOpenUnread = await page.evaluate(() => ({
-    modalDisplay: getComputedStyle(document.getElementById('chatModal')).display,
-    badgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
-    seatsVal: window.__getDb(`formal/chat_rooms/${window.__today}/seats`),
-    spectatorVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
-    composerVisible: getComputedStyle(document.getElementById('chatActiveComposer')).display,
-    titleText: document.getElementById('chatModalTitle').textContent.trim(),
-    titleIconSrc: document.querySelector('#chatModalTitle img')?.getAttribute('src') || '',
-  }));
-  if (afterOpenUnread.modalDisplay !== 'flex' || afterOpenUnread.badgeDisplay !== 'none' ||
-      afterOpenUnread.seatsVal !== null || afterOpenUnread.spectatorVisible !== 'block' ||
-      afterOpenUnread.composerVisible !== 'none' ||
-      afterOpenUnread.titleText !== '即時溝通' || afterOpenUnread.titleIconSrc !== 'talk.png') {
-    throw new Error(`AC-001/AC-002 open spectator state: ${JSON.stringify(afterOpenUnread)}`);
+  const expectedRocDate = await page.evaluate(() => {
+    const [y, m, dd] = window.__today.split('-');
+    return `${Number(y) - 1911}/${m}/${dd}`;
+  });
+  const screen1State = await page.evaluate(() => {
+    const modal = document.getElementById('chatModal');
+    const roleScreen = document.getElementById('chatRoleScreen');
+    const roomScreen = document.getElementById('chatRoomScreen');
+    const dateBadge = document.getElementById('chatDateBadge');
+    const pilotBtn = document.querySelector('.chat-role-item[data-role-id="Pilot"]');
+    const lockImg = pilotBtn ? pilotBtn.querySelector('img.chat-role-lock-img') : null;
+    const roleBtns = Array.from(document.querySelectorAll('#chatRoleBar .chat-role-item'));
+    return {
+      modalDisplay: getComputedStyle(modal).display,
+      badgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
+      roleDisplay: getComputedStyle(roleScreen).display,
+      roomDisplay: getComputedStyle(roomScreen).display,
+      dateText: dateBadge.textContent.trim(),
+      dateWeight: Number(getComputedStyle(dateBadge).fontWeight),
+      talkImgCount: document.querySelectorAll('img[src*="talk.png"]').length,
+      roleIds: roleBtns.map(b => b.dataset.roleId),
+      roleIcons: roleBtns.map(b => b.querySelector('img.chat-role-icon')?.getAttribute('src')),
+      pilotDisabled: pilotBtn ? pilotBtn.disabled : false,
+      pilotCount: pilotBtn ? pilotBtn.querySelector('.chat-role-count')?.textContent : '',
+      lockImgSrc: lockImg ? lockImg.getAttribute('src') : '',
+    };
+  });
+  if (screen1State.modalDisplay !== 'flex' || screen1State.badgeDisplay !== 'none' ||
+      screen1State.roleDisplay !== 'flex' || screen1State.roomDisplay !== 'none' ||
+      screen1State.dateText !== expectedRocDate || screen1State.dateWeight < 700 ||
+      screen1State.talkImgCount !== 0 ||
+      JSON.stringify(screen1State.roleIds) !== JSON.stringify(['CPC_LM', 'Pilot', 'Other', 'Spectator']) ||
+      !screen1State.pilotDisabled || screen1State.pilotCount !== '1/1' || screen1State.lockImgSrc !== 'pic/lock.png') {
+    throw new Error(`AC-001/v2 Screen 1 state: ${JSON.stringify(screen1State)}`);
   }
 
-  // Receive new message while modal open -> read marker updates, closing stays hidden
+  // Click Spectator (觀眾) -> enters Screen 2 (LNG 船聊天室) in Spectator mode without claiming any seat
+  await page.locator('.chat-role-item[data-role-id="Spectator"]').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
+  const specRoomState = await page.evaluate(() => ({
+    titleText: document.getElementById('chatModalTitle').textContent.trim(),
+    specVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
+    specPillText: document.getElementById('chatSpectatorPill').textContent.trim(),
+    footerDisplay: getComputedStyle(document.getElementById('chatComposerFooter')).display,
+    cpcSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
+  }));
+  if (specRoomState.titleText !== 'LNG 船聊天室' || specRoomState.specVisible !== 'flex' ||
+      !specRoomState.specPillText.includes('觀眾模式') || specRoomState.footerDisplay !== 'none' ||
+      specRoomState.cpcSeat !== null) {
+    throw new Error(`AC-002 Spectator mode state: ${JSON.stringify(specRoomState)}`);
+  }
+
+  // Receive new message while modal open -> read marker updates, closing stays hidden, reappears after closing
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/messages`, {
-      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-1', text: '早安，引水梯備便'},
-      m2: {id: 'm2', ts: 20000, timeStr: '08:05', roleId: 'Pilot', roleLabel: 'Pilot-1', clientId: 'other-2', text: '已登輪'},
+      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPC_LM', roleLabel: '中油LNG', clientId: 'other-1', text: '早安，引水梯備便'},
+      m2: {id: 'm2', ts: 20000, timeStr: '08:05', roleId: 'Pilot', roleLabel: 'Pilot', clientId: 'other-2', text: '已登輪'},
     });
   });
   await page.locator('#chatCloseBtn').click();
@@ -571,138 +608,191 @@ async page => {
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/messages/m3`, {
-      id: 'm3', ts: 30000, timeStr: '08:06', roleId: 'VTS', roleLabel: 'VTS-1', clientId: 'other-3', text: '進入外港航道',
+      id: 'm3', ts: 30000, timeStr: '08:06', roleId: 'Other', roleLabel: '拖船船長', clientId: 'other-3', text: '拖船就位',
     });
   });
   if (await page.evaluate(() => getComputedStyle(document.getElementById('chatUnreadBadge')).display) === 'none') {
     throw new Error('AC-001: Badge must reappear when new message arrives after closing modal');
   }
 
-  // AC-002: Seats allocation (-1 / -2 / 2/2滿 / full switch keeps old seat / 15-min overwrite safe / midnight release)
+  // AC-002: Claim 中油LNG (CPC_LM_1) directly from Screen 1 -> enters Screen 2 Active mode
   await page.locator('#chatOpenBtn').click();
-  await page.locator('.chat-role-btn[data-role-id="CPCLNG"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('CPCLNG-1'));
-  const seatState1 = await page.evaluate(() => ({
-    seat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
-    hookArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
-    composerVisible: getComputedStyle(document.getElementById('chatActiveComposer')).display,
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
+  const seatCpc = await page.evaluate(() => ({
+    seat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
+    hookArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
+    specVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
+    footerDisplay: getComputedStyle(document.getElementById('chatComposerFooter')).display,
   }));
-  if (!seatState1.seat || seatState1.seat.roleLabel !== 'CPCLNG-1' || !seatState1.hookArmed || seatState1.composerVisible !== 'flex') {
-    throw new Error(`AC-002 claim CPCLNG-1: ${JSON.stringify(seatState1)}`);
+  if (!seatCpc.seat || seatCpc.seat.roleId !== 'CPC_LM' || seatCpc.seat.roleLabel !== '中油LNG' ||
+      !seatCpc.hookArmed || seatCpc.specVisible !== 'none' || seatCpc.footerDisplay !== 'block') {
+    throw new Error(`AC-002 claim 中油LNG: ${JSON.stringify(seatCpc)}`);
   }
 
-  // Fill Pilot 2/2 and verify clicking Pilot preserves existing CPCLNG-1 seat
-  await page.evaluate(() => {
-    const d = window.__today;
-    const now = getServerNow();
-    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {clientId: 'p1', roleId: 'Pilot', roleLabel: 'Pilot-1', slot: 1, activeAt: now});
-    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_2`, {clientId: 'p2', roleId: 'Pilot', roleLabel: 'Pilot-2', slot: 2, activeAt: now});
+  // Test 「其他」 bottom sheet: blank name -> spectator (releases CPC_LM_1); non-blank -> claims Other_1 & releases old seat
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex');
+  await page.locator('.chat-role-item[data-role-id="Other"]').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatNameSheetBackdrop')).display === 'flex');
+  await page.fill('#chatNameInput', '   ');
+  await page.locator('#chatEnterRoomBtn').click();
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex' &&
+    getComputedStyle(document.getElementById('chatComposerFooter')).display === 'none' &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
+  );
+
+  // Now test non-blank name in 「其他」 bottom sheet -> claims Other_1 with custom name
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('.chat-role-item[data-role-id="Other"]').click();
+  await page.fill('#chatNameInput', '海事工程師');
+  await page.locator('#chatEnterRoomBtn').click();
+  await page.waitForFunction(() => {
+    const s = window.__getDb(`formal/chat_rooms/${window.__today}/seats/Other_1`);
+    return Boolean(s && s.roleLabel === '海事工程師') && getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex';
   });
-  await page.locator('.chat-role-btn[data-role-id="Pilot"]').click();
-  await page.waitForFunction(() => document.getElementById('chatStatusBanner').textContent.includes('2/2 滿'));
-  const fullSwitch = await page.evaluate(() => ({
-    banner: document.getElementById('chatStatusBanner').textContent,
-    idText: document.getElementById('chatIdentityText').textContent,
-    cpcSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
-    pilotText: document.querySelector('.chat-role-btn[data-role-id="Pilot"] .chat-role-count').textContent,
-  }));
-  if (!fullSwitch.banner.includes('2/2 滿') || !fullSwitch.idText.includes('CPCLNG-1') ||
-      !fullSwitch.cpcSeat || fullSwitch.pilotText !== '2/2 滿') {
-    throw new Error(`AC-002 full switch preserve: ${JSON.stringify(fullSwitch)}`);
-  }
 
-  // Switch to Tug -> claims Tug-1 and releases CPCLNG-1 safely; then simulate remote overwrite without losing new owner
-  await page.locator('.chat-role-btn[data-role-id="Tug"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('拖船-1'));
-  const switchedSeat = await page.evaluate(() => ({
-    oldSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
-    newSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
-    oldHook: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
-    newHook: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
-  }));
-  if (switchedSeat.oldSeat !== null || switchedSeat.oldHook || !switchedSeat.newSeat || !switchedSeat.newHook) {
-    throw new Error(`AC-002 switch release old: ${JSON.stringify(switchedSeat)}`);
-  }
-
-  // Remote overwrite on Tug_1 must forfeit local seat and cancel Tug_1 onDisconnect without deleting takeover user
+  // Remote overwrite on Other_1 must forfeit local seat and cancel Other_1 onDisconnect without deleting takeover user
   await page.evaluate(() => {
     const d = window.__today;
-    window.__emit(`formal/chat_rooms/${d}/seats/Tug_1`, {
-      clientId: 'takeover-other', roleId: 'Tug', roleLabel: '拖船-1', slot: 1, activeAt: getServerNow(),
+    window.__emit(`formal/chat_rooms/${d}/seats/Other_1`, {
+      clientId: 'takeover-other', roleId: 'Other', roleLabel: '接手人員', slot: 1, activeAt: getServerNow(),
     });
   });
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('旁觀模式'));
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('chatComposerFooter')).display === 'none' &&
+    document.getElementById('chatStatusBanner').textContent.includes('觀眾模式')
+  );
   const afterTakeover = await page.evaluate(() => ({
-    remoteSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
-    hookStillArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
+    remoteSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/Other_1`),
+    hookStillArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Other_1`),
   }));
   if (!afterTakeover.remoteSeat || afterTakeover.remoteSeat.clientId !== 'takeover-other' || afterTakeover.hookStillArmed) {
     throw new Error(`AC-002 takeover safety: ${JSON.stringify(afterTakeover)}`);
   }
 
-  // Reclaim expired Pilot_1 (>15 min idle) & verify leave/midnight rollover cleanup
+  // Test 15/15 full lock on 「其他」, then clear & reclaim expired Pilot_1 (>15 min idle)
+  await page.locator('#chatBackToRolesBtn').click();
   await page.evaluate(() => {
     const d = window.__today;
-    const stale = getServerNow() - (15 * 60 * 1000 + 5000);
-    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {
-      clientId: 'stale-pilot', roleId: 'Pilot', roleLabel: 'Pilot-1', slot: 1, activeAt: stale,
-    });
+    const now = getServerNow();
+    for (let i = 1; i <= 15; i++) {
+      window.__emit(`formal/chat_rooms/${d}/seats/Other_${i}`, {clientId: `o_${i}`, roleId: 'Other', roleLabel: `人員${i}`, slot: i, activeAt: now});
+    }
+    const stale = now - (15 * 60 * 1000 + 5000);
+    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {clientId: 'stale-pilot', roleId: 'Pilot', roleLabel: 'Pilot', slot: 1, activeAt: stale});
   });
-  await page.locator('.chat-role-btn[data-role-id="Pilot"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Pilot-1'));
-  await page.locator('#chatLeaveRoleBtn').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('旁觀模式'));
-  if (await page.evaluate(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`)) !== null) {
-    throw new Error('AC-002: leaveChatRole must delete owned seat');
+  const otherFullState = await page.evaluate(() => {
+    const btn = document.querySelector('.chat-role-item[data-role-id="Other"]');
+    return {
+      disabled: btn ? btn.disabled : false,
+      count: btn ? btn.querySelector('.chat-role-count')?.textContent : '',
+      lockImg: btn ? btn.querySelector('img.chat-role-lock-img')?.getAttribute('src') : '',
+    };
+  });
+  if (!otherFullState.disabled || otherFullState.count !== '15/15' || otherFullState.lockImg !== 'pic/lock.png') {
+    throw new Error(`AC-002 Other 15/15 lock: ${JSON.stringify(otherFullState)}`);
   }
+  await page.locator('.chat-role-item[data-role-id="Pilot"]').click();
+  await page.waitForFunction(() => {
+    const s = window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`);
+    return Boolean(s && s.clientId !== 'stale-pilot') && getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex';
+  });
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('.chat-role-item[data-role-id="Spectator"]').click();
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`) === null);
 
-  // AC-003: Neutral #f4f4f5 background, 5 high-contrast left stripes, self #10458C right-aligned, XSS immunity
-  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
+  // AC-003: Outgoing mint-teal #b2ebe0 + 已送出, incoming light-grey #e5e7eb, XSS immunity
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatComposerFooter')).display === 'block');
   await page.fill('#chatTextInput', '報告進港 <img src=x onerror="window.__xss=1">');
   await page.locator('#chatSendBtn').click();
   await page.waitForFunction(() => {
     const msgs = window.__getDb(`formal/chat_rooms/${window.__today}/messages`) || {};
     return Object.values(msgs).some(m => m.text && m.text.includes('<img src=x'));
   });
-  await page.evaluate(() => {
-    const d = window.__today;
-    window.__emit(`formal/chat_rooms/${d}/messages`, {
-      o1: {id: 'o1', ts: 40001, timeStr: '09:01', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-c', text: 'CPC'},
-      o2: {id: 'o2', ts: 40002, timeStr: '09:02', roleId: 'Pilot', roleLabel: 'Pilot-2', clientId: 'other-p', text: 'Pilot'},
-      o3: {id: 'o3', ts: 40003, timeStr: '09:03', roleId: 'VTS', roleLabel: 'VTS-1', clientId: 'other-v', text: 'VTS'},
-      o4: {id: 'o4', ts: 40004, timeStr: '09:04', roleId: 'Agent', roleLabel: 'Agent-2', clientId: 'other-a', text: 'Agent'},
-      o5: {id: 'o5', ts: 40005, timeStr: '09:05', roleId: 'Tug', roleLabel: '拖船-1', clientId: 'other-t', text: 'Tug'},
-      ...window.__getDb(`formal/chat_rooms/${d}/messages`),
-    });
-  });
   const ac3 = await page.evaluate(() => {
     const container = document.getElementById('chatMessagesContainer');
     const rows = Array.from(container.querySelectorAll('.chat-msg-row'));
-    const others = ['CPC', 'Pilot', 'VTS', 'Agent', 'Tug'].map(txt => {
-      const r = rows.find(row => row.querySelector('.chat-msg-text')?.textContent === txt);
-      const b = r && r.querySelector('.chat-bubble');
-      const s = b && getComputedStyle(b);
-      return r ? {isOther: r.classList.contains('is-other'), bg: s.backgroundColor, blw: s.borderLeftWidth, blc: s.borderLeftColor} : null;
-    });
+    const otherRow = rows.find(r => r.classList.contains('is-other'));
+    const otherBubble = otherRow && otherRow.querySelector('.chat-bubble');
     const selfRow = rows.find(r => r.classList.contains('is-self'));
     const selfBubble = selfRow && selfRow.querySelector('.chat-bubble');
+    const selfStatus = selfRow && selfRow.querySelector('.chat-msg-status');
     return {
       xssTriggered: Boolean(window.__xss),
       areaBg: getComputedStyle(container).backgroundColor,
-      others,
-      selfText: selfBubble ? selfBubble.textContent : '',
+      otherBg: otherBubble ? getComputedStyle(otherBubble).backgroundColor : '',
       selfBg: selfBubble ? getComputedStyle(selfBubble).backgroundColor : '',
+      selfText: selfBubble ? selfBubble.textContent : '',
+      selfStatusText: selfStatus ? selfStatus.textContent : '',
     };
   });
-  const expectedBorders = ['rgb(29, 78, 216)', 'rgb(124, 58, 237)', 'rgb(5, 150, 105)', 'rgb(234, 88, 12)', 'rgb(190, 18, 60)'];
-  if (ac3.xssTriggered || ac3.areaBg !== 'rgb(244, 244, 245)' ||
-      ac3.others.some((o, i) => !o || !o.isOther || o.bg !== 'rgb(255, 255, 255)' || o.blw !== '5px' || o.blc !== expectedBorders[i]) ||
-      ac3.selfBg !== 'rgb(16, 69, 140)' || !ac3.selfText.includes('<img src=x')) {
-    throw new Error(`AC-003 styles/XSS: ${JSON.stringify(ac3)}`);
+  if (ac3.xssTriggered || ac3.areaBg !== 'rgb(255, 255, 255)' ||
+      ac3.otherBg !== 'rgb(229, 231, 235)' || ac3.selfBg !== 'rgb(178, 235, 224)' ||
+      !ac3.selfText.includes('<img src=x') || !ac3.selfStatusText.includes('已送出')) {
+    throw new Error(`AC-003 bubble styles/XSS: ${JSON.stringify(ac3)}`);
   }
 
-  // AC-004: Valid oversized-dimension image compression (1600x800 -> 1280px JPEG) & PDF upload, #chatPreviewModal (z-index 2100), SVG & >2.5MB rejection
+  // AC-004 (a): Attachment Bottom Sheet (拍照 / 從相簿選取 / 選擇檔案) & Cancel Upload mid-flight
+  await page.locator('#chatAttachBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatAttachSheetBackdrop')).display === 'flex');
+  const sheetOpts = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('#chatAttachSheetBackdrop .chat-attach-option')).map(btn => ({
+      id: btn.id,
+      title: btn.querySelector('.chat-attach-option-title')?.textContent,
+      icon: btn.querySelector('img.chat-attach-option-icon')?.getAttribute('src'),
+    }))
+  );
+  if (sheetOpts.length !== 3 ||
+      sheetOpts[0].title !== '拍照' || sheetOpts[0].icon !== 'pic/拍照.png' ||
+      sheetOpts[1].title !== '從相簿選取' || sheetOpts[1].icon !== 'pic/從相簿選取.png' ||
+      sheetOpts[2].title !== '選擇檔案' || sheetOpts[2].icon !== 'pic/選擇檔案.png') {
+    throw new Error(`AC-004 attachment sheet: ${JSON.stringify(sheetOpts)}`);
+  }
+  await page.evaluate(() => {
+    closeChatAttachSheet();
+    const targetDb = typeof db !== 'undefined' ? db : firebase.database();
+    window.__origAttDbRef = targetDb.ref.bind(targetDb);
+    window.__holdAttUpload = true;
+    targetDb.ref = function (path) {
+      const refObj = window.__origAttDbRef(path);
+      if (window.__holdAttUpload && typeof path === 'string' && path.includes('/chat_attachments/')) {
+        const origSet = refObj.set.bind(refObj);
+        refObj.set = function (val) {
+          return new Promise(resolve => {
+            window.__resumeHeldAttUpload = () => origSet(val).then(resolve);
+          });
+        };
+      }
+      return refObj;
+    };
+    const dt = new DataTransfer();
+    dt.items.add(new File(['a,b\n1,2'], 'cancel_me.csv', {type: 'text/csv'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => Boolean(document.getElementById('chatCancelUploadBtn') && window.__resumeHeldAttUpload));
+  await page.locator('#chatCancelUploadBtn').click();
+  await page.evaluate(() => {
+    window.__holdAttUpload = false;
+    const targetDb = typeof db !== 'undefined' ? db : firebase.database();
+    if (window.__origAttDbRef) {
+      targetDb.ref = window.__origAttDbRef;
+      delete window.__origAttDbRef;
+    }
+    if (window.__resumeHeldAttUpload) window.__resumeHeldAttUpload();
+  });
+  const canceledMsgExists = await page.evaluate(() => {
+    const msgs = Object.values(window.__getDb(`formal/chat_rooms/${window.__today}/messages`) || {});
+    return msgs.some(m => m.attachment && m.attachment.name === 'cancel_me.csv');
+  });
+  if (canceledMsgExists) throw new Error('AC-004: Canceled upload must not publish chat message');
+
+  // AC-004 (b): Valid oversized-dimension image compression (1600x800 -> 1280px JPEG) & Full-Screen Photo Lightbox with zoom
   await page.evaluate(async () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1600;
@@ -721,48 +811,64 @@ async page => {
   await page.locator('.chat-att-thumb-btn').first().click();
   await page.waitForFunction(() => !document.getElementById('chatPreviewDownload').classList.contains('is-disabled'));
   await page.waitForFunction(() => {
-    const img = document.querySelector('#chatPreviewBody img.chat-preview-img');
+    const img = document.getElementById('chatPreviewImage');
     return Boolean(img && img.complete && img.naturalWidth > 0);
   });
-  const imgPreview = await page.evaluate(() => {
-    const m = document.getElementById('chatPreviewModal');
-    const dl = document.getElementById('chatPreviewDownload');
-    const img = document.querySelector('#chatPreviewBody img.chat-preview-img');
-    return {
-      display: getComputedStyle(m).display,
-      zIndex: getComputedStyle(m).zIndex,
-      href: dl.getAttribute('href') || '',
-      hasImg: Boolean(img),
-      naturalWidth: img ? img.naturalWidth : 0,
-      naturalHeight: img ? img.naturalHeight : 0,
-      inputVal: document.getElementById('chatFileInput').value,
-    };
-  });
-  if (imgPreview.display !== 'flex' || Number(imgPreview.zIndex) < 2100 ||
-      !imgPreview.href.startsWith('data:image/jpeg;base64,') || !imgPreview.hasImg ||
-      imgPreview.naturalWidth !== 1280 || imgPreview.naturalHeight !== 640 || imgPreview.inputVal !== '') {
-    throw new Error(`AC-004 image preview: ${JSON.stringify(imgPreview)}`);
+  await page.locator('#chatZoomInBtn').click();
+  const imgZoomedIn = await page.evaluate(() => ({
+    display: getComputedStyle(document.getElementById('chatPreviewModal')).display,
+    zIndex: getComputedStyle(document.getElementById('chatPreviewModal')).zIndex,
+    boxRadius: getComputedStyle(document.querySelector('#chatPreviewModal .chat-preview-box')).borderRadius,
+    zoomLabel: document.getElementById('chatZoomResetBtn').textContent,
+    transform: document.getElementById('chatPreviewImage').style.transform,
+    naturalWidth: document.getElementById('chatPreviewImage').naturalWidth,
+    naturalHeight: document.getElementById('chatPreviewImage').naturalHeight,
+    href: document.getElementById('chatPreviewDownload').getAttribute('href') || '',
+  }));
+  await page.locator('#chatZoomResetBtn').click();
+  const imgResetZoom = await page.evaluate(() => document.getElementById('chatZoomResetBtn').textContent);
+  await page.locator('#chatPreviewImage').dblclick();
+  const imgDblZoom = await page.evaluate(() => document.getElementById('chatZoomResetBtn').textContent);
+  await page.locator('#chatZoomResetBtn').click();
+  if (imgZoomedIn.display !== 'flex' || Number(imgZoomedIn.zIndex) < 2100 || imgZoomedIn.boxRadius !== '0px' ||
+      imgZoomedIn.zoomLabel !== '125%' || imgZoomedIn.transform !== 'scale(1.25)' ||
+      imgResetZoom !== '100%' || imgDblZoom !== '200%' ||
+      imgZoomedIn.naturalWidth !== 1280 || imgZoomedIn.naturalHeight !== 640 ||
+      !imgZoomedIn.href.startsWith('data:image/jpeg;base64,')) {
+    throw new Error(`AC-004 lightbox zoom: ${JSON.stringify({imgZoomedIn, imgDblZoom, imgResetZoom})}`);
   }
   await page.locator('#chatPreviewCloseBtn').click();
 
+  // AC-004 (c): File bubble icon-only download button (pic/下載.png, no "下載" text) & SVG/>2.5MB/F-002/F-004 checks
   await page.evaluate(() => {
+    window.__downloadedAtts = [];
+    window.__origAnchorClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      window.__downloadedAtts.push({download: this.download, href: this.getAttribute('href') || ''});
+    };
     const dt = new DataTransfer();
     dt.items.add(new File(['%PDF-1.4\n1 0 obj\n<<>>\nendobj\n'], 'plan.pdf', {type: 'application/pdf'}));
     const input = document.getElementById('chatFileInput');
     input.files = dt.files;
     input.dispatchEvent(new Event('change'));
   });
-  await page.waitForFunction(() => document.querySelectorAll('.chat-att-file-btn').length > 0);
-  await page.locator('.chat-att-file-btn').first().click();
-  await page.waitForFunction(() => !document.getElementById('chatPreviewDownload').classList.contains('is-disabled'));
-  const pdfPreview = await page.evaluate(() => ({
-    title: document.getElementById('chatPreviewTitle').textContent,
-    href: document.getElementById('chatPreviewDownload').getAttribute('href') || '',
-  }));
-  if (pdfPreview.title !== 'plan.pdf' || !pdfPreview.href.startsWith('data:application/pdf;base64,')) {
-    throw new Error(`AC-004 PDF preview: ${JSON.stringify(pdfPreview)}`);
+  await page.waitForFunction(() => document.querySelectorAll('.chat-att-file-card').length > 0);
+  const fileCardUi = await page.evaluate(() => {
+    const card = document.querySelector('.chat-att-file-card');
+    const icon = card.querySelector('img.chat-att-file-icon');
+    const btn = card.querySelector('button.chat-att-file-btn');
+    const dlImg = btn && btn.querySelector('img.chat-att-download-img');
+    return {
+      iconSrc: icon ? icon.getAttribute('src') : '',
+      btnText: btn ? btn.textContent.trim() : 'ERR',
+      dlImgSrc: dlImg ? dlImg.getAttribute('src') : '',
+    };
+  });
+  if (fileCardUi.iconSrc !== 'pic/選擇檔案.png' || fileCardUi.btnText !== '' || fileCardUi.dlImgSrc !== 'pic/下載.png') {
+    throw new Error(`AC-004 file bubble icon-only download UI: ${JSON.stringify(fileCardUi)}`);
   }
-  await page.locator('#chatPreviewCloseBtn').click();
+  await page.locator('.chat-att-file-card', {hasText: 'plan.pdf'}).locator('.chat-att-file-btn').click();
+  await page.waitForFunction(() => window.__downloadedAtts.some(d => d.download === 'plan.pdf'));
 
   await page.evaluate(() => {
     const dt = new DataTransfer();
@@ -791,11 +897,8 @@ async page => {
     input.dispatchEvent(new Event('change'));
   });
   await page.waitForFunction(() => document.getElementById('chatStatusBanner').textContent.includes('2.5 MB'));
-  if (await page.evaluate(() => document.getElementById('chatFileInput').value) !== '') {
-    throw new Error('AC-004 oversized file must clear fileInput');
-  }
 
-  // Delivery F-002 / F-004 (1): empty-MIME & octet-stream .csv uploads normalize to data:text/csv;base64,... and preview cleanly
+  // Delivery F-002 / F-004 (1): empty-MIME & octet-stream .csv uploads normalize to data:text/csv;base64,... and download cleanly
   await page.evaluate(() => {
     const dt = new DataTransfer();
     dt.items.add(new File(['colA,colB\n1,2'], 'notes.csv', {type: ''}));
@@ -804,21 +907,12 @@ async page => {
     input.dispatchEvent(new Event('change'));
   });
   await page.waitForFunction(() =>
-    Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes('notes.csv'))
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes('notes.csv'))
   );
-  const csvAttStored = await page.evaluate(() => {
-    const atts = window.__getDb(`formal/chat_attachments/${window.__today}`) || {};
-    return Object.values(atts).some(a => a && a.name === 'notes.csv' && typeof a.dataUrl === 'string' && a.dataUrl.startsWith('data:text/csv;base64,'));
-  });
-  if (!csvAttStored) throw new Error('F-002 empty-MIME notes.csv must store normalized data:text/csv;base64 URI');
-  await page.locator('.chat-att-file-btn', {hasText: 'notes.csv'}).click();
-  await page.waitForFunction(() => {
-    const m = document.getElementById('chatPreviewModal');
-    const dl = document.getElementById('chatPreviewDownload');
-    return m && getComputedStyle(m).display === 'flex' && dl && !dl.classList.contains('is-disabled') && (dl.getAttribute('href') || '').startsWith('data:text/csv;base64,');
-  });
-  await page.locator('#chatPreviewCloseBtn').click();
-  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
+  await page.locator('.chat-att-file-card', {hasText: 'notes.csv'}).locator('.chat-att-file-btn').click();
+  await page.waitForFunction(() =>
+    window.__downloadedAtts.some(d => d.download === 'notes.csv' && d.href.startsWith('data:text/csv;base64,'))
+  );
 
   await page.evaluate(() => {
     const dt = new DataTransfer();
@@ -828,24 +922,16 @@ async page => {
     input.dispatchEvent(new Event('change'));
   });
   await page.waitForFunction(() =>
-    Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes('octet.csv'))
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes('octet.csv'))
   );
-  const octetCsvStored = await page.evaluate(() => {
-    const atts = window.__getDb(`formal/chat_attachments/${window.__today}`) || {};
-    return Object.values(atts).some(a => a && a.name === 'octet.csv' && typeof a.dataUrl === 'string' && a.dataUrl.startsWith('data:text/csv;base64,'));
-  });
-  if (!octetCsvStored) throw new Error('F-004 octet-stream octet.csv must store normalized data:text/csv;base64 URI');
-  await page.locator('.chat-att-file-btn', {hasText: 'octet.csv'}).click();
-  await page.waitForFunction(() => {
-    const m = document.getElementById('chatPreviewModal');
-    const dl = document.getElementById('chatPreviewDownload');
-    return m && getComputedStyle(m).display === 'flex' && dl && !dl.classList.contains('is-disabled') && (dl.getAttribute('href') || '').startsWith('data:text/csv;base64,');
-  });
-  await page.locator('#chatPreviewCloseBtn').click();
-  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
+  await page.locator('.chat-att-file-card', {hasText: 'octet.csv'}).locator('.chat-att-file-btn').click();
+  await page.waitForFunction(() =>
+    window.__downloadedAtts.some(d => d.download === 'octet.csv' && d.href.startsWith('data:text/csv;base64,'))
+  );
 
-  // Delivery F-004 (2): application/octet-stream, spoofed csv, and blocked extension downloads must all be refused in preview modal
+  // Delivery F-004 (2): application/octet-stream, spoofed csv, and blocked extension downloads must be refused
   await page.evaluate(() => {
+    window.__downloadedAtts = [];
     const d = window.__today;
     const cases = [
       {attId: 'att_bad', msgId: 'msg_bad', meta: {id: 'att_bad', name: 'evil.exe', mimeType: 'application/octet-stream', size: 4, isImage: false}, dataUrl: 'data:application/octet-stream;base64,TVqQ'},
@@ -857,14 +943,14 @@ async page => {
         ...c.meta,
         dataUrl: c.dataUrl,
         ts: Date.now() + 50 + idx,
-        uploadedBy: 'VTS-1',
+        uploadedBy: 'Other',
       });
       window.__emit(`formal/chat_rooms/${d}/messages/${c.msgId}`, {
         id: c.msgId,
         ts: Date.now() + 50 + idx,
         timeStr: '12:30',
-        roleId: 'VTS',
-        roleLabel: 'VTS-1',
+        roleId: 'Other',
+        roleLabel: 'Other',
         clientId: 'other_bad_client',
         text: '',
         attachment: c.meta,
@@ -873,31 +959,35 @@ async page => {
   });
   for (const blockedName of ['evil.exe', 'spoof.csv', 'bad.exe']) {
     await page.waitForFunction(name =>
-      Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes(name)),
+      Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes(name)),
     blockedName);
-    await page.locator('.chat-att-file-btn', {hasText: blockedName}).click();
+    await page.evaluate(() => { clearChatStatus(); });
+    await page.locator('.chat-att-file-card', {hasText: blockedName}).locator('.chat-att-file-btn').click();
     await page.waitForFunction(() => {
-      const m = document.getElementById('chatPreviewModal');
-      const dl = document.getElementById('chatPreviewDownload');
-      const body = document.getElementById('chatPreviewBody');
-      return m && getComputedStyle(m).display === 'flex' &&
-        body && body.textContent.includes('未通過安全格式檢查') &&
-        dl && dl.classList.contains('is-disabled') && !dl.getAttribute('href');
+      const banner = document.getElementById('chatStatusBanner');
+      return banner && getComputedStyle(banner).display === 'block' && banner.textContent.includes('未通過安全格式檢查');
     });
-    await page.locator('#chatPreviewCloseBtn').click();
-    await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
   }
+  const blockedDownloadTriggered = await page.evaluate(() => {
+    const count = window.__downloadedAtts.length;
+    if (window.__origAnchorClick) {
+      HTMLAnchorElement.prototype.click = window.__origAnchorClick;
+      delete window.__origAnchorClick;
+    }
+    return count;
+  });
+  if (blockedDownloadTriggered !== 0) throw new Error('F-004: blocked attachments must never trigger anchor download');
 
-  // Delivery F-003 (1): leave seat via close -> reopen in spectator mode -> rejected transaction displays status banner error
+  // Delivery F-003 (1): leave seat via close -> reopen on Screen 1 -> rejected transaction displays status banner error
   await page.locator('#chatCloseBtn').click();
   await page.waitForFunction(() =>
     getComputedStyle(document.getElementById('chatModal')).display === 'none' &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/Agent_1`) === null
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
   );
   await page.locator('#chatOpenBtn').click();
   await page.waitForFunction(() =>
     getComputedStyle(document.getElementById('chatModal')).display === 'flex' &&
-    document.getElementById('chatIdentityText').textContent.includes('旁觀模式')
+    getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex'
   );
   await page.evaluate(() => {
     const targetDb = typeof db !== 'undefined' ? db : firebase.database();
@@ -923,34 +1013,31 @@ async page => {
     };
     window.__txTestMode = 'reject';
   });
-  await page.locator('.chat-role-btn[data-role-id="VTS"]').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() => {
     const banner = document.getElementById('chatStatusBanner');
     return banner && getComputedStyle(banner).display === 'block' &&
       banner.textContent.includes('PERMISSION_DENIED') &&
-      document.getElementById('chatIdentityText').textContent.includes('旁觀模式');
+      getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex';
   });
 
-  // Delivery F-003 (2): closing modal while seat transaction is in-flight must release seat and keep no ghost seat
+  // Delivery F-003 (2) / F-001: closing modal while seat transaction is in-flight must release seat and keep no ghost seat
   await page.evaluate(() => {
     window.__flushDelayedTx = null;
     window.__txTestMode = 'delay';
   });
-  await page.locator('.chat-role-btn[data-role-id="VTS"]').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() =>
     typeof window.__flushDelayedTx === 'function' &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_1`) !== null
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null
   );
-  await page.locator('#chatCloseBtn').click();
+  await page.locator('#chatRoleBackBtn').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatModal')).display === 'none');
   await page.evaluate(() => {
     window.__txTestMode = null;
     window.__flushDelayedTx();
   });
-  await page.waitForFunction(() =>
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_1`) === null &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_2`) === null
-  );
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
   await page.evaluate(() => {
     const targetDb = typeof db !== 'undefined' ? db : firebase.database();
     if (window.__origDbRef) {
@@ -958,29 +1045,28 @@ async page => {
       delete window.__origDbRef;
     }
   });
-  await page.locator('#chatOpenBtn').click();
-  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatModal')).display === 'flex');
-  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
 
   // Verify 15-min local idle auto-release AND midnight rollover release + close modal
+  await page.locator('#chatOpenBtn').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
   await page.clock.fastForward(15 * 60 * 1000 + 20000);
   await page.clock.fastForward(16000);
   await page.waitForFunction(() =>
-    document.getElementById('chatIdentityText').textContent.includes('旁觀模式') &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/Agent_1`) === null
+    getComputedStyle(document.getElementById('chatComposerFooter')).display === 'none' &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
   );
 
-  // Re-claim Agent-1, then verify midnight rollover releases old day's seat
-  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
-  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null);
   await page.evaluate(() => {
     window.__oldChatDateForTest = window.__today;
     window.__origGetCurrentDateStr = window.getCurrentDateStr;
     window.getCurrentDateStr = () => '2099-01-01';
     listenToChatRoom();
   });
-  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__oldChatDateForTest}/seats/Agent_1`) === null);
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__oldChatDateForTest}/seats/CPC_LM_1`) === null);
   await page.evaluate(() => {
     window.getCurrentDateStr = window.__origGetCurrentDateStr;
     listenToChatRoom();

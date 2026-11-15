@@ -154,27 +154,19 @@
         .wind-container.is-animating .pulso-wind-3 {
             animation: pulso-slide-right 0.5s ease-in-out 0.12s 1;
         }
-        .pulso-msg-bubble {
+        .pulso-ms-back {
             transform-box: view-box;
-            transform-origin: 12px 12.498px;
+            transform-origin: 9px 8.498px;
         }
-        .pulso-msg-line-1,
-        .pulso-msg-line-2,
-        .pulso-msg-line-3 {
+        .pulso-ms-front {
             transform-box: view-box;
-            transform-origin: 7px 11px;
+            transform-origin: 15px 15.498px;
         }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-bubble {
-            animation: pulso-press 0.4s ease-in-out 0s 1;
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-back {
+            animation: pulso-ms-float 0.55s ease-in-out 0s 1;
         }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-1 {
-            animation: pulso-grow-x 0.45s ease-in-out 0.1s 1 backwards;
-        }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-2 {
-            animation: pulso-grow-x 0.45s ease-in-out 0.16s 1 backwards;
-        }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-3 {
-            animation: pulso-grow-x 0.45s ease-in-out 0.22s 1 backwards;
+        .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-front {
+            animation: pulso-ms-float 0.55s ease-in-out 0.12s 1;
         }
         .pulso-gear-group {
             transform-box: view-box;
@@ -188,15 +180,10 @@
             50% { transform: translateX(1.5px); }
             100% { transform: translateX(0); }
         }
-        @keyframes pulso-press {
-            0% { transform: scale(1); }
-            35% { transform: scale(0.96); }
-            70% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        @keyframes pulso-grow-x {
-            0% { transform: scaleX(0); }
-            100% { transform: scaleX(1); }
+        @keyframes pulso-ms-float {
+            0% { transform: translateY(0); }
+            45% { transform: translateY(-1.5px); }
+            100% { transform: translateY(0); }
         }
         @keyframes pulso-spin-180 {
             0% { transform: rotate(0deg); }
@@ -206,10 +193,8 @@
             .wind-container.is-animating .pulso-wind-1,
             .wind-container.is-animating .pulso-wind-2,
             .wind-container.is-animating .pulso-wind-3,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-bubble,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-1,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-2,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-msg-line-3,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-back,
+            .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-front,
             .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group {
                 animation: none !important;
             }
@@ -542,131 +527,290 @@
             user-select: none;
             animation: none;
         }
+        #chatModal {
+            padding: 12px;
+            box-sizing: border-box;
+        }
         .chat-modal-box {
-            width: 96% !important;
-            max-width: 720px !important;
-            max-height: 90vh !important;
+            width: 100% !important;
+            max-width: 480px !important;
+            height: min(88vh, 800px) !important;
+            max-height: 88vh !important;
             padding: 0 !important;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border-radius: 16px !important;
+            position: relative;
+            border-radius: 20px !important;
             background: #ffffff !important;
-            color: #0f172a !important;
+            color: #111827 !important;
             text-align: left !important;
-            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25) !important;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28) !important;
         }
-        .chat-modal-header {
+        @media (max-width: 600px) {
+            #chatModal {
+                padding: 0;
+            }
+            .chat-modal-box {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                border-radius: 0 !important;
+            }
+        }
+        .chat-screen {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #ffffff;
+        }
+        .chat-topbar {
+            background: #063b43;
+            color: #ffffff;
+            padding: 13px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 14px 18px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
+            flex-shrink: 0;
         }
-        .chat-modal-title-wrap {
+        .chat-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .chat-topbar-right {
             display: flex;
             align-items: center;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-shrink: 0;
         }
-        .chat-modal-title {
-            font-size: 1.05em;
-            font-weight: 700;
-            color: var(--text-blue);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .chat-meta-pill {
-            font-size: 12px;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: #e2e8f0;
-            color: #334155;
-        }
+        .chat-nav-btn,
         .chat-close-btn {
             background: transparent;
             border: none;
-            font-size: 24px;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 800;
             line-height: 1;
-            color: #64748b;
             cursor: pointer;
-            padding: 4px 8px;
+            padding: 6px 8px;
             border-radius: 8px;
-        }
-        .chat-close-btn:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-        .chat-role-bar {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 8px;
-            padding: 10px 14px;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        @media (max-width: 600px) {
-            .chat-role-bar {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-        .chat-role-btn {
-            display: flex;
-            flex-direction: column;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
-            padding: 7px 6px;
-            border-radius: 10px;
-            border: 2px solid transparent;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
         }
-        .chat-role-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
+        .chat-nav-btn:hover,
+        .chat-close-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
         }
-        .chat-role-btn.is-active {
-            box-shadow: 0 0 0 2px #0f172a;
+        .chat-modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .chat-role-btn.is-full:not(.is-active) {
-            opacity: 0.6;
-            cursor: not-allowed;
+        .chat-date-badge {
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
         }
-        .chat-role-count {
-            font-size: 11px;
-            font-weight: 600;
-            opacity: 0.9;
+        .chat-role-list {
+            flex: 1;
+            overflow-y: auto;
+            background: #ffffff;
+            min-height: 0;
         }
-        .chat-identity-bar {
+        .chat-role-item {
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            padding: 8px 16px;
-            font-size: 12.5px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-            color: #334155;
-            flex-wrap: wrap;
-        }
-        .chat-leave-btn {
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
+            gap: 12px;
+            padding: 16px 18px;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
             background: #ffffff;
-            color: #0f172a;
+            color: #111827;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            transition: background 0.14s ease;
+        }
+        .chat-role-item:hover:not(:disabled) {
+            background: #f8fafc;
+        }
+        .chat-role-item.is-active {
+            background: #f0fdfa;
+            box-shadow: inset 4px 0 0 #0d9488;
+        }
+        .chat-role-item.is-full:not(.is-active),
+        .chat-role-item:disabled:not(.is-active) {
+            background: #e5e7eb;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        .chat-role-item-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+        .chat-role-icon {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+        }
+        .chat-role-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.25;
+        }
+        .chat-role-item.is-full:not(.is-active) .chat-role-name {
+            color: #6b7280;
+        }
+        .chat-role-sub {
             font-size: 12px;
             font-weight: 600;
-            cursor: pointer;
+            color: #6b7280;
+            margin-top: 2px;
         }
-        .chat-leave-btn:hover {
-            background: #f1f5f9;
+        .chat-role-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #374151;
+            flex-shrink: 0;
+        }
+        .chat-role-item.is-full:not(.is-active) .chat-role-right {
+            color: #6b7280;
+        }
+        .chat-role-lock-img {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+        .chat-sheet-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            z-index: 30;
+        }
+        .chat-bottom-sheet {
+            background: #ffffff;
+            border-radius: 18px 18px 0 0;
+            padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+            box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.18);
+        }
+        .chat-sheet-handle {
+            width: 38px;
+            height: 4px;
+            background: #cbd5e1;
+            border-radius: 999px;
+            margin: 0 auto 12px;
+        }
+        .chat-sheet-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #111827;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .chat-sheet-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1.5px solid #cbd5e1;
+            font-size: 15px;
+            font-family: inherit;
+            color: #111827;
+            background: #ffffff;
+        }
+        .chat-sheet-input:focus {
+            outline: none;
+            border-color: #063b43;
+        }
+        .chat-sheet-hint {
+            font-size: 12.5px;
+            color: #6b7280;
+            margin: 8px 2px 14px;
+            font-weight: 600;
+        }
+        .chat-sheet-primary-btn {
+            width: 100%;
+            padding: 13px 16px;
+            border-radius: 10px;
+            border: none;
+            background: #063b43;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .chat-sheet-primary-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .chat-attach-sheet-list {
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-attach-option {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 4px;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            background: #ffffff;
+            color: #111827;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+        }
+        .chat-attach-option:last-child {
+            border-bottom: none;
+        }
+        .chat-attach-option-icon {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .chat-attach-option-title {
+            font-size: 15.5px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .chat-attach-option-sub {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-top: 2px;
         }
         .chat-status-banner {
             display: none;
@@ -676,29 +820,55 @@
             background: #fef2f2;
             color: #991b1b;
             border-bottom: 1px solid #fecaca;
+            flex-shrink: 0;
+        }
+        .chat-spectator-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px 4px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 700;
+            background: #ffffff;
+            flex-shrink: 0;
+        }
+        .chat-spectator-divider::before,
+        .chat-spectator-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e5e7eb;
+        }
+        .chat-spectator-pill {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 999px;
+            padding: 3px 12px;
+            color: #4b5563;
+            font-weight: 700;
         }
         .chat-messages-area {
             flex: 1;
-            min-height: 250px;
-            max-height: 46vh;
+            min-height: 0;
             overflow-y: auto;
             padding: 14px 16px;
-            background: #f4f4f5;
+            background: #ffffff;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .chat-empty-state {
             margin: auto;
             text-align: center;
-            color: #64748b;
+            color: #6b7280;
             font-size: 13.5px;
             padding: 24px 12px;
         }
         .chat-msg-row {
             display: flex;
             flex-direction: column;
-            max-width: 84%;
+            max-width: 82%;
             gap: 3px;
         }
         .chat-msg-row.is-other {
@@ -709,96 +879,145 @@
             align-self: flex-end;
             align-items: flex-end;
         }
-        .chat-msg-meta {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11.5px;
-            color: #64748b;
-        }
-        .chat-role-pill {
-            padding: 1px 7px;
-            border-radius: 999px;
-            font-size: 11px;
+        .chat-msg-sender {
+            font-size: 12px;
             font-weight: 700;
+            color: #4b5563;
+            padding: 0 2px;
         }
         .chat-bubble {
-            padding: 9px 12px;
-            font-size: 14px;
+            padding: 9px 13px;
+            font-size: 15px;
             line-height: 1.45;
             word-break: break-word;
             white-space: pre-wrap;
+            color: #111827;
         }
         .chat-msg-row.is-other .chat-bubble {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #e4e4e7;
-            border-left-width: 5px;
-            border-left-style: solid;
+            background: #e5e7eb;
             border-radius: 4px 14px 14px 14px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
         .chat-msg-row.is-self .chat-bubble {
-            background: #10458C;
-            color: #ffffff;
+            background: #b2ebe0;
             border-radius: 14px 4px 14px 14px;
-            box-shadow: 0 2px 6px rgba(16, 69, 140, 0.22);
+        }
+        .chat-msg-status {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 600;
+            padding: 0 2px;
         }
         .chat-msg-text {
             margin: 0;
         }
         .chat-att-wrap {
+            margin-top: 2px;
+        }
+        .chat-msg-text + .chat-att-wrap {
             margin-top: 6px;
         }
         .chat-att-thumb-btn {
-            display: inline-block;
+            display: block;
             border: none;
             padding: 0;
             background: transparent;
-            cursor: pointer;
-            border-radius: 8px;
+            cursor: zoom-in;
+            border-radius: 10px;
             overflow: hidden;
         }
         .chat-att-thumb-img {
             display: block;
-            max-width: 220px;
-            max-height: 160px;
-            border-radius: 8px;
+            max-width: 210px;
+            max-height: 170px;
+            border-radius: 10px;
             object-fit: cover;
         }
         .chat-att-loading {
             font-size: 12px;
-            opacity: 0.85;
-            padding: 6px 8px;
-            border-radius: 6px;
+            color: #374151;
+            padding: 8px 10px;
+            border-radius: 8px;
             background: rgba(15, 23, 42, 0.06);
+        }
+        .chat-att-file-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+        }
+        .chat-att-file-icon {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .chat-att-file-meta {
+            flex: 1;
+            min-width: 0;
+        }
+        .chat-att-file-name {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #111827;
+            word-break: break-all;
+        }
+        .chat-att-file-size {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-top: 2px;
         }
         .chat-att-file-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 7px 10px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            color: #0f172a;
-            font-size: 12.5px;
+            justify-content: center;
+            padding: 4px;
+            border: none;
+            background: transparent;
             cursor: pointer;
-            text-align: left;
+            flex-shrink: 0;
+            border-radius: 8px;
+        }
+        .chat-att-file-btn:hover {
+            background: rgba(6, 59, 67, 0.1);
+        }
+        .chat-att-download-img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            display: block;
+        }
+        .chat-upload-progress-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(6, 59, 67, 0.16);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .chat-upload-progress-fill {
+            height: 100%;
+            background: #063b43;
+            border-radius: 999px;
+            transition: width 0.15s ease;
+        }
+        .chat-cancel-upload-btn {
+            margin-top: 6px;
+            padding: 3px 9px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 1px solid #991b1b;
+            background: #ffffff;
+            color: #991b1b;
+            cursor: pointer;
+            font-family: inherit;
         }
         .chat-composer-footer {
-            padding: 10px 14px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-        }
-        .chat-spectator-bar {
-            text-align: center;
-            color: #475569;
-            font-size: 13px;
-            padding: 6px 8px;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
             background: #f8fafc;
-            border-radius: 8px;
-            border: 1px dashed #cbd5e1;
+            border-top: 1px solid #e5e7eb;
+            flex-shrink: 0;
         }
         .chat-active-composer {
             display: flex;
@@ -806,13 +1025,19 @@
             gap: 8px;
         }
         .chat-attach-btn {
-            padding: 8px 10px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 999px;
             border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            font-size: 16px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 18px;
             cursor: pointer;
             flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .chat-attach-btn:disabled,
         .chat-send-btn:disabled {
@@ -824,68 +1049,98 @@
             resize: none;
             min-height: 40px;
             max-height: 96px;
-            padding: 8px 10px;
-            border-radius: 8px;
+            padding: 9px 14px;
+            border-radius: 20px;
             border: 1px solid #cbd5e1;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 14.5px;
             line-height: 1.4;
-            color: #0f172a;
+            color: #111827;
             background: #ffffff;
             box-sizing: border-box;
         }
         .chat-send-btn {
-            padding: 9px 16px;
-            border-radius: 8px;
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 20px;
             border: none;
-            background: #10458C;
+            background: #063b43;
             color: #ffffff;
-            font-size: 13.5px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             flex-shrink: 0;
+            font-family: inherit;
         }
         .chat-preview-box {
-            width: 94% !important;
-            max-width: 680px !important;
-            max-height: 88vh !important;
-            padding: 18px !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-            border-radius: 14px !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            padding: 0 !important;
+            background: rgba(9, 13, 22, 0.96) !important;
+            color: #f8fafc !important;
+            border-radius: 0 !important;
             display: flex;
             flex-direction: column;
-            gap: 12px;
             text-align: left !important;
         }
-        .chat-preview-body {
+        .chat-preview-header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            background: rgba(9, 13, 22, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            flex-shrink: 0;
+        }
+        .chat-preview-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 120px;
-            max-height: 60vh;
             overflow: auto;
-            background: #f4f4f5;
-            border-radius: 10px;
-            padding: 12px;
+            padding: 16px;
+            background: transparent;
         }
         .chat-preview-img {
             max-width: 100%;
-            max-height: 54vh;
+            max-height: 76dvh;
             border-radius: 8px;
+            transform-origin: center center;
+            transition: transform 0.15s ease;
+            cursor: zoom-in;
+            user-select: none;
         }
         .chat-preview-actions {
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 10px;
             align-items: center;
+            padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+            background: rgba(9, 13, 22, 0.88);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            flex-shrink: 0;
+        }
+        .chat-zoom-btn {
+            padding: 7px 13px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
         }
         .chat-preview-download {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 8px;
-            background: #10458C;
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: #0d9488;
             color: #ffffff;
             text-decoration: none;
             font-size: 13px;
@@ -893,7 +1148,7 @@
         }
         .chat-preview-download.is-disabled {
             pointer-events: none;
-            opacity: 0.5;
+            opacity: 0.45;
         }
         .cpc-btn {
             width: 32px;
@@ -1330,12 +1585,10 @@
     <!-- 船期表區塊 -->
     <div class="schedule-section">
         <div class="schedule-header">
-            <h3 id="chatOpenBtn" role="button" tabindex="0" aria-label="開啟接船對話" onclick="openChatModal()" style="display: inline-flex; align-items: center; gap: 2px;">
-                <svg class="pulso-icon pulso-message-square-text" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
-                    <path class="pulso-msg-bubble" d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>
-                    <path class="pulso-msg-line-1" d="M7 7h8"/>
-                    <path class="pulso-msg-line-2" d="M7 11h10"/>
-                    <path class="pulso-msg-line-3" d="M7 15h6"/>
+            <h3 id="chatOpenBtn" role="button" tabindex="0" aria-label="開啟 LNG 船聊天室" onclick="openChatModal()" style="display: inline-flex; align-items: center; gap: 2px;">
+                <svg class="pulso-icon pulso-messages-square" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
+                    <path class="pulso-ms-back" d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    <path class="pulso-ms-front" d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/>
                 </svg>
                 <span id="chatUnreadBadge" class="chat-unread-badge" style="display: none;" aria-label="有未讀新對話">!</span>
             </h3>
@@ -1363,33 +1616,83 @@
     <div id="loading"></div>
 </div>
 
-<!-- 手動監控設定 Modal -->
-<div id="chatModal" class="modal-overlay" style="display: none; z-index: 2000;">
+<!-- LNG 船聊天室 Modal (v2 PWA Mobile) -->
+<div id="chatModal" class="modal-overlay" style="display: none; z-index: 2050;">
     <div class="modal-content chat-modal-box" role="dialog" aria-modal="true" aria-labelledby="chatModalTitle">
-        <div class="chat-modal-header">
-            <div class="chat-modal-title-wrap">
-                <span id="chatModalTitle" class="chat-modal-title"><img src="talk.png" alt="" style="width: 22px; height: 22px; object-fit: contain; vertical-align: middle;">即時溝通</span>
-                <span id="chatDateBadge" class="chat-meta-pill">--</span>
-                <span id="chatOnlineSummary" class="chat-meta-pill">線上發言 0/10</span>
-            </div>
-            <button id="chatCloseBtn" type="button" class="chat-close-btn" aria-label="關閉對話視窗" onclick="closeChatModal()">&times;</button>
-        </div>
-        <div id="chatRoleBar" class="chat-role-bar" aria-label="選擇發言角色"></div>
-        <div id="chatIdentityBar" class="chat-identity-bar">
-            <span id="chatIdentityText">目前為旁觀模式（僅供閱讀與下載附件），請點選上方角色後發言（15 分鐘無操作自動釋放）</span>
-            <button id="chatLeaveRoleBtn" type="button" class="chat-leave-btn" style="display: none;" onclick="leaveChatRole()">切換 / 退出角色</button>
-        </div>
         <div id="chatStatusBanner" class="chat-status-banner" role="alert"></div>
-        <div id="chatMessagesContainer" class="chat-messages-area">
-            <div class="chat-empty-state">今日尚無接船對話，歡迎隨時點選上方身分發起溝通</div>
+
+        <!-- 畫面 1: 選擇角色 -->
+        <div id="chatRoleScreen" class="chat-screen">
+            <div class="chat-topbar">
+                <div class="chat-topbar-left">
+                    <button id="chatRoleBackBtn" type="button" class="chat-nav-btn" aria-label="返回主畫面" onclick="closeChatModal()">&larr;</button>
+                    <span class="chat-modal-title">選擇角色</span>
+                </div>
+                <div class="chat-topbar-right">
+                    <span id="chatDateBadge" class="chat-date-badge">--</span>
+                </div>
+            </div>
+            <div id="chatRoleBar" class="chat-role-list" aria-label="選擇發言角色"></div>
+            <div id="chatNameSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
+                <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatNameSheetTitle">
+                    <div class="chat-sheet-handle"></div>
+                    <div id="chatNameSheetTitle" class="chat-sheet-title">輸入名稱</div>
+                    <input id="chatNameInput" type="text" class="chat-sheet-input" maxlength="20" placeholder="顯示名稱" autocomplete="off">
+                    <div class="chat-sheet-hint">留空則以觀眾身分進入</div>
+                    <button id="chatEnterRoomBtn" type="button" class="chat-sheet-primary-btn" onclick="submitChatCustomName()">進入聊天室</button>
+                </div>
+            </div>
         </div>
-        <div id="chatComposerFooter" class="chat-composer-footer">
-            <div id="chatSpectatorBar" class="chat-spectator-bar">目前為旁觀模式，請先點選上方角色即可發言或上傳照片／文件</div>
-            <div id="chatActiveComposer" class="chat-active-composer" style="display: none;">
-                <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="上傳圖片或文件 (上限 2.5 MB)" aria-label="上傳圖片或文件">📎</button>
-                <input id="chatFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display: none;">
-                <textarea id="chatTextInput" class="chat-text-input" rows="2" maxlength="2000" placeholder="輸入接船對話... (Enter 發送 / Shift+Enter 換行)"></textarea>
-                <button id="chatSendBtn" type="button" class="chat-send-btn" onclick="sendChatMessage()">發送</button>
+
+        <!-- 畫面 2: LNG 船聊天室 -->
+        <div id="chatRoomScreen" class="chat-screen" style="display: none;">
+            <div class="chat-topbar">
+                <div class="chat-topbar-left">
+                    <button id="chatBackToRolesBtn" type="button" class="chat-nav-btn" aria-label="返回選擇角色" onclick="showChatRoleScreen()">&larr;</button>
+                    <span id="chatModalTitle" class="chat-modal-title">LNG 船聊天室</span>
+                </div>
+                <div class="chat-topbar-right">
+                    <button id="chatCloseBtn" type="button" class="chat-close-btn" aria-label="關閉聊天室" onclick="closeChatModal()">&times;</button>
+                </div>
+            </div>
+            <div id="chatSpectatorBar" class="chat-spectator-divider">
+                <span class="chat-spectator-pill" id="chatSpectatorPill">觀眾模式</span>
+            </div>
+            <div id="chatMessagesContainer" class="chat-messages-area">
+                <div class="chat-empty-state">今日尚無聊天訊息，歡迎選擇角色發起對話</div>
+            </div>
+            <div id="chatComposerFooter" class="chat-composer-footer" style="display: none;">
+                <div id="chatActiveComposer" class="chat-active-composer">
+                    <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="新增附件 (上限 2.5 MB)" aria-label="新增附件">📎</button>
+                    <input id="chatCameraInput" type="file" accept="image/*" capture="environment" style="display: none;">
+                    <input id="chatGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
+                    <input id="chatFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display: none;">
+                    <textarea id="chatTextInput" class="chat-text-input" rows="1" maxlength="2000" placeholder="輸入訊息"></textarea>
+                    <button id="chatSendBtn" type="button" class="chat-send-btn" onclick="sendChatMessage()">發送</button>
+                </div>
+            </div>
+            <div id="chatAttachSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
+                <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatAttachSheetTitle">
+                    <div class="chat-sheet-handle"></div>
+                    <div id="chatAttachSheetTitle" class="chat-sheet-title">新增附件</div>
+                    <div class="chat-attach-sheet-list">
+                        <button id="chatAttachCameraBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatCameraInput')">
+                            <img class="chat-attach-option-icon" src="pic/拍照.png" alt="拍照">
+                            <div><div class="chat-attach-option-title">拍照</div></div>
+                        </button>
+                        <button id="chatAttachGalleryBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatGalleryInput')">
+                            <img class="chat-attach-option-icon" src="pic/從相簿選取.png" alt="從相簿選取">
+                            <div><div class="chat-attach-option-title">從相簿選取</div></div>
+                        </button>
+                        <button id="chatAttachDocBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatFileInput')">
+                            <img class="chat-attach-option-icon" src="pic/選擇檔案.png" alt="選擇檔案">
+                            <div>
+                                <div class="chat-attach-option-title">選擇檔案</div>
+                                <div class="chat-attach-option-sub">PDF、Excel</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1397,14 +1700,17 @@
 
 <div id="chatPreviewModal" class="modal-overlay" style="display: none; z-index: 2100;">
     <div class="modal-content chat-preview-box" role="dialog" aria-modal="true" aria-labelledby="chatPreviewTitle">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-            <strong id="chatPreviewTitle" style="font-size: 15px; word-break: break-all;">附件預覽</strong>
-            <button id="chatPreviewCloseBtn" type="button" class="chat-close-btn" aria-label="關閉附件預覽" onclick="closeChatPreviewModal()">&times;</button>
+        <div class="chat-preview-header">
+            <strong id="chatPreviewTitle" style="font-size: 15px; word-break: break-all;">照片預覽</strong>
+            <button id="chatPreviewCloseBtn" type="button" class="chat-close-btn" aria-label="關閉全螢幕預覽" onclick="closeChatPreviewModal()">&times;</button>
         </div>
         <div id="chatPreviewBody" class="chat-preview-body"></div>
         <div class="chat-preview-actions">
-            <a id="chatPreviewDownload" class="chat-preview-download is-disabled">下載檔案</a>
-            <button type="button" class="chat-leave-btn" onclick="closeChatPreviewModal()">關閉</button>
+            <button id="chatZoomOutBtn" type="button" class="chat-zoom-btn" aria-label="縮小" onclick="adjustChatPreviewZoom(-0.25)">－</button>
+            <button id="chatZoomResetBtn" type="button" class="chat-zoom-btn" onclick="resetChatPreviewZoom()">100%</button>
+            <button id="chatZoomInBtn" type="button" class="chat-zoom-btn" aria-label="放大" onclick="adjustChatPreviewZoom(0.25)">＋</button>
+            <a id="chatPreviewDownload" class="chat-preview-download is-disabled">下載圖片</a>
+            <button type="button" class="chat-zoom-btn" onclick="closeChatPreviewModal()">關閉</button>
         </div>
     </div>
 </div>
@@ -2330,14 +2636,12 @@
         }, { passive: false });
     }
 
-    // ==================== 接船即時對話視窗 (v1.3) ====================
-    const CHAT_ROLE_ORDER = ['CPCLNG', 'Pilot', 'VTS', 'Agent', 'Tug'];
+    // ==================== LNG 船聊天室 (v2 PWA Mobile) ====================
+    const CHAT_ROLE_ORDER = ['CPC_LM', 'Pilot', 'Other'];
     const CHAT_ROLES = {
-        CPCLNG: { id: 'CPCLNG', label: 'CPCLNG', border: '#1d4ed8', pillBg: '#dbeafe', pillFg: '#1e40af' },
-        Pilot: { id: 'Pilot', label: 'Pilot', border: '#7c3aed', pillBg: '#ede9fe', pillFg: '#5b21b6' },
-        VTS: { id: 'VTS', label: 'VTS', border: '#059669', pillBg: '#d1fae5', pillFg: '#065f46' },
-        Agent: { id: 'Agent', label: 'Agent', border: '#ea580c', pillBg: '#ffedd5', pillFg: '#9a3412' },
-        Tug: { id: 'Tug', label: '拖船', border: '#be123c', pillBg: '#ffe4e6', pillFg: '#9f1239' }
+        CPC_LM: { id: 'CPC_LM', label: '中油LNG', maxSeats: 1, icon: 'pic/CPC_LM.png', needsCustomName: false },
+        Pilot:  { id: 'Pilot',  label: 'Pilot',   maxSeats: 1, icon: 'pic/Pilot.png',  needsCustomName: false },
+        Other:  { id: 'Other',  label: '其他',    maxSeats: 15, icon: 'pic/其他.png',  needsCustomName: true }
     };
     const CHAT_IDLE_MS = 15 * 60 * 1000;
     const CHAT_HEARTBEAT_MS = 60 * 1000;
@@ -2387,6 +2691,10 @@
     let mySeatRef = null;
     let isSelectingChatRole = false;
     let isUploadingChatFile = false;
+    let chatUploadingItem = null;
+    let chatUploadSeq = 0;
+    let chatActiveScreen = 'roles';
+    let chatPreviewZoom = 1;
     let lastChatActivityAt = Date.now();
     let chatHeartbeatTimer = null;
     let chatUiRefreshTimer = null;
@@ -2407,6 +2715,14 @@
 
     function isChatSeatActive(seat, nowServer) {
         return Boolean(seat && seat.clientId && (nowServer - Number(seat.activeAt || 0) < CHAT_IDLE_MS));
+    }
+
+    function formatRocDateStr(dateStr) {
+        const s = String(dateStr || '').trim();
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return s || '--';
+        const rocYear = Number(m[1]) - 1911;
+        return `${rocYear}/${m[2]}/${m[3]}`;
     }
 
     function showChatStatus(msg, isError = true) {
@@ -2552,71 +2868,245 @@
         return Math.max(0, Math.floor((b64.length * 3) / 4) - pad);
     }
 
+    function getRoleActiveCount(roleId, nowServer) {
+        const role = CHAT_ROLES[roleId];
+        if (!role) return 0;
+        let activeCount = 0;
+        for (let slot = 1; slot <= role.maxSeats; slot++) {
+            const seat = chatSeatsData[`${roleId}_${slot}`];
+            if (isChatSeatActive(seat, nowServer)) activeCount += 1;
+        }
+        return activeCount;
+    }
+
+    function closeChatNameSheet() {
+        const backdrop = document.getElementById('chatNameSheetBackdrop');
+        if (backdrop) backdrop.style.display = 'none';
+    }
+
+    function openChatNameSheet() {
+        recordChatActivity();
+        const backdrop = document.getElementById('chatNameSheetBackdrop');
+        const input = document.getElementById('chatNameInput');
+        if (!backdrop) return;
+        if (input) {
+            input.value = (mySeat && mySeat.roleId === 'Other') ? (mySeat.roleLabel || '') : '';
+        }
+        backdrop.style.display = 'flex';
+        if (input) {
+            setTimeout(() => { try { input.focus(); } catch (_) {} }, 30);
+        }
+    }
+
+    function closeChatAttachSheet() {
+        const backdrop = document.getElementById('chatAttachSheetBackdrop');
+        if (backdrop) backdrop.style.display = 'none';
+    }
+
+    function openChatAttachSheet() {
+        recordChatActivity();
+        if (isUploadingChatFile) return;
+        if (!mySeat) {
+            showChatStatus('觀眾模式僅供瀏覽，請先選擇角色後再上傳附件', true);
+            return;
+        }
+        const backdrop = document.getElementById('chatAttachSheetBackdrop');
+        if (backdrop) backdrop.style.display = 'flex';
+    }
+
+    function triggerChatFileInput(inputId) {
+        recordChatActivity();
+        closeChatAttachSheet();
+        const el = document.getElementById(inputId);
+        if (el) el.click();
+    }
+
+    function showChatRoleScreen() {
+        recordChatActivity();
+        chatActiveScreen = 'roles';
+        closeChatNameSheet();
+        closeChatAttachSheet();
+        const roleScreen = document.getElementById('chatRoleScreen');
+        const roomScreen = document.getElementById('chatRoomScreen');
+        if (roleScreen) roleScreen.style.display = 'flex';
+        if (roomScreen) roomScreen.style.display = 'none';
+        renderChatRoleBar();
+    }
+
+    function showChatRoomScreen() {
+        recordChatActivity();
+        chatActiveScreen = 'room';
+        closeChatNameSheet();
+        closeChatAttachSheet();
+        const roleScreen = document.getElementById('chatRoleScreen');
+        const roomScreen = document.getElementById('chatRoomScreen');
+        if (roleScreen) roleScreen.style.display = 'none';
+        if (roomScreen) roomScreen.style.display = 'flex';
+        markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
+        renderChatIdentityAndComposer();
+        renderChatMessages();
+        const container = document.getElementById('chatMessagesContainer');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+
     function renderChatRoleBar() {
         const bar = document.getElementById('chatRoleBar');
         const dateBadge = document.getElementById('chatDateBadge');
-        const summary = document.getElementById('chatOnlineSummary');
-        if (dateBadge) dateBadge.textContent = currentChatDateStr || getCurrentDateStr();
+        if (dateBadge) dateBadge.textContent = formatRocDateStr(currentChatDateStr || getCurrentDateStr());
         if (!bar) return;
 
         const nowServer = getServerNow();
-        let totalActive = 0;
         bar.textContent = '';
 
         CHAT_ROLE_ORDER.forEach(roleId => {
             const role = CHAT_ROLES[roleId];
-            let activeCount = 0;
-            [1, 2].forEach(slot => {
-                const seat = chatSeatsData[`${roleId}_${slot}`];
-                if (isChatSeatActive(seat, nowServer)) activeCount += 1;
-            });
-            totalActive += activeCount;
-
+            const activeCount = getRoleActiveCount(roleId, nowServer);
             const isCurrentRole = Boolean(mySeat && mySeat.roleId === roleId);
-            const isFull = activeCount >= 2 && !isCurrentRole;
+            const isFull = activeCount >= role.maxSeats && !isCurrentRole;
+
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'chat-role-btn' + (isCurrentRole ? ' is-active' : '') + (isFull ? ' is-full' : '');
+            btn.className = 'chat-role-item' + (isCurrentRole ? ' is-active' : '') + (isFull ? ' is-full' : '');
             btn.dataset.roleId = roleId;
-            btn.style.background = role.pillBg;
-            btn.style.color = role.pillFg;
-            btn.style.borderColor = role.border;
-            btn.disabled = isSelectingChatRole;
+            btn.disabled = isSelectingChatRole || isFull;
             btn.setAttribute('aria-pressed', isCurrentRole ? 'true' : 'false');
-            btn.onclick = () => selectChatRole(roleId);
+            btn.onclick = () => {
+                if (role.needsCustomName) {
+                    openChatNameSheet();
+                } else if (isCurrentRole) {
+                    showChatRoomScreen();
+                } else {
+                    enterChatWithRole(roleId, role.label);
+                }
+            };
 
-            const titleSpan = document.createElement('span');
-            titleSpan.textContent = role.label;
+            const left = document.createElement('div');
+            left.className = 'chat-role-item-left';
+            const iconImg = document.createElement('img');
+            iconImg.className = 'chat-role-icon';
+            iconImg.src = role.icon;
+            iconImg.alt = role.label;
+
+            const textWrap = document.createElement('div');
+            const nameEl = document.createElement('div');
+            nameEl.className = 'chat-role-name';
+            nameEl.textContent = role.label;
+            textWrap.appendChild(nameEl);
+
+            if (isCurrentRole) {
+                const subEl = document.createElement('div');
+                subEl.className = 'chat-role-sub';
+                subEl.textContent = (role.id === 'Other' && mySeat.roleLabel)
+                    ? `目前使用中：${mySeat.roleLabel}`
+                    : '目前使用中';
+                textWrap.appendChild(subEl);
+            }
+
+            left.appendChild(iconImg);
+            left.appendChild(textWrap);
+
+            const right = document.createElement('div');
+            right.className = 'chat-role-right';
             const countSpan = document.createElement('span');
             countSpan.className = 'chat-role-count';
-            countSpan.textContent = activeCount >= 2 ? '2/2 滿' : `${activeCount}/2`;
+            countSpan.textContent = `${activeCount}/${role.maxSeats}`;
+            right.appendChild(countSpan);
 
-            btn.appendChild(titleSpan);
-            btn.appendChild(countSpan);
+            if (isFull) {
+                const lockImg = document.createElement('img');
+                lockImg.className = 'chat-role-lock-img';
+                lockImg.src = 'pic/lock.png';
+                lockImg.alt = '已鎖定';
+                right.appendChild(lockImg);
+            } else {
+                const arrowSpan = document.createElement('span');
+                arrowSpan.textContent = '›';
+                right.appendChild(arrowSpan);
+            }
+
+            btn.appendChild(left);
+            btn.appendChild(right);
             bar.appendChild(btn);
         });
 
-        if (summary) summary.textContent = `線上發言 ${totalActive}/10`;
+        const isSpectatorNow = !mySeat;
+        const specBtn = document.createElement('button');
+        specBtn.type = 'button';
+        specBtn.className = 'chat-role-item' + (isSpectatorNow ? ' is-active' : '');
+        specBtn.dataset.roleId = 'Spectator';
+        specBtn.disabled = isSelectingChatRole;
+        specBtn.onclick = () => enterSpectatorMode();
+
+        const specLeft = document.createElement('div');
+        specLeft.className = 'chat-role-item-left';
+        const specIcon = document.createElement('img');
+        specIcon.className = 'chat-role-icon';
+        specIcon.src = 'pic/觀眾.png';
+        specIcon.alt = '觀眾';
+
+        const specText = document.createElement('div');
+        const specName = document.createElement('div');
+        specName.className = 'chat-role-name';
+        specName.textContent = '觀眾';
+        const specSub = document.createElement('div');
+        specSub.className = 'chat-role-sub';
+        specSub.textContent = '僅觀看';
+        specText.appendChild(specName);
+        specText.appendChild(specSub);
+        specLeft.appendChild(specIcon);
+        specLeft.appendChild(specText);
+
+        const specRight = document.createElement('div');
+        specRight.className = 'chat-role-right';
+        const specArrow = document.createElement('span');
+        specArrow.textContent = '›';
+        specRight.appendChild(specArrow);
+
+        specBtn.appendChild(specLeft);
+        specBtn.appendChild(specRight);
+        bar.appendChild(specBtn);
     }
 
     function renderChatIdentityAndComposer() {
-        const idText = document.getElementById('chatIdentityText');
-        const leaveBtn = document.getElementById('chatLeaveRoleBtn');
         const specBar = document.getElementById('chatSpectatorBar');
-        const composer = document.getElementById('chatActiveComposer');
-        if (!idText || !leaveBtn || !specBar || !composer) return;
+        const footer = document.getElementById('chatComposerFooter');
+        if (!specBar || !footer) return;
 
         if (mySeat) {
-            idText.textContent = `目前發言身分：${mySeat.roleLabel}（15 分鐘無操作自動釋放）`;
-            leaveBtn.style.display = 'inline-block';
             specBar.style.display = 'none';
-            composer.style.display = 'flex';
+            footer.style.display = 'block';
         } else {
-            idText.textContent = '目前為旁觀模式（僅供閱讀與下載附件），請點選上方角色後發言（15 分鐘無操作自動釋放）';
-            leaveBtn.style.display = 'none';
-            specBar.style.display = 'block';
-            composer.style.display = 'none';
+            specBar.style.display = 'flex';
+            footer.style.display = 'none';
         }
+    }
+
+    async function enterSpectatorMode() {
+        recordChatActivity();
+        clearChatStatus();
+        closeChatNameSheet();
+        if (mySeat) {
+            await leaveChatRole({ keepOnDisconnect: false });
+        }
+        showChatRoomScreen();
+    }
+
+    async function enterChatWithRole(roleId, customLabel) {
+        const claimed = await selectChatRole(roleId, customLabel);
+        if (claimed) {
+            showChatRoomScreen();
+        }
+    }
+
+    async function submitChatCustomName() {
+        const input = document.getElementById('chatNameInput');
+        const trimmed = input ? String(input.value || '').trim().slice(0, 20) : '';
+        closeChatNameSheet();
+        if (!trimmed) {
+            await enterSpectatorMode();
+            return;
+        }
+        await enterChatWithRole('Other', trimmed);
     }
 
     function loadChatAttachment(dateStr, attId) {
@@ -2641,6 +3131,27 @@
         return chatAttachmentPending[cacheKey];
     }
 
+    async function downloadChatFileAttachment(dateStr, attMeta) {
+        recordChatActivity();
+        clearChatStatus();
+        if (!attMeta || !attMeta.id) return;
+        const attData = await loadChatAttachment(dateStr, attMeta.id);
+        if (!attData || !isSafeChatAttachmentName(attMeta.name, false) || !isSafeChatDataUri(attData.dataUrl, false)) {
+            showChatStatus('無法下載：附件不存在、已歸檔清除或未通過安全格式檢查', true);
+            return;
+        }
+        const a = document.createElement('a');
+        a.href = attData.dataUrl;
+        a.download = attMeta.name || 'attachment';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        try {
+            a.click();
+        } finally {
+            a.remove();
+        }
+    }
+
     function renderChatMessages() {
         const container = document.getElementById('chatMessagesContainer');
         if (!container) return;
@@ -2648,38 +3159,28 @@
         const prevStickBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
         container.textContent = '';
 
-        if (!messages.length) {
+        if (!messages.length && !chatUploadingItem) {
             const empty = document.createElement('div');
             empty.className = 'chat-empty-state';
-            empty.textContent = '今日尚無接船對話，歡迎隨時點選上方身分發起溝通';
+            empty.textContent = '今日尚無聊天訊息，歡迎選擇角色發起對話';
             container.appendChild(empty);
             return;
         }
 
         const dateStr = currentChatDateStr;
         messages.forEach(msg => {
-            const role = CHAT_ROLES[msg.roleId] || { label: msg.roleId || '角色', border: '#475569', pillBg: '#e2e8f0', pillFg: '#1e293b' };
-            const isSelf = Boolean(msg.clientId === chatClientId && mySeat && msg.roleLabel === mySeat.roleLabel);
+            const role = CHAT_ROLES[msg.roleId] || { label: msg.roleId || '角色' };
+            const isSelf = Boolean(msg.clientId === chatClientId);
 
             const row = document.createElement('div');
             row.className = 'chat-msg-row ' + (isSelf ? 'is-self' : 'is-other');
 
-            const meta = document.createElement('div');
-            meta.className = 'chat-msg-meta';
-            const pill = document.createElement('span');
-            pill.className = 'chat-role-pill';
-            pill.style.background = isSelf ? '#dbeafe' : role.pillBg;
-            pill.style.color = isSelf ? '#1e3a8a' : role.pillFg;
-            pill.textContent = msg.roleLabel || role.label;
-
-            const timeEl = document.createElement('span');
-            timeEl.textContent = msg.timeStr || formatTwTimeHHMM(msg.ts || Date.now());
-            meta.appendChild(pill);
-            meta.appendChild(timeEl);
+            const senderEl = document.createElement('div');
+            senderEl.className = 'chat-msg-sender';
+            senderEl.textContent = msg.roleLabel || role.label;
 
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble';
-            if (!isSelf) bubble.style.borderLeftColor = role.border;
 
             if (msg.text) {
                 const textEl = document.createElement('div');
@@ -2696,7 +3197,7 @@
                     const thumbBtn = document.createElement('button');
                     thumbBtn.type = 'button';
                     thumbBtn.className = 'chat-att-thumb-btn';
-                    thumbBtn.title = `點擊檢視原圖：${attMeta.name || '圖片'}`;
+                    thumbBtn.title = `點擊全螢幕放大：${attMeta.name || '圖片'}`;
                     thumbBtn.onclick = () => openChatAttachment(dateStr, attMeta);
 
                     const cacheKey = `${dateStr}:${attMeta.id}`;
@@ -2710,7 +3211,7 @@
                     } else {
                         const placeholder = document.createElement('div');
                         placeholder.className = 'chat-att-loading';
-                        placeholder.textContent = `🖼️ ${attMeta.name || '圖片'}（載入中...）`;
+                        placeholder.textContent = `${attMeta.name || '圖片'}（載入中...）`;
                         thumbBtn.appendChild(placeholder);
                         loadChatAttachment(dateStr, attMeta.id).then(attData => {
                             if (!thumbBtn.isConnected) return;
@@ -2728,24 +3229,125 @@
                     }
                     attWrap.appendChild(thumbBtn);
                 } else {
-                    const fileBtn = document.createElement('button');
-                    fileBtn.type = 'button';
-                    fileBtn.className = 'chat-att-file-btn';
-                    fileBtn.textContent = `📄 ${attMeta.name || '文件'} (${formatChatBytes(attMeta.size)}) · 查看/下載`;
-                    fileBtn.onclick = () => openChatAttachment(dateStr, attMeta);
-                    attWrap.appendChild(fileBtn);
+                    const card = document.createElement('div');
+                    card.className = 'chat-att-file-card';
+
+                    const fileIcon = document.createElement('img');
+                    fileIcon.className = 'chat-att-file-icon';
+                    fileIcon.src = 'pic/選擇檔案.png';
+                    fileIcon.alt = '文件';
+
+                    const metaCol = document.createElement('div');
+                    metaCol.className = 'chat-att-file-meta';
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'chat-att-file-name';
+                    nameDiv.textContent = attMeta.name || '文件';
+                    const sizeDiv = document.createElement('div');
+                    sizeDiv.className = 'chat-att-file-size';
+                    sizeDiv.textContent = formatChatBytes(attMeta.size);
+                    metaCol.appendChild(nameDiv);
+                    metaCol.appendChild(sizeDiv);
+
+                    const dlBtn = document.createElement('button');
+                    dlBtn.type = 'button';
+                    dlBtn.className = 'chat-att-file-btn';
+                    dlBtn.title = `下載 ${attMeta.name || '檔案'}`;
+                    dlBtn.setAttribute('aria-label', `下載 ${attMeta.name || '檔案'}`);
+                    dlBtn.onclick = () => downloadChatFileAttachment(dateStr, attMeta);
+
+                    const dlIcon = document.createElement('img');
+                    dlIcon.className = 'chat-att-download-img';
+                    dlIcon.src = 'pic/下載.png';
+                    dlIcon.alt = '下載';
+                    dlBtn.appendChild(dlIcon);
+
+                    card.appendChild(fileIcon);
+                    card.appendChild(metaCol);
+                    card.appendChild(dlBtn);
+                    attWrap.appendChild(card);
                 }
                 bubble.appendChild(attWrap);
             }
 
-            row.appendChild(meta);
+            const statusEl = document.createElement('div');
+            statusEl.className = 'chat-msg-status';
+            const timeText = msg.timeStr || formatTwTimeHHMM(msg.ts || Date.now());
+            statusEl.textContent = isSelf ? `${timeText} · 已送出` : timeText;
+
+            row.appendChild(senderEl);
             row.appendChild(bubble);
+            row.appendChild(statusEl);
             container.appendChild(row);
         });
+
+        if (chatUploadingItem && !chatUploadingItem.aborted) {
+            const upRow = document.createElement('div');
+            upRow.id = 'chatUploadProgressRow';
+            upRow.className = 'chat-msg-row is-self is-uploading';
+
+            const senderEl = document.createElement('div');
+            senderEl.className = 'chat-msg-sender';
+            senderEl.textContent = (mySeat && mySeat.roleLabel) || '上傳中';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+
+            const card = document.createElement('div');
+            card.className = 'chat-att-file-card';
+            const icon = document.createElement('img');
+            icon.className = 'chat-att-file-icon';
+            icon.src = 'pic/選擇檔案.png';
+            icon.alt = '上傳中';
+            const metaCol = document.createElement('div');
+            metaCol.className = 'chat-att-file-meta';
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'chat-att-file-name';
+            nameDiv.textContent = chatUploadingItem.fileName || '檔案';
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'chat-att-file-size';
+            infoDiv.textContent = `${formatChatBytes(chatUploadingItem.fileSize)} · 上傳中 ${chatUploadingItem.percent || 0}%`;
+            const track = document.createElement('div');
+            track.className = 'chat-upload-progress-track';
+            const fill = document.createElement('div');
+            fill.className = 'chat-upload-progress-fill';
+            fill.style.width = `${Math.min(100, Math.max(0, chatUploadingItem.percent || 0))}%`;
+            track.appendChild(fill);
+            metaCol.appendChild(nameDiv);
+            metaCol.appendChild(infoDiv);
+            metaCol.appendChild(track);
+            card.appendChild(icon);
+            card.appendChild(metaCol);
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.id = 'chatCancelUploadBtn';
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'chat-cancel-upload-btn';
+            cancelBtn.textContent = '取消上傳';
+            cancelBtn.onclick = () => cancelCurrentChatUpload();
+
+            bubble.appendChild(card);
+            bubble.appendChild(cancelBtn);
+            upRow.appendChild(senderEl);
+            upRow.appendChild(bubble);
+            container.appendChild(upRow);
+        }
 
         if (prevStickBottom) {
             container.scrollTop = container.scrollHeight;
         }
+    }
+
+    function cancelCurrentChatUpload() {
+        if (!chatUploadingItem) return;
+        chatUploadingItem.aborted = true;
+        chatUploadingItem = null;
+        isUploadingChatFile = false;
+        const attachBtn = document.getElementById('chatAttachBtn');
+        const sendBtn = document.getElementById('chatSendBtn');
+        if (attachBtn) attachBtn.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        renderChatMessages();
+        showChatStatus('已取消附件上傳', false);
     }
 
     async function releaseChatSeatByTarget(targetSeat, options = {}) {
@@ -2826,7 +3428,7 @@
         renderChatIdentityAndComposer();
         renderChatMessages();
         if (isChatModalOpen()) {
-            showChatStatus('您的發言席位已因閒置過久或由其他裝置接手而釋放，目前已切回旁觀模式', false);
+            showChatStatus('您的發言席位已因閒置過久或由其他裝置接手而釋放，目前已切回觀眾模式', false);
         }
     }
 
@@ -2870,11 +3472,20 @@
         }, CHAT_HEARTBEAT_MS);
     }
 
-    async function selectChatRole(roleId) {
+    async function selectChatRole(roleId, customLabel) {
         recordChatActivity();
         clearChatStatus();
-        if (!CHAT_ROLES[roleId] || !db || isSelectingChatRole) return;
-        if (mySeat && mySeat.roleId === roleId) return;
+        const role = CHAT_ROLES[roleId];
+        if (!role || !db || isSelectingChatRole) return false;
+
+        const targetLabel = role.needsCustomName
+            ? String(customLabel || '').trim().slice(0, 20)
+            : role.label;
+        if (!targetLabel) return false;
+
+        if (mySeat && mySeat.roleId === roleId && mySeat.roleLabel === targetLabel) {
+            return true;
+        }
 
         listenToChatRoom();
         const dateStr = currentChatDateStr;
@@ -2885,9 +3496,30 @@
         let wonSeat = null;
         let wonRef = null;
         try {
-            for (const slot of [1, 2]) {
+            // 若目前已經持有「其他」席位，改名稱時優先沿用既有 slot
+            if (oldSeat && oldSeat.roleId === 'Other' && roleId === 'Other' && oldSeat.dateStr === dateStr) {
+                const sameRef = db.ref(`formal/chat_rooms/${dateStr}/seats/${oldSeat.seatKey}`);
+                if (typeof sameRef.transaction === 'function') {
+                    const txRes = await sameRef.transaction(cur => {
+                        if (!cur || cur.clientId !== chatClientId) return undefined;
+                        return { ...cur, roleLabel: targetLabel, activeAt: getServerNow() };
+                    });
+                    const val = txRes && txRes.snapshot && typeof txRes.snapshot.val === 'function' ? txRes.snapshot.val() : null;
+                    if (txRes && txRes.committed && val && val.clientId === chatClientId) {
+                        mySeat = { ...oldSeat, roleLabel: targetLabel };
+                        mySeatRef = sameRef;
+                        recordChatActivity();
+                        startChatSeatTimers();
+                        renderChatIdentityAndComposer();
+                        renderChatMessages();
+                        return true;
+                    }
+                }
+            }
+
+            for (let slot = 1; slot <= role.maxSeats; slot++) {
                 const seatKey = `${roleId}_${slot}`;
-                const roleLabel = `${CHAT_ROLES[roleId].label}-${slot}`;
+                const roleLabel = targetLabel;
                 const seatRef = db.ref(`formal/chat_rooms/${dateStr}/seats/${seatKey}`);
                 if (typeof seatRef.transaction === 'function') {
                     const txRes = await seatRef.transaction(cur => {
@@ -2922,13 +3554,13 @@
 
             if (!wonSeat) {
                 if (isChatModalOpen() && currentChatDateStr === dateStr) {
-                    showChatStatus(`${CHAT_ROLES[roleId].label} 目前席位已滿 (2/2 滿)，請改選其他角色或稍後再試`, true);
+                    showChatStatus(`${role.label} 目前席位已滿 (${role.maxSeats}/${role.maxSeats})，請改選其他角色或稍後再試`, true);
                 }
-                return;
+                return false;
             }
             if (!isChatModalOpen() || currentChatDateStr !== dateStr) {
                 await releaseChatSeatByTarget(wonSeat, { keepOnDisconnect: false });
-                return;
+                return false;
             }
 
             mySeat = wonSeat;
@@ -2947,12 +3579,14 @@
             }
             if (!isChatModalOpen() || currentChatDateStr !== dateStr) {
                 await leaveChatRole({ keepOnDisconnect: false });
-                return;
+                return false;
             }
             renderChatIdentityAndComposer();
             renderChatMessages();
+            return true;
         } catch (err) {
             showChatStatus(`領取或切換角色失敗：${err && err.message ? err.message : err}`, true);
+            return false;
         } finally {
             isSelectingChatRole = false;
             renderChatRoleBar();
@@ -2963,7 +3597,7 @@
         recordChatActivity();
         clearChatStatus();
         if (!mySeat) {
-            showChatStatus('請先選擇上方角色再發言', true);
+            showChatStatus('請先選擇角色再發言', true);
             return;
         }
         const input = document.getElementById('chatTextInput');
@@ -3056,13 +3690,21 @@
         }
         if (!mySeat) {
             if (fileInput) fileInput.value = '';
-            showChatStatus('請先選擇上方角色再上傳附件', true);
+            showChatStatus('請先選擇角色再上傳附件', true);
             return;
         }
 
         isUploadingChatFile = true;
         if (attachBtn) attachBtn.disabled = true;
         if (sendBtn) sendBtn.disabled = true;
+        const uploadToken = ++chatUploadSeq;
+        const setUploadProgress = (percent) => {
+            if (chatUploadingItem && chatUploadingItem.token === uploadToken && !chatUploadingItem.aborted) {
+                chatUploadingItem.percent = percent;
+                renderChatMessages();
+            }
+        };
+
         try {
             const fileName = String(file.name || 'attachment');
             const dotIdx = fileName.lastIndexOf('.');
@@ -3078,11 +3720,21 @@
             let finalMime = mime || 'application/octet-stream';
             let finalSize = Number(file.size) || 0;
 
+            chatUploadingItem = {
+                token: uploadToken,
+                fileName,
+                fileSize: finalSize,
+                percent: 15,
+                aborted: false
+            };
+            renderChatMessages();
+
             if (isImage) {
                 if (file.size > CHAT_MAX_RAW_IMAGE_BYTES) {
                     throw new Error('原始圖片超過 20 MB 安全處理上限');
                 }
                 const compressed = await compressChatImage(file);
+                if (!chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
                 if (!isSafeChatDataUri(compressed.dataUrl, true)) {
                     throw new Error('圖片格式未通過安全檢查');
                 }
@@ -3103,6 +3755,7 @@
                     throw new Error('檔案超過 2.5 MB 上限，無法上傳');
                 }
                 finalDataUrl = await readChatFileAsBase64(file);
+                if (!chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
                 if (finalDataUrl.startsWith('data:;')) {
                     finalDataUrl = `data:${resolvedDocMime};${finalDataUrl.slice(6)}`;
                 } else if (finalDataUrl.startsWith('data:,')) {
@@ -3117,9 +3770,11 @@
                 finalSize = Number(file.size) || computeBase64DecodedBytes(finalDataUrl);
             }
 
+            setUploadProgress(55);
             const alive = await renewChatSeatActiveAt();
-            if (!alive || !mySeat) return;
+            if (!alive || !mySeat || !chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
 
+            setUploadProgress(80);
             const dateStr = currentChatDateStr;
             const ts = getServerNow();
             const attId = `att_${ts}_${Math.random().toString(36).slice(2, 8)}`;
@@ -3129,6 +3784,9 @@
 
             chatAttachmentCache[`${dateStr}:${attId}`] = fullAtt;
             await db.ref(`formal/chat_attachments/${dateStr}/${attId}`).set(fullAtt);
+            if (!chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
+
+            setUploadProgress(95);
             await db.ref(`formal/chat_rooms/${dateStr}/messages/${msgId}`).set({
                 id: msgId,
                 ts,
@@ -3139,15 +3797,45 @@
                 text: '',
                 attachment: attMeta
             });
+            chatUploadingItem = null;
             markChatAsRead(dateStr, ts);
         } catch (err) {
+            if (chatUploadingItem && chatUploadingItem.token === uploadToken) {
+                chatUploadingItem = null;
+                renderChatMessages();
+            }
             showChatStatus(err && err.message ? err.message : '附件上傳失敗', true);
         } finally {
+            if (chatUploadingItem && chatUploadingItem.token === uploadToken) {
+                chatUploadingItem = null;
+            }
             isUploadingChatFile = false;
             if (attachBtn) attachBtn.disabled = false;
             if (sendBtn) sendBtn.disabled = false;
             if (fileInput) fileInput.value = '';
         }
+    }
+
+    function applyChatPreviewZoom() {
+        const img = document.getElementById('chatPreviewImage');
+        const resetBtn = document.getElementById('chatZoomResetBtn');
+        if (img) {
+            img.style.transform = `scale(${chatPreviewZoom})`;
+            img.style.cursor = chatPreviewZoom > 1 ? 'zoom-out' : 'zoom-in';
+        }
+        if (resetBtn) {
+            resetBtn.textContent = `${Math.round(chatPreviewZoom * 100)}%`;
+        }
+    }
+
+    function adjustChatPreviewZoom(delta) {
+        chatPreviewZoom = Math.min(3, Math.max(0.5, Math.round((chatPreviewZoom + delta) * 100) / 100));
+        applyChatPreviewZoom();
+    }
+
+    function resetChatPreviewZoom() {
+        chatPreviewZoom = 1;
+        applyChatPreviewZoom();
     }
 
     async function openChatAttachment(dateStr, attMeta) {
@@ -3158,8 +3846,10 @@
         const dlEl = document.getElementById('chatPreviewDownload');
         if (!modal || !titleEl || !bodyEl || !dlEl) return;
 
-        titleEl.textContent = (attMeta && attMeta.name) ? attMeta.name : '附件預覽';
-        bodyEl.textContent = '載入附件中...';
+        chatPreviewZoom = 1;
+        applyChatPreviewZoom();
+        titleEl.textContent = (attMeta && attMeta.name) ? attMeta.name : '照片預覽';
+        bodyEl.textContent = '載入照片中...';
         dlEl.removeAttribute('href');
         dlEl.removeAttribute('download');
         dlEl.classList.add('is-disabled');
@@ -3170,7 +3860,7 @@
         const isImg = Boolean(attMeta && attMeta.isImage);
         if (!attData || !attMeta || !isSafeChatAttachmentName(attMeta.name, isImg) || !isSafeChatDataUri(attData.dataUrl, isImg)) {
             const errEl = document.createElement('div');
-            errEl.style.color = '#64748b';
+            errEl.style.color = '#cbd5e1';
             errEl.textContent = '無法檢視：附件不存在、已歸檔清除或未通過安全格式檢查';
             bodyEl.appendChild(errEl);
             return;
@@ -3178,26 +3868,27 @@
 
         if (attMeta.isImage) {
             const img = document.createElement('img');
+            img.id = 'chatPreviewImage';
             img.className = 'chat-preview-img';
             img.alt = attMeta.name || '接船圖片預覽';
             img.src = attData.dataUrl;
+            img.ondblclick = () => {
+                chatPreviewZoom = chatPreviewZoom > 1 ? 1 : 2;
+                applyChatPreviewZoom();
+            };
             bodyEl.appendChild(img);
+            applyChatPreviewZoom();
         } else {
             const docCard = document.createElement('div');
             docCard.style.textAlign = 'center';
-            const docIcon = document.createElement('div');
-            docIcon.style.fontSize = '36px';
-            docIcon.textContent = '📄';
             const docName = document.createElement('div');
             docName.style.fontWeight = '700';
-            docName.style.marginTop = '6px';
             docName.textContent = attMeta.name || '文件檔案';
             const docInfo = document.createElement('div');
             docInfo.style.fontSize = '12.5px';
-            docInfo.style.color = '#475569';
+            docInfo.style.color = '#cbd5e1';
             docInfo.style.marginTop = '4px';
             docInfo.textContent = `${attMeta.mimeType || '文件'} · ${formatChatBytes(attMeta.size)}`;
-            docCard.appendChild(docIcon);
             docCard.appendChild(docName);
             docCard.appendChild(docInfo);
             bodyEl.appendChild(docCard);
@@ -3212,6 +3903,7 @@
         const modal = document.getElementById('chatPreviewModal');
         const dlEl = document.getElementById('chatPreviewDownload');
         const bodyEl = document.getElementById('chatPreviewBody');
+        chatPreviewZoom = 1;
         if (modal) modal.style.display = 'none';
         if (bodyEl) bodyEl.textContent = '';
         if (dlEl) {
@@ -3286,23 +3978,18 @@
         if (!modal) return;
         modal.style.display = 'flex';
         markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
-        renderChatRoleBar();
-        renderChatIdentityAndComposer();
-        renderChatMessages();
+        showChatRoleScreen();
 
         if (chatUiRefreshTimer) clearInterval(chatUiRefreshTimer);
         chatUiRefreshTimer = setInterval(() => {
             checkChatIdleAndRefreshUi();
         }, CHAT_UI_REFRESH_MS);
-
-        const container = document.getElementById('chatMessagesContainer');
-        if (container) container.scrollTop = container.scrollHeight;
     }
 
     function checkChatIdleAndRefreshUi() {
         if (!isChatModalOpen()) return;
         if (mySeat && Date.now() - lastChatActivityAt >= CHAT_IDLE_MS) {
-            leaveChatRole({ reason: '已超過 15 分鐘無操作，系統自動釋放發言席位並切回旁觀模式' });
+            leaveChatRole({ reason: '已超過 15 分鐘無操作，系統自動釋放發言席位並切回觀眾模式' });
             return;
         }
         renderChatRoleBar();
@@ -3311,6 +3998,8 @@
     function closeChatModal() {
         markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
         closeChatPreviewModal();
+        closeChatNameSheet();
+        closeChatAttachSheet();
         if (chatUiRefreshTimer) {
             clearInterval(chatUiRefreshTimer);
             chatUiRefreshTimer = null;
@@ -3344,6 +4033,33 @@
             });
         }
 
+        const nameBackdrop = document.getElementById('chatNameSheetBackdrop');
+        if (nameBackdrop && !nameBackdrop.dataset.chatBound) {
+            nameBackdrop.dataset.chatBound = '1';
+            nameBackdrop.addEventListener('click', (e) => {
+                if (e.target === nameBackdrop) closeChatNameSheet();
+            });
+        }
+
+        const nameInput = document.getElementById('chatNameInput');
+        if (nameInput && !nameInput.dataset.chatBound) {
+            nameInput.dataset.chatBound = '1';
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitChatCustomName();
+                }
+            });
+        }
+
+        const attachBackdrop = document.getElementById('chatAttachSheetBackdrop');
+        if (attachBackdrop && !attachBackdrop.dataset.chatBound) {
+            attachBackdrop.dataset.chatBound = '1';
+            attachBackdrop.addEventListener('click', (e) => {
+                if (e.target === attachBackdrop) closeChatAttachSheet();
+            });
+        }
+
         const previewModal = document.getElementById('chatPreviewModal');
         if (previewModal && !previewModal.dataset.chatBound) {
             previewModal.dataset.chatBound = '1';
@@ -3354,13 +4070,19 @@
 
         const attachBtn = document.getElementById('chatAttachBtn');
         const fileInput = document.getElementById('chatFileInput');
-        if (attachBtn && fileInput && !attachBtn.dataset.chatBound) {
+        const camInput = document.getElementById('chatCameraInput');
+        const galInput = document.getElementById('chatGalleryInput');
+        if (attachBtn && !attachBtn.dataset.chatBound) {
             attachBtn.dataset.chatBound = '1';
             attachBtn.addEventListener('click', () => {
-                recordChatActivity();
-                fileInput.click();
+                openChatAttachSheet();
             });
-            fileInput.addEventListener('change', handleChatFileSelect);
+            [fileInput, camInput, galInput].forEach(inp => {
+                if (inp && !inp.dataset.chatBound) {
+                    inp.dataset.chatBound = '1';
+                    inp.addEventListener('change', handleChatFileSelect);
+                }
+            });
         }
 
         const textInput = document.getElementById('chatTextInput');
