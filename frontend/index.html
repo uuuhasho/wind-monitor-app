@@ -1039,6 +1039,12 @@
             align-items: center;
             justify-content: center;
         }
+        .chat-attach-btn-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            display: block;
+        }
         .chat-attach-btn:disabled,
         .chat-send-btn:disabled {
             opacity: 0.55;
@@ -1663,7 +1669,7 @@
             </div>
             <div id="chatComposerFooter" class="chat-composer-footer" style="display: none;">
                 <div id="chatActiveComposer" class="chat-active-composer">
-                    <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="新增附件 (上限 2.5 MB)" aria-label="新增附件">📎</button>
+                    <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="新增附件 (上限 2.5 MB)" aria-label="新增附件"><img src="pic/paper-clip.png" alt="新增附件" class="chat-attach-btn-icon"></button>
                     <input id="chatCameraInput" type="file" accept="image/*" capture="environment" style="display: none;">
                     <input id="chatGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
                     <input id="chatFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display: none;">
