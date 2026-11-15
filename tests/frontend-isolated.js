@@ -23,8 +23,53 @@ async page => {
       'formal/forecast_metadata': {updatedAt: `${today}T02:00:00Z`},
     };
     const listeners = {};
-    const snapshot = path => ({val: () => records[path] ?? null, exists: () => records[path] != null});
-    window.__emit = (path, value) => { records[path] = value; (listeners[path] || []).forEach(callback => callback(snapshot(path))); };
+    const tree = {};
+    window.__onDisconnectHooks = new Map();
+    const cloneVal = val => (val === undefined ? null : JSON.parse(JSON.stringify(val)));
+    const splitPath = p => p.split('/').filter(Boolean);
+    const getTree = path => {
+      const parts = splitPath(path);
+      let cur = tree;
+      for (const part of parts) {
+        if (cur == null || typeof cur !== 'object') return null;
+        cur = cur[part];
+      }
+      return cur === undefined ? null : cloneVal(cur);
+    };
+    const setTree = (path, value) => {
+      const parts = splitPath(path);
+      if (!parts.length) return;
+      if (value === null || value === undefined) {
+        let cur = tree;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') return;
+          cur = cur[parts[i]];
+        }
+        delete cur[parts[parts.length - 1]];
+        return;
+      }
+      let cur = tree;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+        cur = cur[parts[i]];
+      }
+      cur[parts[parts.length - 1]] = cloneVal(value);
+    };
+    const snapshot = path => {
+      const val = getTree(path);
+      return {val: () => cloneVal(val), exists: () => val != null};
+    };
+    const notifyPath = path => {
+      Object.keys(listeners).forEach(listenerPath => {
+        if (listenerPath === path || path.startsWith(listenerPath + '/') || listenerPath.startsWith(path + '/')) {
+          const snap = snapshot(listenerPath);
+          (listeners[listenerPath] || []).forEach(callback => callback(snap));
+        }
+      });
+    };
+    Object.entries(records).forEach(([k, v]) => setTree(k, v));
+    window.__emit = (path, value) => { setTree(path, value); notifyPath(path); };
+    window.__getDb = path => getTree(path);
     window.__requests = [];
     window.__chartOptions = [];
     window.__today = today;
@@ -34,7 +79,25 @@ async page => {
         if (!path.startsWith('formal/') && !path.startsWith('.info/')) throw new Error(`Unexpected Firebase path: ${path}`);
         return {
           on(_event, callback) { (listeners[path] ||= []).push(callback); callback(snapshot(path)); },
-          off() { listeners[path] = []; }, once: async () => snapshot(path),
+          off(_event, callback) {
+            if (callback && listeners[path]) listeners[path] = listeners[path].filter(fn => fn !== callback);
+            else listeners[path] = [];
+          },
+          once: async () => snapshot(path),
+          set: async value => { setTree(path, value); notifyPath(path); },
+          remove: async () => { setTree(path, null); notifyPath(path); },
+          transaction: async updateFn => {
+            const cur = getTree(path);
+            const next = updateFn(cloneVal(cur));
+            if (next === undefined) return {committed: false, snapshot: snapshot(path)};
+            setTree(path, next);
+            notifyPath(path);
+            return {committed: true, snapshot: snapshot(path)};
+          },
+          onDisconnect: () => ({
+            remove: async () => { window.__onDisconnectHooks.set(path, true); },
+            cancel: async () => { window.__onDisconnectHooks.delete(path); },
+          }),
         };
       }}),
     };
@@ -58,7 +121,7 @@ async page => {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('http://127.0.0.1:4177/index.html');
   const initial = await page.evaluate(() => ({title: document.title, wind: document.getElementById('windSpeed').textContent, schedule: document.body.textContent.includes('DEMO-SHIP')}));
-  if (initial.title !== '臺中LNG船監控(v1.2.1)' || initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
+  if (initial.title !== '臺中LNG船監控(v1.3)' || initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
   const badges = await page.evaluate(() => Array.from(document.querySelectorAll('#scheduleBody tr'), row => ({
     terminal: row.querySelector('.badge')?.textContent,
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
@@ -96,6 +159,7 @@ async page => {
       msgTitle: msgHeading.getAttribute('title'),
       msgAriaLabel: msgHeading.getAttribute('aria-label'),
       msgCursor: getComputedStyle(msgHeading).cursor,
+      unreadBadgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
       msgSvgWidth: Math.round(msgRect.width),
       msgSvgHeight: Math.round(msgRect.height),
       msgColor: getComputedStyle(msgSvg).color,
@@ -112,10 +176,10 @@ async page => {
       icon.windPaths !== 3) {
     throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   }
-  if (icon.oldTableImportExists || icon.msgText !== '' || icon.msgRole !== null || icon.msgOnclick !== null ||
-      icon.msgTitle !== null || icon.msgAriaLabel !== '對話訊息（尚未開放）' || icon.msgCursor === 'pointer' ||
-      icon.msgSvgWidth !== 32 || icon.msgSvgHeight !== 32 || icon.msgColor !== 'rgb(16, 69, 140)' ||
-      !icon.msgBubble || icon.msgLines !== 3) {
+  if (icon.oldTableImportExists || icon.msgRole !== 'button' || icon.msgOnclick !== 'openChatModal()' ||
+      icon.msgTitle !== null || icon.msgAriaLabel !== '開啟接船對話' || icon.msgCursor !== 'pointer' ||
+      icon.unreadBadgeDisplay !== 'none' || icon.msgSvgWidth !== 32 || icon.msgSvgHeight !== 32 ||
+      icon.msgColor !== 'rgb(16, 69, 140)' || !icon.msgBubble || icon.msgLines !== 3) {
     throw new Error(`Message icon: ${JSON.stringify(icon)}`);
   }
   if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(16, 69, 140)' || !icon.gearGroup) {
@@ -197,11 +261,16 @@ async page => {
   }
   await page.locator('.schedule-header h3').click();
   const msgClickState = await page.evaluate(() => ({
+    chatVisible: getComputedStyle(document.getElementById('chatModal')).display,
     pwdVisible: getComputedStyle(document.getElementById('pwdModal')).display,
     adjustVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display,
   }));
-  if (msgClickState.pwdVisible !== 'none' || msgClickState.adjustVisible !== 'none') {
-    throw new Error(`Message icon click must be a no-op: ${JSON.stringify(msgClickState)}`);
+  if (msgClickState.chatVisible !== 'flex' || msgClickState.pwdVisible !== 'none' || msgClickState.adjustVisible !== 'none') {
+    throw new Error(`Message icon click must open chatModal only: ${JSON.stringify(msgClickState)}`);
+  }
+  await page.locator('#chatCloseBtn').click();
+  if (await page.locator('#chatModal').isVisible()) {
+    throw new Error('chatModal must close before scheduleHeaderRow double-tap test');
   }
   const headerStyles = await page.evaluate(() => {
     const row = document.getElementById('scheduleHeaderRow');
@@ -441,6 +510,483 @@ async page => {
       pob: document.getElementById('pobTime').value, reason: document.getElementById('noEntryReason').value};
   });
   if (!commands.commands.some(item => item.mode === 'start') || !commands.commands.some(item => item.mode === 'reset' && item.pobTime === '10:00')) throw new Error(`Commands: ${JSON.stringify(commands)}`);
+
+  // ==================== Ship Chat Room Tests (AC-001 ~ AC-004) ====================
+  await page.evaluate(() => {
+    if (typeof closeForecastModal === 'function') closeForecastModal();
+    localStorage.clear();
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}`, null);
+    window.__emit(`formal/chat_attachments/${d}`, null);
+  });
+
+  // AC-001: Unread static red "!" lifecycle & no red border/animation
+  await page.evaluate(() => {
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}/messages`, {
+      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-1', text: '早安，引水梯備便'},
+    });
+  });
+  const unread1 = await page.evaluate(() => {
+    const badge = document.getElementById('chatUnreadBadge');
+    const btn = document.getElementById('chatOpenBtn');
+    const bs = getComputedStyle(badge);
+    const hs = getComputedStyle(btn);
+    return {text: badge.textContent.trim(), display: bs.display, color: bs.color, anim: bs.animationName, btnBorder: hs.borderStyle};
+  });
+  if (unread1.text !== '!' || unread1.display === 'none' || unread1.color !== 'rgb(220, 38, 38)' ||
+      unread1.anim !== 'none' || unread1.btnBorder !== 'none') {
+    throw new Error(`AC-001 badge initial unread: ${JSON.stringify(unread1)}`);
+  }
+
+  await page.locator('#chatOpenBtn').click();
+  const afterOpenUnread = await page.evaluate(() => ({
+    modalDisplay: getComputedStyle(document.getElementById('chatModal')).display,
+    badgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
+    seatsVal: window.__getDb(`formal/chat_rooms/${window.__today}/seats`),
+    spectatorVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
+    composerVisible: getComputedStyle(document.getElementById('chatActiveComposer')).display,
+    titleText: document.getElementById('chatModalTitle').textContent.trim(),
+    titleIconSrc: document.querySelector('#chatModalTitle img')?.getAttribute('src') || '',
+  }));
+  if (afterOpenUnread.modalDisplay !== 'flex' || afterOpenUnread.badgeDisplay !== 'none' ||
+      afterOpenUnread.seatsVal !== null || afterOpenUnread.spectatorVisible !== 'block' ||
+      afterOpenUnread.composerVisible !== 'none' ||
+      afterOpenUnread.titleText !== '即時溝通' || afterOpenUnread.titleIconSrc !== 'talk.png') {
+    throw new Error(`AC-001/AC-002 open spectator state: ${JSON.stringify(afterOpenUnread)}`);
+  }
+
+  // Receive new message while modal open -> read marker updates, closing stays hidden
+  await page.evaluate(() => {
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}/messages`, {
+      m1: {id: 'm1', ts: 10000, timeStr: '08:00', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-1', text: '早安，引水梯備便'},
+      m2: {id: 'm2', ts: 20000, timeStr: '08:05', roleId: 'Pilot', roleLabel: 'Pilot-1', clientId: 'other-2', text: '已登輪'},
+    });
+  });
+  await page.locator('#chatCloseBtn').click();
+  if (await page.evaluate(() => getComputedStyle(document.getElementById('chatUnreadBadge')).display) !== 'none') {
+    throw new Error('AC-001: Badge must remain hidden after closing modal when newest msg was read while open');
+  }
+  await page.evaluate(() => {
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}/messages/m3`, {
+      id: 'm3', ts: 30000, timeStr: '08:06', roleId: 'VTS', roleLabel: 'VTS-1', clientId: 'other-3', text: '進入外港航道',
+    });
+  });
+  if (await page.evaluate(() => getComputedStyle(document.getElementById('chatUnreadBadge')).display) === 'none') {
+    throw new Error('AC-001: Badge must reappear when new message arrives after closing modal');
+  }
+
+  // AC-002: Seats allocation (-1 / -2 / 2/2滿 / full switch keeps old seat / 15-min overwrite safe / midnight release)
+  await page.locator('#chatOpenBtn').click();
+  await page.locator('.chat-role-btn[data-role-id="CPCLNG"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('CPCLNG-1'));
+  const seatState1 = await page.evaluate(() => ({
+    seat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
+    hookArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
+    composerVisible: getComputedStyle(document.getElementById('chatActiveComposer')).display,
+  }));
+  if (!seatState1.seat || seatState1.seat.roleLabel !== 'CPCLNG-1' || !seatState1.hookArmed || seatState1.composerVisible !== 'flex') {
+    throw new Error(`AC-002 claim CPCLNG-1: ${JSON.stringify(seatState1)}`);
+  }
+
+  // Fill Pilot 2/2 and verify clicking Pilot preserves existing CPCLNG-1 seat
+  await page.evaluate(() => {
+    const d = window.__today;
+    const now = getServerNow();
+    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {clientId: 'p1', roleId: 'Pilot', roleLabel: 'Pilot-1', slot: 1, activeAt: now});
+    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_2`, {clientId: 'p2', roleId: 'Pilot', roleLabel: 'Pilot-2', slot: 2, activeAt: now});
+  });
+  await page.locator('.chat-role-btn[data-role-id="Pilot"]').click();
+  await page.waitForFunction(() => document.getElementById('chatStatusBanner').textContent.includes('2/2 滿'));
+  const fullSwitch = await page.evaluate(() => ({
+    banner: document.getElementById('chatStatusBanner').textContent,
+    idText: document.getElementById('chatIdentityText').textContent,
+    cpcSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
+    pilotText: document.querySelector('.chat-role-btn[data-role-id="Pilot"] .chat-role-count').textContent,
+  }));
+  if (!fullSwitch.banner.includes('2/2 滿') || !fullSwitch.idText.includes('CPCLNG-1') ||
+      !fullSwitch.cpcSeat || fullSwitch.pilotText !== '2/2 滿') {
+    throw new Error(`AC-002 full switch preserve: ${JSON.stringify(fullSwitch)}`);
+  }
+
+  // Switch to Tug -> claims Tug-1 and releases CPCLNG-1 safely; then simulate remote overwrite without losing new owner
+  await page.locator('.chat-role-btn[data-role-id="Tug"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('拖船-1'));
+  const switchedSeat = await page.evaluate(() => ({
+    oldSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
+    newSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
+    oldHook: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPCLNG_1`),
+    newHook: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
+  }));
+  if (switchedSeat.oldSeat !== null || switchedSeat.oldHook || !switchedSeat.newSeat || !switchedSeat.newHook) {
+    throw new Error(`AC-002 switch release old: ${JSON.stringify(switchedSeat)}`);
+  }
+
+  // Remote overwrite on Tug_1 must forfeit local seat and cancel Tug_1 onDisconnect without deleting takeover user
+  await page.evaluate(() => {
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}/seats/Tug_1`, {
+      clientId: 'takeover-other', roleId: 'Tug', roleLabel: '拖船-1', slot: 1, activeAt: getServerNow(),
+    });
+  });
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('旁觀模式'));
+  const afterTakeover = await page.evaluate(() => ({
+    remoteSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
+    hookStillArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Tug_1`),
+  }));
+  if (!afterTakeover.remoteSeat || afterTakeover.remoteSeat.clientId !== 'takeover-other' || afterTakeover.hookStillArmed) {
+    throw new Error(`AC-002 takeover safety: ${JSON.stringify(afterTakeover)}`);
+  }
+
+  // Reclaim expired Pilot_1 (>15 min idle) & verify leave/midnight rollover cleanup
+  await page.evaluate(() => {
+    const d = window.__today;
+    const stale = getServerNow() - (15 * 60 * 1000 + 5000);
+    window.__emit(`formal/chat_rooms/${d}/seats/Pilot_1`, {
+      clientId: 'stale-pilot', roleId: 'Pilot', roleLabel: 'Pilot-1', slot: 1, activeAt: stale,
+    });
+  });
+  await page.locator('.chat-role-btn[data-role-id="Pilot"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Pilot-1'));
+  await page.locator('#chatLeaveRoleBtn').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('旁觀模式'));
+  if (await page.evaluate(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`)) !== null) {
+    throw new Error('AC-002: leaveChatRole must delete owned seat');
+  }
+
+  // AC-003: Neutral #f4f4f5 background, 5 high-contrast left stripes, self #10458C right-aligned, XSS immunity
+  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
+  await page.fill('#chatTextInput', '報告進港 <img src=x onerror="window.__xss=1">');
+  await page.locator('#chatSendBtn').click();
+  await page.waitForFunction(() => {
+    const msgs = window.__getDb(`formal/chat_rooms/${window.__today}/messages`) || {};
+    return Object.values(msgs).some(m => m.text && m.text.includes('<img src=x'));
+  });
+  await page.evaluate(() => {
+    const d = window.__today;
+    window.__emit(`formal/chat_rooms/${d}/messages`, {
+      o1: {id: 'o1', ts: 40001, timeStr: '09:01', roleId: 'CPCLNG', roleLabel: 'CPCLNG-1', clientId: 'other-c', text: 'CPC'},
+      o2: {id: 'o2', ts: 40002, timeStr: '09:02', roleId: 'Pilot', roleLabel: 'Pilot-2', clientId: 'other-p', text: 'Pilot'},
+      o3: {id: 'o3', ts: 40003, timeStr: '09:03', roleId: 'VTS', roleLabel: 'VTS-1', clientId: 'other-v', text: 'VTS'},
+      o4: {id: 'o4', ts: 40004, timeStr: '09:04', roleId: 'Agent', roleLabel: 'Agent-2', clientId: 'other-a', text: 'Agent'},
+      o5: {id: 'o5', ts: 40005, timeStr: '09:05', roleId: 'Tug', roleLabel: '拖船-1', clientId: 'other-t', text: 'Tug'},
+      ...window.__getDb(`formal/chat_rooms/${d}/messages`),
+    });
+  });
+  const ac3 = await page.evaluate(() => {
+    const container = document.getElementById('chatMessagesContainer');
+    const rows = Array.from(container.querySelectorAll('.chat-msg-row'));
+    const others = ['CPC', 'Pilot', 'VTS', 'Agent', 'Tug'].map(txt => {
+      const r = rows.find(row => row.querySelector('.chat-msg-text')?.textContent === txt);
+      const b = r && r.querySelector('.chat-bubble');
+      const s = b && getComputedStyle(b);
+      return r ? {isOther: r.classList.contains('is-other'), bg: s.backgroundColor, blw: s.borderLeftWidth, blc: s.borderLeftColor} : null;
+    });
+    const selfRow = rows.find(r => r.classList.contains('is-self'));
+    const selfBubble = selfRow && selfRow.querySelector('.chat-bubble');
+    return {
+      xssTriggered: Boolean(window.__xss),
+      areaBg: getComputedStyle(container).backgroundColor,
+      others,
+      selfText: selfBubble ? selfBubble.textContent : '',
+      selfBg: selfBubble ? getComputedStyle(selfBubble).backgroundColor : '',
+    };
+  });
+  const expectedBorders = ['rgb(29, 78, 216)', 'rgb(124, 58, 237)', 'rgb(5, 150, 105)', 'rgb(234, 88, 12)', 'rgb(190, 18, 60)'];
+  if (ac3.xssTriggered || ac3.areaBg !== 'rgb(244, 244, 245)' ||
+      ac3.others.some((o, i) => !o || !o.isOther || o.bg !== 'rgb(255, 255, 255)' || o.blw !== '5px' || o.blc !== expectedBorders[i]) ||
+      ac3.selfBg !== 'rgb(16, 69, 140)' || !ac3.selfText.includes('<img src=x')) {
+    throw new Error(`AC-003 styles/XSS: ${JSON.stringify(ac3)}`);
+  }
+
+  // AC-004: Valid oversized-dimension image compression (1600x800 -> 1280px JPEG) & PDF upload, #chatPreviewModal (z-index 2100), SVG & >2.5MB rejection
+  await page.evaluate(async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1600;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(0, 0, 1600, 800);
+    const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const dt = new DataTransfer();
+    dt.items.add(new File([pngBlob], 'berth.png', {type: 'image/png'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => document.querySelectorAll('.chat-att-thumb-img').length > 0);
+  await page.locator('.chat-att-thumb-btn').first().click();
+  await page.waitForFunction(() => !document.getElementById('chatPreviewDownload').classList.contains('is-disabled'));
+  await page.waitForFunction(() => {
+    const img = document.querySelector('#chatPreviewBody img.chat-preview-img');
+    return Boolean(img && img.complete && img.naturalWidth > 0);
+  });
+  const imgPreview = await page.evaluate(() => {
+    const m = document.getElementById('chatPreviewModal');
+    const dl = document.getElementById('chatPreviewDownload');
+    const img = document.querySelector('#chatPreviewBody img.chat-preview-img');
+    return {
+      display: getComputedStyle(m).display,
+      zIndex: getComputedStyle(m).zIndex,
+      href: dl.getAttribute('href') || '',
+      hasImg: Boolean(img),
+      naturalWidth: img ? img.naturalWidth : 0,
+      naturalHeight: img ? img.naturalHeight : 0,
+      inputVal: document.getElementById('chatFileInput').value,
+    };
+  });
+  if (imgPreview.display !== 'flex' || Number(imgPreview.zIndex) < 2100 ||
+      !imgPreview.href.startsWith('data:image/jpeg;base64,') || !imgPreview.hasImg ||
+      imgPreview.naturalWidth !== 1280 || imgPreview.naturalHeight !== 640 || imgPreview.inputVal !== '') {
+    throw new Error(`AC-004 image preview: ${JSON.stringify(imgPreview)}`);
+  }
+  await page.locator('#chatPreviewCloseBtn').click();
+
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['%PDF-1.4\n1 0 obj\n<<>>\nendobj\n'], 'plan.pdf', {type: 'application/pdf'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => document.querySelectorAll('.chat-att-file-btn').length > 0);
+  await page.locator('.chat-att-file-btn').first().click();
+  await page.waitForFunction(() => !document.getElementById('chatPreviewDownload').classList.contains('is-disabled'));
+  const pdfPreview = await page.evaluate(() => ({
+    title: document.getElementById('chatPreviewTitle').textContent,
+    href: document.getElementById('chatPreviewDownload').getAttribute('href') || '',
+  }));
+  if (pdfPreview.title !== 'plan.pdf' || !pdfPreview.href.startsWith('data:application/pdf;base64,')) {
+    throw new Error(`AC-004 PDF preview: ${JSON.stringify(pdfPreview)}`);
+  }
+  await page.locator('#chatPreviewCloseBtn').click();
+
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['<svg onload="window.__xss=2"></svg>'], 'bad.svg', {type: 'image/svg+xml'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => document.getElementById('chatStatusBanner').style.display === 'block');
+  const blockedSvg = await page.evaluate(() => ({
+    banner: document.getElementById('chatStatusBanner').textContent,
+    inputVal: document.getElementById('chatFileInput').value,
+    xss: Boolean(window.__xss),
+  }));
+  if (!blockedSvg.banner.includes('SVG') || blockedSvg.inputVal !== '' || blockedSvg.xss) {
+    throw new Error(`AC-004 SVG block: ${JSON.stringify(blockedSvg)}`);
+  }
+
+  await page.evaluate(() => {
+    const bigBytes = new Uint8Array(2700000);
+    bigBytes.fill(65);
+    const dt = new DataTransfer();
+    dt.items.add(new File([bigBytes], 'huge.pdf', {type: 'application/pdf'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() => document.getElementById('chatStatusBanner').textContent.includes('2.5 MB'));
+  if (await page.evaluate(() => document.getElementById('chatFileInput').value) !== '') {
+    throw new Error('AC-004 oversized file must clear fileInput');
+  }
+
+  // Delivery F-002 / F-004 (1): empty-MIME & octet-stream .csv uploads normalize to data:text/csv;base64,... and preview cleanly
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['colA,colB\n1,2'], 'notes.csv', {type: ''}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes('notes.csv'))
+  );
+  const csvAttStored = await page.evaluate(() => {
+    const atts = window.__getDb(`formal/chat_attachments/${window.__today}`) || {};
+    return Object.values(atts).some(a => a && a.name === 'notes.csv' && typeof a.dataUrl === 'string' && a.dataUrl.startsWith('data:text/csv;base64,'));
+  });
+  if (!csvAttStored) throw new Error('F-002 empty-MIME notes.csv must store normalized data:text/csv;base64 URI');
+  await page.locator('.chat-att-file-btn', {hasText: 'notes.csv'}).click();
+  await page.waitForFunction(() => {
+    const m = document.getElementById('chatPreviewModal');
+    const dl = document.getElementById('chatPreviewDownload');
+    return m && getComputedStyle(m).display === 'flex' && dl && !dl.classList.contains('is-disabled') && (dl.getAttribute('href') || '').startsWith('data:text/csv;base64,');
+  });
+  await page.locator('#chatPreviewCloseBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
+
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['x,y\n3,4'], 'octet.csv', {type: 'application/octet-stream'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes('octet.csv'))
+  );
+  const octetCsvStored = await page.evaluate(() => {
+    const atts = window.__getDb(`formal/chat_attachments/${window.__today}`) || {};
+    return Object.values(atts).some(a => a && a.name === 'octet.csv' && typeof a.dataUrl === 'string' && a.dataUrl.startsWith('data:text/csv;base64,'));
+  });
+  if (!octetCsvStored) throw new Error('F-004 octet-stream octet.csv must store normalized data:text/csv;base64 URI');
+  await page.locator('.chat-att-file-btn', {hasText: 'octet.csv'}).click();
+  await page.waitForFunction(() => {
+    const m = document.getElementById('chatPreviewModal');
+    const dl = document.getElementById('chatPreviewDownload');
+    return m && getComputedStyle(m).display === 'flex' && dl && !dl.classList.contains('is-disabled') && (dl.getAttribute('href') || '').startsWith('data:text/csv;base64,');
+  });
+  await page.locator('#chatPreviewCloseBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
+
+  // Delivery F-004 (2): application/octet-stream, spoofed csv, and blocked extension downloads must all be refused in preview modal
+  await page.evaluate(() => {
+    const d = window.__today;
+    const cases = [
+      {attId: 'att_bad', msgId: 'msg_bad', meta: {id: 'att_bad', name: 'evil.exe', mimeType: 'application/octet-stream', size: 4, isImage: false}, dataUrl: 'data:application/octet-stream;base64,TVqQ'},
+      {attId: 'att_bad2', msgId: 'msg_bad2', meta: {id: 'att_bad2', name: 'spoof.csv', mimeType: 'application/octet-stream', size: 4, isImage: false}, dataUrl: 'data:application/octet-stream;base64,TVqQ'},
+      {attId: 'att_bad3', msgId: 'msg_bad3', meta: {id: 'att_bad3', name: 'bad.exe', mimeType: 'application/pdf', size: 12, isImage: false}, dataUrl: 'data:application/pdf;base64,JVBERi0xLjQ='},
+    ];
+    cases.forEach((c, idx) => {
+      window.__emit(`formal/chat_attachments/${d}/${c.attId}`, {
+        ...c.meta,
+        dataUrl: c.dataUrl,
+        ts: Date.now() + 50 + idx,
+        uploadedBy: 'VTS-1',
+      });
+      window.__emit(`formal/chat_rooms/${d}/messages/${c.msgId}`, {
+        id: c.msgId,
+        ts: Date.now() + 50 + idx,
+        timeStr: '12:30',
+        roleId: 'VTS',
+        roleLabel: 'VTS-1',
+        clientId: 'other_bad_client',
+        text: '',
+        attachment: c.meta,
+      });
+    });
+  });
+  for (const blockedName of ['evil.exe', 'spoof.csv', 'bad.exe']) {
+    await page.waitForFunction(name =>
+      Array.from(document.querySelectorAll('.chat-att-file-btn')).some(btn => btn.textContent.includes(name)),
+    blockedName);
+    await page.locator('.chat-att-file-btn', {hasText: blockedName}).click();
+    await page.waitForFunction(() => {
+      const m = document.getElementById('chatPreviewModal');
+      const dl = document.getElementById('chatPreviewDownload');
+      const body = document.getElementById('chatPreviewBody');
+      return m && getComputedStyle(m).display === 'flex' &&
+        body && body.textContent.includes('未通過安全格式檢查') &&
+        dl && dl.classList.contains('is-disabled') && !dl.getAttribute('href');
+    });
+    await page.locator('#chatPreviewCloseBtn').click();
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('chatPreviewModal')).display === 'none');
+  }
+
+  // Delivery F-003 (1): leave seat via close -> reopen in spectator mode -> rejected transaction displays status banner error
+  await page.locator('#chatCloseBtn').click();
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('chatModal')).display === 'none' &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/Agent_1`) === null
+  );
+  await page.locator('#chatOpenBtn').click();
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('chatModal')).display === 'flex' &&
+    document.getElementById('chatIdentityText').textContent.includes('旁觀模式')
+  );
+  await page.evaluate(() => {
+    const targetDb = typeof db !== 'undefined' ? db : firebase.database();
+    window.__origDbRef = targetDb.ref.bind(targetDb);
+    targetDb.ref = function (path) {
+      const refObj = window.__origDbRef(path);
+      if (typeof path === 'string' && path.includes('/seats/')) {
+        const origTx = refObj.transaction.bind(refObj);
+        refObj.transaction = function (updater) {
+          if (window.__txTestMode === 'reject') {
+            return Promise.reject(new Error('PERMISSION_DENIED'));
+          }
+          if (window.__txTestMode === 'delay') {
+            const p = origTx(updater);
+            return new Promise((resolve, reject) => {
+              window.__flushDelayedTx = () => p.then(resolve, reject);
+            });
+          }
+          return origTx(updater);
+        };
+      }
+      return refObj;
+    };
+    window.__txTestMode = 'reject';
+  });
+  await page.locator('.chat-role-btn[data-role-id="VTS"]').click();
+  await page.waitForFunction(() => {
+    const banner = document.getElementById('chatStatusBanner');
+    return banner && getComputedStyle(banner).display === 'block' &&
+      banner.textContent.includes('PERMISSION_DENIED') &&
+      document.getElementById('chatIdentityText').textContent.includes('旁觀模式');
+  });
+
+  // Delivery F-003 (2): closing modal while seat transaction is in-flight must release seat and keep no ghost seat
+  await page.evaluate(() => {
+    window.__flushDelayedTx = null;
+    window.__txTestMode = 'delay';
+  });
+  await page.locator('.chat-role-btn[data-role-id="VTS"]').click();
+  await page.waitForFunction(() =>
+    typeof window.__flushDelayedTx === 'function' &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_1`) !== null
+  );
+  await page.locator('#chatCloseBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatModal')).display === 'none');
+  await page.evaluate(() => {
+    window.__txTestMode = null;
+    window.__flushDelayedTx();
+  });
+  await page.waitForFunction(() =>
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_1`) === null &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/VTS_2`) === null
+  );
+  await page.evaluate(() => {
+    const targetDb = typeof db !== 'undefined' ? db : firebase.database();
+    if (window.__origDbRef) {
+      targetDb.ref = window.__origDbRef;
+      delete window.__origDbRef;
+    }
+  });
+  await page.locator('#chatOpenBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatModal')).display === 'flex');
+  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
+
+  // Verify 15-min local idle auto-release AND midnight rollover release + close modal
+  await page.clock.fastForward(15 * 60 * 1000 + 20000);
+  await page.clock.fastForward(16000);
+  await page.waitForFunction(() =>
+    document.getElementById('chatIdentityText').textContent.includes('旁觀模式') &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/Agent_1`) === null
+  );
+
+  // Re-claim Agent-1, then verify midnight rollover releases old day's seat
+  await page.locator('.chat-role-btn[data-role-id="Agent"]').click();
+  await page.waitForFunction(() => document.getElementById('chatIdentityText').textContent.includes('Agent-1'));
+  await page.evaluate(() => {
+    window.__oldChatDateForTest = window.__today;
+    window.__origGetCurrentDateStr = window.getCurrentDateStr;
+    window.getCurrentDateStr = () => '2099-01-01';
+    listenToChatRoom();
+  });
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__oldChatDateForTest}/seats/Agent_1`) === null);
+  await page.evaluate(() => {
+    window.getCurrentDateStr = window.__origGetCurrentDateStr;
+    listenToChatRoom();
+  });
+  await page.locator('#chatCloseBtn').click();
+
   if (errors.length) throw new Error(JSON.stringify(errors));
-  return {externalServices: 'mocked', initial, forecast, operations, commands, expiredLeaseRecovered: true, errors};
+  return {externalServices: 'mocked', initial, forecast, operations, commands, chatVerified: true, expiredLeaseRecovered: true, errors};
 }

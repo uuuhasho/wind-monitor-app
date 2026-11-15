@@ -1,0 +1,1215 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-11-15 接船對話視窗草圖與排版比較</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-soft: #f1f5f9;
+    --ink: #0f172a;
+    --ink-2: #475569;
+    --ink-3: #64748b;
+    --line: #e2e8f0;
+    --navy: #0A2540;
+    --blue: #10458C;
+
+    /* 5 種作業角色配色（高對比） */
+    --cpc-fg: #1d4ed8;
+    --cpc-bg: #dbeafe;
+    --cpc-bd: #93c5fd;
+
+    --pilot-fg: #7c3aed;
+    --pilot-bg: #ede9fe;
+    --pilot-bd: #c4b5fd;
+
+    --vts-fg: #059669;
+    --vts-bg: #d1fae5;
+    --vts-bd: #6ee7b7;
+
+    --agent-fg: #ea580c;
+    --agent-bg: #ffedd5;
+    --agent-bd: #fdba74;
+
+    --tug-fg: #be123c;
+    --tug-bg: #ffe4e6;
+    --tug-bd: #fda4af;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", "PingFang TC", Roboto, sans-serif;
+    line-height: 1.5;
+    padding: 28px 20px 64px;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* 頁首 */
+  .hero {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  }
+  .hero-meta {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .hero h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    color: var(--navy);
+  }
+  .hero p {
+    margin: 0 0 16px;
+    color: var(--ink-2);
+    font-size: 15px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .legend-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-2);
+    margin-right: 4px;
+  }
+  .role-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+  .r-cpc   { color: var(--cpc-fg);   background: var(--cpc-bg);   border-color: var(--cpc-bd); }
+  .r-pilot { color: var(--pilot-fg); background: var(--pilot-bg); border-color: var(--pilot-bd); }
+  .r-vts   { color: var(--vts-fg);   background: var(--vts-bg);   border-color: var(--vts-bd); }
+  .r-agent { color: var(--agent-fg); background: var(--agent-bg); border-color: var(--agent-bd); }
+  .r-tug   { color: var(--tug-fg);   background: var(--tug-bg);   border-color: var(--tug-bd); }
+
+  /* 區塊標題 */
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 30px 0 14px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 19px;
+    color: var(--navy);
+  }
+  .section-head span {
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  /* 三畫面並排網格 */
+  .screens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  }
+  .step-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    background: #e0ecff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    align-self: flex-start;
+  }
+  .step-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .step-desc {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  /* 手機模擬外框 */
+  .phone {
+    border: 2px solid #cbd5e1;
+    border-radius: 26px;
+    background: linear-gradient(135deg, #E1EDFA 0%, #F2F7FD 100%);
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 540px;
+    position: relative;
+    overflow: hidden;
+  }
+  .phone-notch {
+    width: 72px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 99px;
+    margin: 0 auto 10px;
+    opacity: 0.45;
+  }
+
+  /* 畫面 1：現有主畫面模擬 */
+  .app-card {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 16px 14px;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 20px rgba(16, 69, 140, 0.06);
+  }
+  .app-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .app-logo-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #10458C, #38bdf8);
+    color: #fff;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+  }
+  .app-manual-link {
+    font-size: 12px;
+    color: var(--blue);
+    margin: 4px 0 10px;
+    font-weight: 600;
+  }
+  .wind-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 4px;
+    color: var(--navy);
+  }
+  .wind-num {
+    font-size: 46px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1.5px;
+  }
+  .wind-unit {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .wind-time {
+    font-size: 11px;
+    color: #64748b;
+    margin: 4px 0 12px;
+  }
+  .status-pill-safe {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 10px;
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+
+  /* 船期表標題列 + 驚嘆號重點標示 */
+  .sched-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 4px;
+    margin-bottom: 6px;
+  }
+  .chat-entry-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .chat-entry-wrap:hover {
+    background: rgba(16, 69, 140, 0.06);
+  }
+  .bang-badge {
+    display: inline-block;
+    color: #dc2626;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    margin-left: 1px;
+    user-select: none;
+  }
+  .callout-pointer {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .sched-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .sched-table th {
+    background: #e8f0fb;
+    color: var(--blue);
+    padding: 6px 4px;
+    font-weight: 700;
+  }
+  .sched-table td {
+    padding: 7px 4px;
+    border-top: 1px solid #e2e8f0;
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .w-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #1e40af;
+    margin-top: 2px;
+  }
+
+  /* 畫面 2 & 3：對話視窗 Modal 內部 */
+  .chat-modal {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid #cbd5e1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  }
+  .chat-top {
+    background: var(--navy);
+    color: #ffffff;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .chat-top-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chat-online-pill {
+    font-size: 10.5px;
+    background: rgba(255,255,255,0.16);
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .chat-close {
+    font-size: 16px;
+    opacity: 0.85;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  /* 5 角色彩色方框列 */
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    padding: 8px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line);
+  }
+  .role-box {
+    border-radius: 8px;
+    padding: 5px 2px;
+    text-align: center;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    user-select: none;
+  }
+  .role-box:hover:not(.is-full) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+  }
+  .role-box-name {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .role-box-count {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 600;
+    margin-top: 2px;
+    opacity: 0.9;
+  }
+  .role-box.is-full {
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    border-color: #cbd5e1 !important;
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+  .role-box.is-me {
+    box-shadow: 0 0 0 2px #1d4ed8;
+    position: relative;
+  }
+
+  /* 身分狀態列 */
+  .identity-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #ecfdf5;
+    border-bottom: 1px solid #a7f3d0;
+    font-size: 11px;
+    color: #065f46;
+  }
+  .identity-bar-text {
+    line-height: 1.35;
+  }
+  .identity-exit-btn {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 6px;
+    border: 1px solid #059669;
+    background: #ffffff;
+    color: #047857;
+    cursor: pointer;
+  }
+
+  /* 對話訊息區 */
+  .chat-body {
+    flex: 1;
+    padding: 10px;
+    background: #f4f4f5;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+  }
+  .msg-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 88%;
+  }
+  .msg-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    align-self: flex-end;
+    max-width: 85%;
+  }
+  .msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+  .sender-pill {
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  .msg-time {
+    font-size: 10px;
+    color: var(--ink-3);
+  }
+  .bubble-left {
+    background: #ffffff;
+    color: var(--ink);
+    padding: 7px 10px;
+    border-radius: 4px 12px 12px 12px;
+    font-size: 12px;
+    border: 1px solid #e4e4e7;
+    border-left-width: 5px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    text-align: left;
+  }
+  .b-cpc   { border-left-color: var(--cpc-fg); }
+  .b-pilot { border-left-color: var(--pilot-fg); }
+  .b-vts   { border-left-color: var(--vts-fg); }
+  .b-agent { border-left-color: var(--agent-fg); }
+  .b-tug   { border-left-color: var(--tug-fg); }
+
+  .bubble-right {
+    background: var(--blue);
+    color: #ffffff;
+    padding: 7px 10px;
+    border-radius: 12px 4px 12px 12px;
+    font-size: 12px;
+    box-shadow: 0 2px 6px rgba(16, 69, 140, 0.22);
+    text-align: left;
+  }
+
+  /* 附件縮圖與文件卡片 */
+  .attach-file {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 8px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--blue);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .attach-file:hover {
+    background: #eff6ff;
+  }
+  .attach-photo {
+    margin-top: 5px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #cbd5e1;
+    position: relative;
+    cursor: pointer;
+    background: #dbeafe;
+  }
+  .attach-photo-tag {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    background: rgba(15, 23, 42, 0.72);
+    color: #fff;
+    font-size: 9.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* 底部輸入列（未選角色 vs 已選角色） */
+  .composer-spectator {
+    padding: 10px;
+    background: #fffbeb;
+    border-top: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .composer-active {
+    padding: 8px;
+    background: #ffffff;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-attach {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .composer-input {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+  }
+  .composer-input:focus {
+    border-color: var(--blue);
+  }
+  .btn-send {
+    background: var(--blue);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* 檔案/照片點擊預覽燈箱 */
+  .preview-toast {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .preview-box {
+    background: #fff;
+    border-radius: 14px;
+    max-width: 380px;
+    width: 100%;
+    padding: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .preview-box h4 { margin: 0 0 8px; color: var(--navy); }
+  .preview-box p { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-2); }
+  .preview-close {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* 第 3 題：三個排版選項比較 */
+  .pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 18px;
+  }
+  .pick-card {
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  }
+  .pick-card.is-rec {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 16px rgba(29, 78, 216, 0.08);
+  }
+  .pick-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .pick-head h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--navy);
+  }
+  .rec-tag {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  /* 迷你預覽畫布 */
+  .mini-chat {
+    background: #f4f4f5;
+    border: 1px solid #d4d4d8;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 220px;
+  }
+  .mini-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cbd5e1;
+  }
+  .mini-tab {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .mini-tab.is-on {
+    background: var(--navy);
+    color: #ffffff;
+    border-color: var(--navy);
+  }
+  .plain-name {
+    font-size: 10px;
+    color: var(--ink-3);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .plain-bubble {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 6px 9px;
+    font-size: 11.5px;
+    color: var(--ink);
+  }
+  .plain-bubble-me {
+    background: #9fe870;
+    color: #111827;
+    border-radius: 10px;
+    padding: 6px 9px;
+    font-size: 11.5px;
+    align-self: flex-end;
+  }
+
+  .pick-pros {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--ink-2);
+    flex: 1;
+  }
+  .pick-pros li { margin-bottom: 4px; }
+
+  .pick-btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1.5px solid var(--blue);
+    background: #ffffff;
+    color: var(--blue);
+    transition: all 0.15s;
+  }
+  .pick-btn:hover, .pick-card.is-rec .pick-btn {
+    background: var(--blue);
+    color: #ffffff;
+  }
+  .pick-card.is-rec .pick-btn:hover {
+    background: var(--navy);
+    border-color: var(--navy);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 頂部說明與角色配色總覽 -->
+  <header class="hero">
+    <div class="hero-meta">設計草圖日期：2026-11-15 ｜ 臺中 LNG 船監控 APP ✕ spec-egm-flow 第 2 題圖解 ＋ 第 3 題選擇</div>
+    <h1>接船即時對話視窗 — 操作流程草圖</h1>
+    <p>根據第 1、2 題決策（<strong>免密碼進入</strong> ＋ <strong>旁觀不佔名額、選角色才領取 -1/-2 席位、最多 10 人同時掛名發言、關視窗或閒置 15 分鐘自動釋放</strong>），實際手機畫面流程如下：</p>
+    <div class="legend">
+      <span class="legend-title">5 種作業角色配色（各 2 席，共 10 席）：</span>
+      <span class="role-tag r-cpc">🔵 CPCLNG（中油廠）</span>
+      <span class="role-tag r-pilot">🟣 Pilot（引水人）</span>
+      <span class="role-tag r-vts">🟢 VTS（航管）</span>
+      <span class="role-tag r-agent">🟠 Agent（船代）</span>
+      <span class="role-tag r-tug">🔴 拖船（高對比玫紅）</span>
+    </div>
+  </header>
+
+  <!-- 第 2 題：3 步驟草圖 -->
+  <div class="section-head">
+    <h2>一、第 2 題選項 A 操作流程草圖（可直接點擊模擬互動）</h2>
+    <span>由左至右：主畫面入口 → 旁觀唯讀 → 領取角色發言</span>
+  </div>
+
+  <div class="screens-grid">
+
+    <!-- 畫面 1：主畫面入口 -->
+    <article class="step-card">
+      <span class="step-badge">畫面 1 / 主畫面入口</span>
+      <h3 class="step-title">有未讀新訊息時顯示縮小靜態「!」</h3>
+      <p class="step-desc">保持船期表左上角原本乾淨的藍色對話符號（無紅框、無閃爍）；僅在有未讀新訊息時，於圖示右側顯示<strong>縮小粗體紅色 !</strong>，點開看過即消失。</p>
+
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="app-card">
+          <div class="app-title">
+            <span class="app-logo-dot">LNG</span>
+            <span>臺中LNG船監控</span>
+          </div>
+          <div class="app-manual-link">📖 操作說明</div>
+
+          <div class="wind-row">
+            <span class="wind-num">10.4</span>
+            <span class="wind-unit">m/s</span>
+          </div>
+          <div class="wind-time">最後更新: 2026/11/15 08:45</div>
+
+          <div class="status-pill-safe">Seri Dayang 可進港</div>
+
+          <div class="callout-pointer">👇 保持原本乾淨圖示（有未讀新訊時旁顯示縮小靜態紅 <strong>!</strong>）</div>
+
+          <div class="sched-header">
+            <div class="chat-entry-wrap" title="點擊開啟接船對話" onclick="showPreview('互動提示', '在正式 APP 中，點擊這個帶有「!」的對話圖示就會開啟右側的「接船即時對話視窗」（畫面 2）。')">
+              <!-- 與 frontend/index.html 相同的 message-square-text SVG -->
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10458C" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>
+                <path d="M7 7h8"/>
+                <path d="M7 11h10"/>
+                <path d="M7 15h6"/>
+              </svg>
+              <span class="bang-badge" aria-label="有新對話">!</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;color:#10458C;">
+              <span style="font-size:17px;">🔕</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10458C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+              </svg>
+            </div>
+          </div>
+
+          <table class="sched-table">
+            <thead>
+              <tr><th>日期</th><th>船名</th><th>速限</th></tr>
+            </thead>
+            <tbody>
+              <tr style="background:#dcfce7;">
+                <td>11/15<br><span class="w-badge">W12</span></td>
+                <td>Seri Dayang</td>
+                <td>12</td>
+              </tr>
+              <tr>
+                <td>11/17<br><span class="w-badge">W12</span></td>
+                <td>Arctic Princess</td>
+                <td>12</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+    <!-- 畫面 2：點開視窗（旁觀唯讀模式） -->
+    <article class="step-card">
+      <span class="step-badge">畫面 2 / 點開視窗（旁觀模式）</span>
+      <h3 class="step-title">看對話不佔名額，頂部顯示 5 色角色</h3>
+      <p class="step-desc">任何人點開就能立刻看到所有留言與附件（旁觀人數不限）。若要發言，點上方尚未額滿的彩色方框（例如 <strong>CPCLNG</strong>）即可領號。</p>
+
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="chat-modal">
+          <div class="chat-top">
+            <div class="chat-top-title">
+              <span style="display:inline-flex;align-items:center;gap:6px;"><img src="../../frontend/talk.png" alt="" style="width:20px;height:20px;object-fit:contain;">即時溝通</span>
+              <span class="chat-online-pill">4/10 發言中</span>
+            </div>
+            <span class="chat-close">✕</span>
+          </div>
+
+          <!-- 5 角色選擇列 -->
+          <div class="role-grid">
+            <div class="role-box r-cpc" onclick="showPreview('點擊 CPCLNG 示範', '因為 CPCLNG-1 已經在線，您點擊 CPCLNG 後系統會自動配發「CPCLNG-2」給您，進入右側畫面 3 的發言模式！')">
+              <span class="role-box-name">CPCLNG</span>
+              <span class="role-box-count">1/2</span>
+            </div>
+            <div class="role-box r-pilot" onclick="showPreview('點擊 Pilot 示範', 'Pilot 目前 0/2 在線，點擊後系統將自動配發「Pilot-1」給您發言。')">
+              <span class="role-box-name">Pilot</span>
+              <span class="role-box-count">0/2</span>
+            </div>
+            <div class="role-box r-vts" onclick="showPreview('點擊 VTS 示範', 'VTS 目前 1/2 在線，點擊後系統將自動配發「VTS-2」給您發言。')">
+              <span class="role-box-name">VTS</span>
+              <span class="role-box-count">1/2</span>
+            </div>
+            <div class="role-box r-agent is-full" onclick="showPreview('Agent 名額已滿 (2/2)', '目前已有 Agent-1 與 Agent-2 在線，因此方框反灰不可選；等其中一人退出、關閉視窗或閒置 15 分鐘後就會自動釋放。')">
+              <span class="role-box-name">Agent</span>
+              <span class="role-box-count">2/2 滿</span>
+            </div>
+            <div class="role-box r-tug" onclick="showPreview('點擊 拖船 示範', '拖船目前 0/2 在線，點擊後系統將自動配發「拖船-1」給您發言。')">
+              <span class="role-box-name">拖船</span>
+              <span class="role-box-count">0/2</span>
+            </div>
+          </div>
+
+          <div class="chat-body">
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-cpc">CPCLNG-1</span>
+                <span class="msg-time">08:40</span>
+              </div>
+              <div class="bubble-left b-cpc">早安，北堤目前 10.4 m/s，W12 碼頭準備就緒。</div>
+            </div>
+
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-vts">VTS-1</span>
+                <span class="msg-time">08:41</span>
+              </div>
+              <div class="bubble-left b-vts">VTS 收到，目前航道淨空，准予進港作業。</div>
+            </div>
+
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-agent">Agent-1</span>
+                <span class="msg-time">08:42</span>
+              </div>
+              <div class="bubble-left b-agent">
+                本日拖船配置表已上傳，請各單位查閱：
+                <div class="attach-file" onclick="showPreview('📄 1115進港拖船配置.pdf', '旁觀者與線上所有人員都可以直接點開文件查看或下載！')">
+                  <span>📄</span>
+                  <span>1115進港拖船配置.pdf</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="composer-spectator">
+            👆 點選上方彩色角色方框，自動領取 -1 或 -2 即可開始發言（僅觀看不會佔用名額）
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 畫面 3：選完角色後（發言模式） -->
+    <article class="step-card">
+      <span class="step-badge">畫面 3 / 已選角色（發言模式）</span>
+      <h3 class="step-title">自動配發「CPCLNG-2」＋ 閒置自動釋放</h3>
+      <p class="step-desc">點擊 <strong>CPCLNG</strong> 後自動配發空缺的 <strong>-2</strong>。頂部顯示目前身分與退出按鈕；關分頁或閒置 15 分鐘會自動讓出名額。</p>
+
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="chat-modal">
+          <div class="chat-top">
+            <div class="chat-top-title">
+              <span style="display:inline-flex;align-items:center;gap:6px;"><img src="../../frontend/talk.png" alt="" style="width:20px;height:20px;object-fit:contain;">即時溝通</span>
+              <span class="chat-online-pill">6/10 發言中</span>
+            </div>
+            <span class="chat-close">✕</span>
+          </div>
+
+          <!-- 5 角色列（已選狀態） -->
+          <div class="role-grid">
+            <div class="role-box r-cpc is-me">
+              <span class="role-box-name">CPCLNG</span>
+              <span class="role-box-count">2/2(我)</span>
+            </div>
+            <div class="role-box r-pilot">
+              <span class="role-box-name">Pilot</span>
+              <span class="role-box-count">1/2</span>
+            </div>
+            <div class="role-box r-vts">
+              <span class="role-box-name">VTS</span>
+              <span class="role-box-count">1/2</span>
+            </div>
+            <div class="role-box r-agent is-full">
+              <span class="role-box-name">Agent</span>
+              <span class="role-box-count">2/2 滿</span>
+            </div>
+            <div class="role-box r-tug">
+              <span class="role-box-name">拖船</span>
+              <span class="role-box-count">1/2</span>
+            </div>
+          </div>
+
+          <!-- 身分狀態列 -->
+          <div class="identity-bar">
+            <div class="identity-bar-text">
+              🟢 目前發言身分：<strong>[CPCLNG-2]</strong><br>
+              <span style="font-size:10px;opacity:0.85;">關視窗或閒置 15 分鐘自動釋放</span>
+            </div>
+            <button type="button" class="identity-exit-btn" onclick="showPreview('切換 / 退出角色', '按下後會立刻釋放 CPCLNG-2 名額給下一位同仁，自己退回旁觀模式或改選其他角色。')">切換/退出角色</button>
+          </div>
+
+          <!-- 對話區 -->
+          <div class="chat-body" id="demoChatBody">
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-cpc">CPCLNG-1</span>
+                <span class="msg-time">08:40</span>
+              </div>
+              <div class="bubble-left b-cpc">北堤目前 10.4 m/s，W12 碼頭準備就緒。</div>
+            </div>
+
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-pilot">Pilot-1</span>
+                <span class="msg-time">08:42</span>
+              </div>
+              <div class="bubble-left b-pilot">
+                引水人已登輪，預計 08:50 POB。
+                <div class="attach-photo" onclick="showPreview('📷 現場海象照片（IMG_0842.jpg）', '點開照片可全螢幕放大查看；當晚 23:00 歸檔時會將檔案連結一起寫入對話 JSON。')">
+                  <svg width="100%" height="58" viewBox="0 0 220 58" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                    <rect width="220" height="58" fill="#bae6fd"/>
+                    <path d="M0 38 Q55 32 110 38 T220 38 L220 58 L0 58 Z" fill="#0284c7"/>
+                    <polygon points="72,34 152,34 144,41 80,41" fill="#0f172a"/>
+                    <rect x="118" y="24" width="22" height="10" fill="#ffffff" rx="1"/>
+                    <circle cx="34" cy="17" r="7" fill="#fde047"/>
+                  </svg>
+                  <span class="attach-photo-tag">🔍 點擊放大</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg-left">
+              <div class="msg-meta">
+                <span class="sender-pill r-tug">拖船-1</span>
+                <span class="msg-time">08:43</span>
+              </div>
+              <div class="bubble-left b-tug">
+                拖船 2 艘已於防波堤外待命。
+                <div class="attach-file" onclick="showPreview('📄 靠泊作業檢查表.pdf (245 KB)', '點擊即可預覽或下載 PDF / 圖片檔案。')">
+                  <span>📄</span>
+                  <span>靠泊作業檢查表.pdf · 245 KB</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg-right">
+              <div class="msg-meta">
+                <span class="msg-time">08:44</span>
+                <span class="sender-pill r-cpc">CPCLNG-2（我）</span>
+              </div>
+              <div class="bubble-right">收到，廠區已確認就位，請注意側風陣風！</div>
+            </div>
+          </div>
+
+          <!-- 輸入欄 -->
+          <div class="composer-active">
+            <button type="button" class="btn-attach" title="上傳照片或文件" onclick="showPreview('📎 上傳照片 / 文件', '支援手機拍照、圖片或 PDF 文件上傳，所有在線人員都能點開查看。')">📎</button>
+            <input type="text" class="composer-input" id="demoInput" placeholder="以 CPCLNG-2 發言..." onkeydown="if(event.key==='Enter')sendDemoMsg()">
+            <button type="button" class="btn-send" onclick="sendDemoMsg()">送出</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- 第 3 題：多角色對話排版比較 -->
+  <div class="section-head">
+    <h2>二、第 3 題：多角色同時發言時，LINE 對話要怎麼呈現？（請選 A / B / C）</h2>
+    <span>最多 10 人（5 種角色）同時在線上溝通，請看實際視覺對比</span>
+  </div>
+
+  <div class="pick-grid">
+
+    <!-- 選項 A -->
+    <div class="pick-card is-rec">
+      <div class="pick-head">
+        <h3>A — 角色彩色膠囊 ＋ 左側色條分流</h3>
+        <span class="rec-tag">推薦</span>
+      </div>
+      <div class="mini-chat">
+        <div class="msg-left">
+          <div class="msg-meta"><span class="sender-pill r-pilot">Pilot-1</span><span class="msg-time">08:42</span></div>
+          <div class="bubble-left b-pilot">引水人已登輪，風速穩定。</div>
+        </div>
+        <div class="msg-left">
+          <div class="msg-meta"><span class="sender-pill r-vts">VTS-1</span><span class="msg-time">08:43</span></div>
+          <div class="bubble-left b-vts">航道淨空，請進港。</div>
+        </div>
+        <div class="msg-left">
+          <div class="msg-meta"><span class="sender-pill r-tug">拖船-1</span><span class="msg-time">08:43</span></div>
+          <div class="bubble-left b-tug">拖船就位，準備帶纜。</div>
+        </div>
+        <div class="msg-right">
+          <div class="msg-meta"><span class="msg-time">08:44</span><span class="sender-pill r-cpc">CPCLNG-2（我）</span></div>
+          <div class="bubble-right">收到，W12 碼頭完成準備！</div>
+        </div>
+      </div>
+      <ul class="pick-pros">
+        <li><strong>訊息不漏看</strong>：所有單位依時間混排在同一個視窗，完整保留現場指令脈絡。</li>
+        <li><strong>一眼辨識角色</strong>：彩色膠囊＋左色條，不需細讀文字就能分辨是 Pilot、VTS 還是拖船。</li>
+      </ul>
+      <button type="button" class="pick-btn" onclick="pickOption('A', this)">選擇 A（推薦）</button>
+    </div>
+
+    <!-- 選項 B -->
+    <div class="pick-card">
+      <div class="pick-head">
+        <h3>B — 傳統 LINE 單色泡泡 ＋ 純文字名稱</h3>
+      </div>
+      <div class="mini-chat">
+        <div class="msg-left">
+          <div class="plain-name">Pilot-1 · 08:42</div>
+          <div class="plain-bubble">引水人已登輪，風速穩定。</div>
+        </div>
+        <div class="msg-left">
+          <div class="plain-name">VTS-1 · 08:43</div>
+          <div class="plain-bubble">航道淨空，請進港。</div>
+        </div>
+        <div class="msg-left">
+          <div class="plain-name">拖船-1 · 08:43</div>
+          <div class="plain-bubble">拖船就位，準備帶纜。</div>
+        </div>
+        <div class="plain-bubble-me">收到，W12 碼頭完成準備！</div>
+      </div>
+      <ul class="pick-pros">
+        <li><strong>外觀最樸素</strong>：與一般 LINE 群組幾乎相同，沒有額外顏色干擾。</li>
+        <li><strong>取捨</strong>：當 4–5 個單位接連快速發言時，所有左邊泡泡都長一樣，必須逐字看名稱才分得清誰講的。</li>
+      </ul>
+      <button type="button" class="pick-btn" onclick="pickOption('B', this)">選擇 B</button>
+    </div>
+
+    <!-- 選項 C -->
+    <div class="pick-card">
+      <div class="pick-head">
+        <h3>C — 同視窗混排 ＋ 頂部「角色篩選頁籤」</h3>
+      </div>
+      <div class="mini-chat">
+        <div class="mini-tabs">
+          <span class="mini-tab is-on">全部</span>
+          <span class="mini-tab">CPCLNG</span>
+          <span class="mini-tab">Pilot</span>
+          <span class="mini-tab">VTS</span>
+          <span class="mini-tab">Agent</span>
+          <span class="mini-tab">拖船</span>
+        </div>
+        <div class="msg-left">
+          <div class="msg-meta"><span class="sender-pill r-pilot">Pilot-1</span><span class="msg-time">08:42</span></div>
+          <div class="bubble-left b-pilot">引水人已登輪，風速穩定。</div>
+        </div>
+        <div class="msg-left">
+          <div class="msg-meta"><span class="sender-pill r-tug">拖船-1</span><span class="msg-time">08:43</span></div>
+          <div class="bubble-left b-tug">拖船就位，準備帶纜。</div>
+        </div>
+        <div class="msg-right">
+          <div class="msg-meta"><span class="msg-time">08:44</span><span class="sender-pill r-cpc">CPCLNG-2（我）</span></div>
+          <div class="bubble-right">收到，W12 碼頭完成準備！</div>
+        </div>
+      </div>
+      <ul class="pick-pros">
+        <li><strong>可單獨過濾</strong>：保留 A 的彩色混排，想只看某角色歷史訊息時可切頁籤篩選。</li>
+        <li><strong>取捨</strong>：手機畫面頂部會多佔一排高度（角色按鈕列＋篩選列）；且切換後容易忽略其他單位的新發言。</li>
+      </ul>
+      <button type="button" class="pick-btn" onclick="pickOption('C', this)">選擇 C</button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- 預覽彈窗 -->
+<div class="preview-toast" id="previewToast" onclick="if(event.target===this)closePreview()">
+  <div class="preview-box">
+    <h4 id="previewTitle"></h4>
+    <p id="previewDesc"></p>
+    <button type="button" class="preview-close" onclick="closePreview()">知道了</button>
+  </div>
+</div>
+
+<script>
+  function showPreview(title, desc) {
+    document.getElementById('previewTitle').textContent = title;
+    document.getElementById('previewDesc').textContent = desc;
+    document.getElementById('previewToast').style.display = 'flex';
+  }
+  function closePreview() {
+    document.getElementById('previewToast').style.display = 'none';
+  }
+  function sendDemoMsg() {
+    const input = document.getElementById('demoInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const body = document.getElementById('demoChatBody');
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-right';
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.innerHTML = `<span class="msg-time">${hh}:${mm}</span><span class="sender-pill r-cpc">CPCLNG-2（我）</span>`;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble-right';
+    bubble.textContent = text;
+    wrap.append(meta, bubble);
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+    input.value = '';
+  }
+  function pickOption(choice, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(choice).catch(() => {});
+    }
+    document.querySelectorAll('.pick-btn').forEach(b => {
+      if (b !== btn) {
+        const label = b.textContent.includes('推薦') ? '選擇 A（推薦）' : b.textContent.replace(/^已選擇 .*/, b.textContent.includes('B') ? '選擇 B' : '選擇 C');
+        if (b.dataset.orig) b.textContent = b.dataset.orig;
+      }
+    });
+    if (!btn.dataset.orig) btn.dataset.orig = btn.textContent;
+    btn.textContent = `已選擇 ${choice}（已複製，可直接貼回對話）`;
+  }
+</script>
+</body>
+</html>

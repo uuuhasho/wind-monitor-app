@@ -438,10 +438,163 @@ function archiveSheetRowById(sheet, id, idColumn = 13) {
   return index < 0 ? null : index + 2;
 }
 
-function upsertArchiveRow(sheet, id, row) {
+const CHAT_ARCHIVE_MAX_CHARS = 48000;
+
+function ensureArchiveHeaderRow(sheet) {
+  const headers = ["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值", "archive_id", "接船對話"];
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    return;
+  }
+  if (sheet.getRange(1, 13).getValue() !== "archive_id") sheet.getRange(1, 13).setValue("archive_id");
+  if (sheet.getRange(1, 14).getValue() !== "接船對話") sheet.getRange(1, 14).setValue("接船對話");
+}
+
+function fitChatPayloadWithinLimit(dateStr, cleanMsgs, maxChars = CHAT_ARCHIVE_MAX_CHARS) {
+  const fullJson = JSON.stringify({ date: dateStr, count: cleanMsgs.length, messages: cleanMsgs });
+  if (fullJson.length <= maxChars) return fullJson;
+
+  const totalCount = cleanMsgs.length;
+  for (let startIdx = 1; startIdx < totalCount; startIdx++) {
+    const kept = cleanMsgs.slice(startIdx);
+    const json = JSON.stringify({
+      date: dateStr,
+      count: kept.length,
+      total_count: totalCount,
+      kept_count: kept.length,
+      truncated: true,
+      messages: kept
+    });
+    if (json.length <= maxChars) return json;
+  }
+
+  const lastOrig = cleanMsgs[totalCount - 1];
+  const buildSingleJson = (msgObj) => JSON.stringify({
+    date: dateStr,
+    count: 1,
+    total_count: totalCount,
+    kept_count: 1,
+    truncated: true,
+    messages: [msgObj]
+  });
+
+  const baseMsg = { time: lastOrig.time, role: lastOrig.role, text: "" };
+  if (lastOrig.attachment) {
+    const attName = String(lastOrig.attachment.name || "附件");
+    baseMsg.attachment = {
+      name: attName.length > 200 ? `${attName.slice(0, 197)}...` : attName,
+      type: String(lastOrig.attachment.type || "").slice(0, 120),
+      size: Number(lastOrig.attachment.size) || 0
+    };
+  }
+  const origText = String(lastOrig.text || "");
+  const suffix = origText ? "…(已截斷)" : "";
+  let lo = 0;
+  let hi = origText.length;
+  let best = 0;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const candidate = { ...baseMsg, text: mid < origText.length ? `${origText.slice(0, mid)}${suffix}` : origText };
+    if (buildSingleJson(candidate).length <= maxChars) {
+      best = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  const finalMsg = { ...baseMsg, text: best < origText.length ? `${origText.slice(0, best)}${suffix}` : origText };
+  let finalJson = buildSingleJson(finalMsg);
+  if (finalJson.length > maxChars) {
+    finalMsg.text = "";
+    finalMsg.role = String(finalMsg.role || "").slice(0, 80);
+    if (finalMsg.attachment) finalMsg.attachment.name = String(finalMsg.attachment.name || "").slice(0, 80);
+    finalJson = buildSingleJson(finalMsg);
+  }
+  return finalJson;
+}
+
+function cleanChatLogs(rawChat, dateStr, maxChars = CHAT_ARCHIVE_MAX_CHARS) {
+  if (!rawChat || typeof rawChat !== "object") return "-";
+  const rawMessages = rawChat.messages && typeof rawChat.messages === "object" ? Object.values(rawChat.messages) : [];
+  const normalized = [];
+
+  rawMessages.forEach((m) => {
+    if (!m || typeof m !== "object") return;
+    const text = m.text != null ? String(m.text) : "";
+    const hasAtt = Boolean(m.attachment && typeof m.attachment === "object");
+    if (!text && !hasAtt) return;
+    const ts = Number(m.ts) || 0;
+    let time = String(m.timeStr || m.time || "").trim();
+    if (!time) {
+      time = ts > 0 ? Utilities.formatDate(new Date(ts), "Asia/Taipei", "HH:mm") : "-";
+    }
+    const entry = {
+      _ts: ts,
+      _id: String(m.id || ""),
+      time,
+      role: String(m.roleLabel || m.role || m.roleId || "未知"),
+      text
+    };
+    if (hasAtt) {
+      entry.attachment = {
+        name: String(m.attachment.name || "附件"),
+        type: String(m.attachment.mimeType || m.attachment.type || ""),
+        size: Number(m.attachment.size) || 0
+      };
+    }
+    normalized.push(entry);
+  });
+
+  if (!normalized.length) return "-";
+  normalized.sort((a, b) => (a._ts - b._ts) || a._id.localeCompare(b._id));
+  const cleanMsgs = normalized.map(({ _ts, _id, ...rest }) => rest);
+  return fitChatPayloadWithinLimit(dateStr, cleanMsgs, maxChars);
+}
+
+function buildChatArchivePayload(dateStr) {
+  const chatResponse = firebaseReadOrThrow(`chat_rooms/${dateStr}`);
+  const rawChat = safeJsonParse(chatResponse.getContentText(), null);
+  const hasChatRoom = rawChat !== null && typeof rawChat === "object";
+  return { hasChatRoom, chatJson: cleanChatLogs(rawChat, dateStr) };
+}
+
+function normalizeSheetDateCell(rawVal) {
+  if (rawVal instanceof Date) return getTwDateStr(rawVal);
+  const s = String(rawVal || "").trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : s;
+}
+
+function findShipArchiveRowsForDate(sheet, dateStr) {
+  const rows = [];
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return rows;
+  const colDates = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  const colIds = sheet.getRange(2, 13, lastRow - 1, 1).getValues();
+  const chatOnlyId = `${dateStr}:chat_only`;
+  for (let i = 0; i < colDates.length; i++) {
+    const rowDate = normalizeSheetDateCell(colDates[i][0]);
+    const rowId = String(colIds[i][0] || "").trim();
+    const matchesDate = rowDate === dateStr || rowId.startsWith(`${dateStr}:`);
+    if (matchesDate && rowId !== chatOnlyId) {
+      rows.push(i + 2);
+    }
+  }
+  return rows;
+}
+
+function cleanupDailyChatNodes(dateStr, hasChatRoom) {
+  if (hasChatRoom) firebaseWriteOrThrow(`chat_rooms/${dateStr}`, null, "delete");
+  firebaseWriteOrThrow(`chat_attachments/${dateStr}`, null, "delete");
+}
+
+function upsertArchiveRow(sheet, id, row12, chatJson = "-") {
   const existingRow = archiveSheetRowById(sheet, id);
-  if (existingRow) sheet.getRange(existingRow, 10).setValue(row[9]);
-  else sheet.appendRow(row.concat([id]));
+  if (existingRow) {
+    sheet.getRange(existingRow, 10).setValue(row12[9]);
+    sheet.getRange(existingRow, 14).setValue(chatJson);
+  } else {
+    sheet.appendRow(row12.concat([id, chatJson]));
+  }
   SpreadsheetApp.flush();
 }
 
@@ -522,7 +675,30 @@ function archiveAndClearFirebase(simDate = null) {
     const todayMD = simDate ? `${Number(simDate.substring(5, 7))}/${Number(simDate.substring(8, 10))}` : `${now.getMonth() + 1}/${now.getDate()}`;
     const dataResponse = firebaseReadOrThrow(`daily_records/${dateStr}`);
     const todayData = JSON.parse(dataResponse.getContentText()) || {};
+    const chatArchive = buildChatArchivePayload(dateStr);
     if (!Object.keys(todayData).length) {
+      if (chatArchive.chatJson !== "-") {
+        if (!SPREADSHEET_ID) throw new Error("SPREADSHEET_ID is not configured; chat retained");
+        const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+        const sheet = ss.getSheetByName("歸檔總表") || ss.insertSheet("歸檔總表", 0);
+        ensureArchiveHeaderRow(sheet);
+        const existingShipRows = findShipArchiveRowsForDate(sheet, dateStr);
+        const receiptsResp = firebaseReadOrThrow(`archive_receipts/${dateStr}`);
+        const receiptsObj = safeJsonParse(receiptsResp.getContentText(), null);
+        const hasReceipts = Boolean(receiptsObj && typeof receiptsObj === "object" && Object.keys(receiptsObj).length > 0);
+        if (existingShipRows.length > 0 || hasReceipts) {
+          existingShipRows.forEach((r) => sheet.getRange(r, 14).setValue(chatArchive.chatJson));
+          SpreadsheetApp.flush();
+        } else {
+          upsertArchiveRow(
+            sheet,
+            `${dateStr}:chat_only`,
+            [dateStr, "無船期(純對話)", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"],
+            chatArchive.chatJson
+          );
+        }
+      }
+      cleanupDailyChatNodes(dateStr, chatArchive.hasChatRoom);
       firebaseWriteOrThrow("active_status", {app_mode: "stop", target_key: "", ship_name: "", limit_speed: "", forecast_auto_failed: null}, "patch");
       props.deleteProperty("LAST_WIND_DATA_TIME");
       updateFirebaseScheduleList();
@@ -532,8 +708,7 @@ function archiveAndClearFirebase(simDate = null) {
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName("歸檔總表") || ss.insertSheet("歸檔總表", 0);
-    if (sheet.getLastRow() === 0) sheet.appendRow(["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值", "archive_id"]);
-    else if (sheet.getRange(1, 13).getValue() !== "archive_id") sheet.getRange(1, 13).setValue("archive_id");
+    ensureArchiveHeaderRow(sheet);
     const [cpcJson, omJson] = getForecastArchiveJson(dateStr);
     const schedule = getScheduleList(true);
     const sheet160K = ss.getSheetByName("160K") || ss.insertSheet("160K");
@@ -589,6 +764,7 @@ function archiveAndClearFirebase(simDate = null) {
           const archiveRow = archiveSheetRowById(sheet, receipt.archive_id || id);
           if (!archiveRow) throw new Error("archive receipt exists without its archive row");
           sheet.getRange(archiveRow, 10).setValue(logs);
+          sheet.getRange(archiveRow, 14).setValue(chatArchive.chatJson);
           SpreadsheetApp.flush();
         } else {
           let migration = receipt && receipt.mode === "migration" ? receipt : null;
@@ -617,7 +793,7 @@ function archiveAndClearFirebase(simDate = null) {
               });
               firebaseWriteOrThrow(`daily_records/${migration.target_date}/${migration.target_key}`, {config: migratedConfig, pob_info: {}}, "put", {"if-match": targetEtag});
             }
-            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson]);
+            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", "未進港", "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", "-", logs, cpcJson, omJson], chatArchive.chatJson);
           } else {
             if (!receipt) {
               firebaseWriteOrThrow(receiptPath, {archive_id: id, source_fingerprint: sourceFingerprint,
@@ -635,7 +811,7 @@ function archiveAndClearFirebase(simDate = null) {
             if (config.original_date && config.original_date !== dateStr) {
               delayNote = `原定:${config.original_date.substring(5)} 延遲:${Math.ceil(Math.abs(new Date(dateStr) - new Date(config.original_date)) / 86400000)}天`;
             }
-            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", pob.pob_time || "未進港", pob.pob_wind_speed || "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", delayNote, logs, cpcJson, omJson]);
+            upsertArchiveRow(sheet, id, [dateStr, shipName, config.limit_speed || "-", pob.pob_time || "未進港", pob.pob_wind_speed || "-", pob.formatted_msg || "無訊息", config.terminal || "-", pob.no_entry_reason || "-", delayNote, logs, cpcJson, omJson], chatArchive.chatJson);
             const targetSheet = Number(config.limit_speed) === 13.8 ? sheet160K : Number(config.limit_speed) === 12 ? sheet180K : null;
             if (targetSheet && pob.pob_time) {
               if (targetSheet.getRange(1, 5).getValue() !== "archive_id") targetSheet.getRange(1, 5).setValue("archive_id");
@@ -659,6 +835,7 @@ function archiveAndClearFirebase(simDate = null) {
       props.setProperty("ARCHIVED_SHIPS_TODAY", JSON.stringify({date: dateStr, ships: [...new Set(ships)]}));
     }
     if (failures.length) throw new Error(`archive incomplete; retained source cards: ${failures.join(", ")}`);
+    cleanupDailyChatNodes(dateStr, chatArchive.hasChatRoom);
     firebaseWriteOrThrow("active_status", {app_mode: "stop", target_key: "", ship_name: "", limit_speed: "", forecast_auto_failed: null}, "patch");
     props.deleteProperty("LAST_WIND_DATA_TIME");
     updateFirebaseScheduleList();

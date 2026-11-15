@@ -16,14 +16,14 @@ function createSheet(name) {
         getValue: () => (rows[row - 1] || [])[column - 1],
         setValue: value => { (rows[row - 1] ||= [])[column - 1] = value; },
         getValues: () => Array.from({length: count}, (_, index) =>
-          [(rows[row - 1 + index] || [])[column - 1]]),
+          Array.from({length: width}, (_, colIdx) => (rows[row - 1 + index] || [])[column - 1 + colIdx])),
       };
     },
   };
 }
 
-function createHarness({records, schedule = [], failDeleteOnce = false, failMoveOnce = false, fetchHook, sheetHook, flushHook, lockBusy = false, opPassword = "test"}) {
-  const db = {daily_records: records, forecast_data: [{timestamp: "2026-10-26T08:00:00+08:00", cpc_wind_speed: 5, open_meteo_wind_speed: 7}]};
+function createHarness({records, extraDb = {}, schedule = [], failDeleteOnce = false, failMoveOnce = false, fetchHook, sheetHook, flushHook, lockBusy = false, opPassword = "test"}) {
+  const db = {daily_records: records, forecast_data: [{timestamp: "2026-10-26T08:00:00+08:00", cpc_wind_speed: 5, open_meteo_wind_speed: 7}], ...extraDb};
   const props = new Map([
     ["FIREBASE_URL", "https://example.test/formal"], ["SPREADSHEET_ID", "sheet"],
   ]);
@@ -53,7 +53,10 @@ function createHarness({records, schedule = [], failDeleteOnce = false, failMove
     })},
     LockService: {getScriptLock: () => ({tryLock: () => !lockBusy, releaseLock: () => {}})},
     Utilities: {
-      formatDate: date => new Date(date.getTime() + 8 * 3600000).toISOString().slice(0, 10),
+      formatDate: (date, _tz, pattern) => {
+        const iso = new Date(date.getTime() + 8 * 3600000).toISOString();
+        return pattern === "HH:mm" ? iso.slice(11, 16) : iso.slice(0, 10);
+      },
       DigestAlgorithm: {SHA_256: "sha256"},
       computeDigest: (_algorithm, value) => [...crypto.createHash("sha256").update(value).digest()],
       sleep: () => {},
@@ -399,4 +402,246 @@ function normalCard() {
   assert.equal(test.calls.length, 0, "missing operation password does not call Firebase");
 }
 
-console.log("GAS archive and operations: 21 scenarios passed");
+// 22. 既有的 13 欄歸檔總表會自動補上第 14 欄「接船對話」表頭並保留第 13 欄 archive_id
+{
+  const card = normalCard();
+  card.pob_info = {no_entry_reason: "風大"};
+  const test = createHarness({
+    records: {"2026-11-15": {ship_a: card}},
+  });
+  const sheet13 = createSheet("歸檔總表");
+  sheet13.rows.push(["日期", "船名", "限制風速", "POB時間", "POB風速", "POB訊息", "碼頭", "未進港原因", "備註", "北堤實際風力", "空軍預測值", "陣風預測值", "archive_id"]);
+  test.sheets.set("歸檔總表", sheet13);
+  test.context.archiveAndClearFirebase("2026-11-15");
+  assert.strictEqual(sheet13.rows[0][12], "archive_id");
+  assert.strictEqual(sheet13.rows[0][13], "接船對話");
+  assert.strictEqual(sheet13.rows[1][13], "-");
+}
+
+// 23. 當日有船隻卡片與對話（含附件 metadata）：排序整理成純 JSON、剝除 dataUrl 與 clientId、成功後刪除 chat_rooms 與 chat_attachments
+{
+  const card = normalCard();
+  card.pob_info = {pob_time: "08:30", pob_wind_speed: "12.0", formatted_msg: "POB 08:30"};
+  const test = createHarness({
+    records: {"2026-11-15": {ship_a: card}},
+    extraDb: {
+      chat_rooms: {
+        "2026-11-15": {
+          seats: {CPCLNG_1: {clientId: "secret-client", roleId: "CPCLNG", roleLabel: "CPCLNG-1", slot: 1, activeAt: 1700000000000}},
+          messages: {
+            m2: {id: "m2", ts: 2000, timeStr: "09:10", roleId: "Pilot", roleLabel: "Pilot-1", clientId: "c-pilot", text: "引水梯已備妥", attachment: {id: "att1", name: "photo.jpg", mimeType: "image/jpeg", size: 12345, isImage: true, dataUrl: "data:image/jpeg;base64,AAAA"}},
+            m1: {id: "m1", ts: 1000, timeStr: "09:05", roleId: "CPCLNG", roleLabel: "CPCLNG-1", clientId: "c-cpc", text: "準備靠泊"},
+          },
+        },
+      },
+      chat_attachments: {
+        "2026-11-15": {
+          att1: {id: "att1", name: "photo.jpg", mimeType: "image/jpeg", size: 12345, isImage: true, dataUrl: "data:image/jpeg;base64,AAAA"},
+        },
+      },
+    },
+  });
+  test.context.archiveAndClearFirebase("2026-11-15");
+  const rows = test.sheets.get("歸檔總表").rows;
+  assert.strictEqual(rows[0][13], "接船對話");
+  const parsed = JSON.parse(rows[1][13]);
+  assert.strictEqual(parsed.date, "2026-11-15");
+  assert.strictEqual(parsed.count, 2);
+  assert.deepStrictEqual(parsed.messages.map(m => m.time), ["09:05", "09:10"]);
+  assert.strictEqual(parsed.messages[1].attachment.name, "photo.jpg");
+  assert.strictEqual(parsed.messages[1].attachment.type, "image/jpeg");
+  assert.strictEqual(parsed.messages[1].attachment.size, 12345);
+  assert.strictEqual(parsed.messages[1].attachment.dataUrl, undefined);
+  assert.strictEqual(parsed.messages[1].clientId, undefined);
+  assert.strictEqual(rows[1][13].includes("c-pilot"), false);
+  assert.strictEqual(rows[1][13].includes("AAAA"), false);
+  assert.strictEqual(test.db.chat_rooms["2026-11-15"], undefined);
+  assert.strictEqual(test.db.chat_attachments["2026-11-15"], undefined);
+}
+
+// 24. 當日僅有船隻卡片、無任何對話時，第 14 欄寫入 "-" 且清理空房間/附件
+{
+  const card = normalCard();
+  card.pob_info = {no_entry_reason: "取消"};
+  const test = createHarness({
+    records: {"2026-11-15": {ship_a: card}},
+    extraDb: {chat_rooms: {"2026-11-15": {seats: {Tug_1: {clientId: "x", roleLabel: "拖船-1"}}}}},
+  });
+  test.context.archiveAndClearFirebase("2026-11-15");
+  assert.strictEqual(test.sheets.get("歸檔總表").rows[1][13], "-");
+  assert.strictEqual(test.db.chat_rooms["2026-11-15"], undefined);
+}
+
+// 25. 無船期純對話日寫入 14 欄 chat_only 列（無船期(純對話)），且刪除 chat_rooms 失敗一次後重試不會重複補列
+{
+  let failChatDelete = true;
+  const test = createHarness({
+    records: {},
+    extraDb: {
+      chat_rooms: {
+        "2026-11-16": {messages: {m1: {id: "m1", ts: 1000, timeStr: "10:00", roleLabel: "VTS-1", clientId: "c1", text: "航道淨空"}}},
+      },
+      chat_attachments: {"2026-11-16": {att1: {dataUrl: "data:text/plain;base64,MQ=="}}},
+    },
+    fetchHook: ({path, method, response}) => {
+      if (method === "DELETE" && path === "chat_rooms/2026-11-16" && failChatDelete) {
+        failChatDelete = false;
+        return response(500, {error: "chat delete transient failure"});
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-11-16"), /500/);
+  const sheet = test.sheets.get("歸檔總表");
+  assert.strictEqual(sheet.rows.length, 2);
+  assert.strictEqual(sheet.rows[1][0], "2026-11-16");
+  assert.strictEqual(sheet.rows[1][1], "無船期(純對話)");
+  assert.strictEqual(sheet.rows[1][12], "2026-11-16:chat_only");
+  assert.strictEqual(JSON.parse(sheet.rows[1][13]).count, 1);
+
+  test.db.chat_rooms["2026-11-16"].messages.m2 = {id: "m2", ts: 2000, timeStr: "10:05", roleLabel: "Agent-1", clientId: "c2", text: "收到"};
+  test.context.archiveAndClearFirebase("2026-11-16");
+  assert.strictEqual(sheet.rows.length, 2);
+  assert.strictEqual(JSON.parse(sheet.rows[1][13]).count, 2);
+  assert.strictEqual(test.db.chat_rooms["2026-11-16"], undefined);
+  assert.strictEqual(test.db.chat_attachments["2026-11-16"], undefined);
+}
+
+// 26. 船隻已歸檔並自 daily_records 刪除、但首次刪除 chat_rooms 失敗時，重試偵測已有船列後不誤寫 chat_only 列並完成收尾刪除
+{
+  let failChatDelete = true;
+  const card = {config: {ship_name: "LNG_A", limit_speed: 12}, pob_info: {pob_time: "07:00", pob_wind_speed: "9.5"}, wind_logs: {"上午 07:00": 9}};
+  const test = createHarness({
+    records: {"2026-11-17": {ship_a: card}},
+    extraDb: {
+      chat_rooms: {
+        "2026-11-17": {messages: {m1: {id: "m1", ts: 1000, timeStr: "06:50", roleLabel: "CPCLNG-1", clientId: "c1", text: "準備帶纜"}}},
+      },
+      chat_attachments: {"2026-11-17": {a1: {dataUrl: "data:image/jpeg;base64,xx"}}},
+    },
+    fetchHook: ({path, method, response}) => {
+      if (method === "DELETE" && path === "chat_rooms/2026-11-17" && failChatDelete) {
+        failChatDelete = false;
+        return response(500, {error: "chat delete failed once"});
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-11-17"), /500/);
+  assert.deepStrictEqual(test.db.daily_records["2026-11-17"], {});
+  assert.ok(test.db.chat_rooms["2026-11-17"]);
+
+  test.context.archiveAndClearFirebase("2026-11-17");
+  const rows = test.sheets.get("歸檔總表").rows;
+  assert.strictEqual(rows.length, 2);
+  assert.strictEqual(rows[1][1], "LNG_A");
+  assert.strictEqual(rows.some(r => r[1] === "無船期(純對話)"), false);
+  assert.strictEqual(test.db.chat_rooms["2026-11-17"], undefined);
+  assert.strictEqual(test.db.chat_attachments["2026-11-17"], undefined);
+}
+
+// 27. 若船隻卡片歸檔失敗，必須保留 chat_rooms 與 chat_attachments 不可提前刪除
+{
+  const card = normalCard();
+  card.pob_info = {no_entry_reason: "風大"};
+  const test = createHarness({
+    records: {"2026-10-26": {ship_a: card}},
+    failDeleteOnce: true,
+    extraDb: {
+      chat_rooms: {"2026-10-26": {messages: {m1: {id: "m1", ts: 1000, timeStr: "08:00", roleLabel: "Pilot-1", text: "等候指令"}}}},
+      chat_attachments: {"2026-10-26": {a1: {dataUrl: "data:application/pdf;base64,JVBER"}}},
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-10-26"), /archive incomplete/);
+  assert.ok(test.db.chat_rooms["2026-10-26"]);
+  assert.ok(test.db.chat_attachments["2026-10-26"]);
+}
+
+// 28. 多則超過 48,000 字元自最舊截斷並附 truncated/total_count/kept_count；單則超長亦安全截斷至 <= 48,000
+{
+  const manyMsgs = {};
+  for (let i = 1; i <= 120; i++) {
+    manyMsgs[`m${String(i).padStart(3, "0")}`] = {
+      id: `m${i}`,
+      ts: i * 1000,
+      timeStr: "12:00",
+      roleLabel: "CPCLNG-1",
+      text: `msg-${i}-` + "x".repeat(600),
+    };
+  }
+  const card1 = normalCard();
+  card1.pob_info = {no_entry_reason: "取消"};
+  const testMany = createHarness({
+    records: {"2026-11-18": {ship_a: card1}},
+    extraDb: {chat_rooms: {"2026-11-18": {messages: manyMsgs}}},
+  });
+  testMany.context.archiveAndClearFirebase("2026-11-18");
+  const manyStr = testMany.sheets.get("歸檔總表").rows[1][13];
+  assert.ok(manyStr.length <= 48000, `Expected <= 48000, got ${manyStr.length}`);
+  const manyParsed = JSON.parse(manyStr);
+  assert.strictEqual(manyParsed.truncated, true);
+  assert.strictEqual(manyParsed.total_count, 120);
+  assert.strictEqual(manyParsed.kept_count, manyParsed.messages.length);
+  assert.strictEqual(manyParsed.count, manyParsed.kept_count);
+  assert.ok(manyParsed.messages.at(-1).text.startsWith("msg-120-"));
+
+  const card2 = normalCard();
+  card2.pob_info = {no_entry_reason: "取消"};
+  const testSingle = createHarness({
+    records: {"2026-11-19": {ship_a: card2}},
+    extraDb: {
+      chat_rooms: {
+        "2026-11-19": {
+          messages: {
+            m1: {id: "m1", ts: 1000, timeStr: "12:00", roleLabel: "拖船-1", text: "舊訊息"},
+            m2: {id: "m2", ts: 2000, timeStr: "12:01", roleLabel: "VTS-1", text: "超長訊息" + "A".repeat(60000)},
+          },
+        },
+      },
+    },
+  });
+  testSingle.context.archiveAndClearFirebase("2026-11-19");
+  const singleStr = testSingle.sheets.get("歸檔總表").rows[1][13];
+  assert.ok(singleStr.length <= 48000, `Expected single-msg JSON <= 48000, got ${singleStr.length}`);
+  const singleParsed = JSON.parse(singleStr);
+  assert.strictEqual(singleParsed.truncated, true);
+  assert.strictEqual(singleParsed.total_count, 2);
+  assert.strictEqual(singleParsed.kept_count, 1);
+  assert.ok(singleParsed.messages[0].text.endsWith("…(已截斷)"));
+}
+
+// 29. Google Sheets 將第 1 欄自動轉成 Date 物件且遺失 archive_receipts 時，重試仍能辨識已歸檔船隻列並略過補寫 chat_only 列
+{
+  let failChatDelete = true;
+  const card = {config: {ship_name: "LNG_B", limit_speed: 12}, pob_info: {pob_time: "08:00", pob_wind_speed: "10.2"}, wind_logs: {"上午 08:00": 10}};
+  const test = createHarness({
+    records: {"2026-11-20": {ship_a: card}},
+    extraDb: {
+      chat_rooms: {
+        "2026-11-20": {messages: {m1: {id: "m1", ts: 1000, timeStr: "08:00", roleLabel: "CPCLNG-1", clientId: "c1", text: "準備靠泊"}}},
+      },
+      chat_attachments: {"2026-11-20": {att1: {dataUrl: "data:text/plain;base64,MQ=="}}},
+    },
+    fetchHook: ({path, method, response}) => {
+      if (method === "DELETE" && path === "chat_rooms/2026-11-20" && failChatDelete) {
+        failChatDelete = false;
+        return response(500, {error: "transient delete fail"});
+      }
+    },
+  });
+  assert.throws(() => test.context.archiveAndClearFirebase("2026-11-20"), /500/);
+  const sheet = test.sheets.get("歸檔總表");
+  assert.strictEqual(sheet.rows.length, 2);
+
+  // 模擬 Google Sheets 將 Col 1 的 "2026-11-20" 字串自動解析為 Date 物件，並清除 receipt 強迫走備援查找
+  sheet.rows[1][0] = new Date("2026-11-20T00:00:00+08:00");
+  delete test.db.archive_receipts["2026-11-20"];
+  test.db.chat_rooms["2026-11-20"].messages.m2 = {id: "m2", ts: 2000, timeStr: "08:15", roleLabel: "Pilot-1", clientId: "c2", text: "引水人登輪"};
+
+  test.context.archiveAndClearFirebase("2026-11-20");
+  assert.strictEqual(sheet.rows.length, 2);
+  assert.strictEqual(sheet.rows.some(r => r[1] === "無船期(純對話)"), false);
+  assert.strictEqual(JSON.parse(sheet.rows[1][13]).count, 2);
+  assert.strictEqual(test.db.chat_rooms["2026-11-20"], undefined);
+  assert.strictEqual(test.db.chat_attachments["2026-11-20"], undefined);
+}
+
+console.log("GAS archive and operations: 29 scenarios passed");
