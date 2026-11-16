@@ -1081,6 +1081,40 @@ async page => {
     window.getCurrentDateStr = window.__origGetCurrentDateStr;
     listenToChatRoom();
   });
+
+  // Regression: mobile camera/picker backgrounding wipes seat via onDisconnect -> reclaim seat on file select & clear 95% progress row
+  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex' &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null
+  );
+  await page.evaluate(() => {
+    const cam = document.getElementById('chatCameraInput');
+    cam.__origClick = cam.click;
+    cam.click = () => {};
+    document.getElementById('chatAttachBtn').click();
+    document.getElementById('chatAttachCameraBtn').click();
+    cam.click = cam.__origClick;
+    delete cam.__origClick;
+    window.__emit(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`, null);
+  });
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
+  await page.evaluate(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['reclaim-test'], 'reclaim.txt', {type: 'text/plain'}));
+    const input = document.getElementById('chatFileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('.chat-att-file-card')).some(c => c.textContent.includes('reclaim.txt')) &&
+    !document.getElementById('chatUploadProgressRow') &&
+    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null &&
+    getComputedStyle(document.getElementById('chatComposerFooter')).display === 'block' &&
+    !document.getElementById('chatStatusBanner').textContent.includes('請先選擇角色再上傳附件')
+  );
+
   await page.locator('#chatCloseBtn').click();
 
   if (errors.length) throw new Error(JSON.stringify(errors));

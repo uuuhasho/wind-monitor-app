@@ -2695,6 +2695,9 @@
     let chatReadMemoryMap = {};
     let mySeat = null;
     let mySeatRef = null;
+    let lastIntendedSeat = null;
+    let chatFilePickerPendingUntil = 0;
+    let chatReclaimPromise = null;
     let isSelectingChatRole = false;
     let isUploadingChatFile = false;
     let chatUploadingItem = null;
@@ -2924,7 +2927,11 @@
         recordChatActivity();
         closeChatAttachSheet();
         const el = document.getElementById(inputId);
-        if (el) el.click();
+        if (el) {
+            chatFilePickerPendingUntil = Date.now() + 180000;
+            el.value = '';
+            el.click();
+        }
     }
 
     function showChatRoleScreen() {
@@ -3406,6 +3413,8 @@
         const seatToRelease = mySeat ? { ...mySeat } : null;
         mySeat = null;
         mySeatRef = null;
+        lastIntendedSeat = null;
+        chatFilePickerPendingUntil = 0;
         stopChatSeatTimers();
         renderChatRoleBar();
         renderChatIdentityAndComposer();
@@ -3416,11 +3425,14 @@
         }
     }
 
-    function handleRemoteSeatForfeit() {
+    function handleRemoteSeatForfeit(options = {}) {
         if (!mySeat) return;
         const staleRef = mySeatRef;
         mySeat = null;
         mySeatRef = null;
+        if (!options.preserveIntent) {
+            lastIntendedSeat = null;
+        }
         stopChatSeatTimers();
         if (staleRef) {
             try {
@@ -3433,9 +3445,42 @@
         renderChatRoleBar();
         renderChatIdentityAndComposer();
         renderChatMessages();
-        if (isChatModalOpen()) {
+        if (isChatModalOpen() && !options.silent) {
             showChatStatus('您的發言席位已因閒置過久或由其他裝置接手而釋放，目前已切回觀眾模式', false);
         }
+    }
+
+    async function tryReclaimChatSeat() {
+        if (mySeat && mySeat.dateStr === currentChatDateStr) return true;
+        if (!lastIntendedSeat || !db || !isChatModalOpen() || lastIntendedSeat.dateStr !== currentChatDateStr) {
+            return false;
+        }
+        if (Date.now() - lastChatActivityAt >= CHAT_IDLE_MS) {
+            lastIntendedSeat = null;
+            return false;
+        }
+        if (chatReclaimPromise) return chatReclaimPromise;
+        const target = { ...lastIntendedSeat };
+        chatReclaimPromise = (async () => {
+            const ok = await selectChatRole(target.roleId, target.roleLabel);
+            if (!ok) {
+                lastIntendedSeat = null;
+            }
+            return ok;
+        })().finally(() => {
+            chatReclaimPromise = null;
+        });
+        return chatReclaimPromise;
+    }
+
+    function withChatTimeout(promise, ms, timeoutMessage) {
+        let timer = null;
+        const timeoutPromise = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(timeoutMessage || '操作逾時，請稍後再試')), ms);
+        });
+        return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => {
+            if (timer) clearTimeout(timer);
+        });
     }
 
     async function renewChatSeatActiveAt() {
@@ -3514,6 +3559,7 @@
                     if (txRes && txRes.committed && val && val.clientId === chatClientId) {
                         mySeat = { ...oldSeat, roleLabel: targetLabel };
                         mySeatRef = sameRef;
+                        lastIntendedSeat = { ...mySeat };
                         recordChatActivity();
                         startChatSeatTimers();
                         renderChatIdentityAndComposer();
@@ -3571,6 +3617,7 @@
 
             mySeat = wonSeat;
             mySeatRef = wonRef;
+            lastIntendedSeat = { ...wonSeat };
             try {
                 if (typeof wonRef.onDisconnect === 'function') {
                     const hook = wonRef.onDisconnect();
@@ -3602,6 +3649,9 @@
     async function sendChatMessage() {
         recordChatActivity();
         clearChatStatus();
+        if (!mySeat && lastIntendedSeat && isChatModalOpen()) {
+            await tryReclaimChatSeat();
+        }
         if (!mySeat) {
             showChatStatus('請先選擇角色再發言', true);
             return;
@@ -3614,7 +3664,10 @@
         const sendBtn = document.getElementById('chatSendBtn');
         if (sendBtn) sendBtn.disabled = true;
         try {
-            const alive = await renewChatSeatActiveAt();
+            let alive = await renewChatSeatActiveAt();
+            if ((!alive || !mySeat) && lastIntendedSeat && isChatModalOpen()) {
+                alive = await tryReclaimChatSeat();
+            }
             if (!alive || !mySeat) return;
 
             const ts = getServerNow();
@@ -3628,8 +3681,8 @@
                 clientId: chatClientId,
                 text
             };
-            input.value = '';
             await db.ref(`formal/chat_rooms/${currentChatDateStr}/messages/${msgId}`).set(msgPayload);
+            input.value = '';
             markChatAsRead(currentChatDateStr, ts);
         } catch (err) {
             showChatStatus(`訊息發送失敗：${err.message || err}`, true);
@@ -3684,6 +3737,7 @@
     async function handleChatFileSelect(event) {
         const fileInput = event && event.target ? event.target : document.getElementById('chatFileInput');
         const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        chatFilePickerPendingUntil = 0;
         if (!file) return;
 
         recordChatActivity();
@@ -3693,6 +3747,9 @@
         if (isUploadingChatFile) {
             if (fileInput) fileInput.value = '';
             return;
+        }
+        if (!mySeat && lastIntendedSeat && isChatModalOpen()) {
+            await tryReclaimChatSeat();
         }
         if (!mySeat) {
             if (fileInput) fileInput.value = '';
@@ -3750,6 +3807,9 @@
                 finalDataUrl = compressed.dataUrl;
                 finalMime = compressed.mimeType;
                 finalSize = compressed.size;
+                if (chatUploadingItem && chatUploadingItem.token === uploadToken) {
+                    chatUploadingItem.fileSize = finalSize;
+                }
             } else {
                 const resolvedDocMime = (!mime || mime === 'application/octet-stream')
                     ? (CHAT_DOC_EXT_TO_MIME[ext] || '')
@@ -3777,8 +3837,16 @@
             }
 
             setUploadProgress(55);
-            const alive = await renewChatSeatActiveAt();
-            if (!alive || !mySeat || !chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
+            let alive = await renewChatSeatActiveAt();
+            if ((!alive || !mySeat) && lastIntendedSeat && isChatModalOpen()) {
+                alive = await tryReclaimChatSeat();
+            }
+            if (!alive || !mySeat || !chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) {
+                if (!alive || !mySeat) {
+                    showChatStatus('發言席位已釋放，請重新選擇角色後再上傳附件', true);
+                }
+                return;
+            }
 
             setUploadProgress(80);
             const dateStr = currentChatDateStr;
@@ -3789,22 +3857,31 @@
             const fullAtt = { ...attMeta, dataUrl: finalDataUrl, ts, uploadedBy: mySeat.roleLabel };
 
             chatAttachmentCache[`${dateStr}:${attId}`] = fullAtt;
-            await db.ref(`formal/chat_attachments/${dateStr}/${attId}`).set(fullAtt);
+            await withChatTimeout(
+                db.ref(`formal/chat_attachments/${dateStr}/${attId}`).set(fullAtt),
+                30000,
+                '附件上傳逾時，請檢查網路連線後重試'
+            );
             if (!chatUploadingItem || chatUploadingItem.token !== uploadToken || chatUploadingItem.aborted) return;
 
             setUploadProgress(95);
-            await db.ref(`formal/chat_rooms/${dateStr}/messages/${msgId}`).set({
-                id: msgId,
-                ts,
-                timeStr: formatTwTimeHHMM(ts),
-                roleId: mySeat.roleId,
-                roleLabel: mySeat.roleLabel,
-                clientId: chatClientId,
-                text: '',
-                attachment: attMeta
-            });
+            await withChatTimeout(
+                db.ref(`formal/chat_rooms/${dateStr}/messages/${msgId}`).set({
+                    id: msgId,
+                    ts,
+                    timeStr: formatTwTimeHHMM(ts),
+                    roleId: mySeat.roleId,
+                    roleLabel: mySeat.roleLabel,
+                    clientId: chatClientId,
+                    text: '',
+                    attachment: attMeta
+                }),
+                30000,
+                '訊息寫入逾時，請檢查網路連線後重試'
+            );
             chatUploadingItem = null;
             markChatAsRead(dateStr, ts);
+            renderChatMessages();
         } catch (err) {
             if (chatUploadingItem && chatUploadingItem.token === uploadToken) {
                 chatUploadingItem = null;
@@ -3812,13 +3889,20 @@
             }
             showChatStatus(err && err.message ? err.message : '附件上傳失敗', true);
         } finally {
+            let clearedUploadingItem = false;
             if (chatUploadingItem && chatUploadingItem.token === uploadToken) {
                 chatUploadingItem = null;
+                clearedUploadingItem = true;
             }
-            isUploadingChatFile = false;
-            if (attachBtn) attachBtn.disabled = false;
-            if (sendBtn) sendBtn.disabled = false;
+            if (chatUploadSeq === uploadToken) {
+                isUploadingChatFile = false;
+                if (attachBtn) attachBtn.disabled = false;
+                if (sendBtn) sendBtn.disabled = false;
+            }
             if (fileInput) fileInput.value = '';
+            if (clearedUploadingItem) {
+                renderChatMessages();
+            }
         }
     }
 
@@ -3951,7 +4035,21 @@
             if (mySeat && mySeat.dateStr === currentChatDateStr) {
                 const remote = chatSeatsData[mySeat.seatKey];
                 if (!remote || remote.clientId !== chatClientId) {
-                    handleRemoteSeatForfeit();
+                    const wipedByDisconnect = !remote;
+                    const canAutoReclaim = wipedByDisconnect &&
+                        isChatModalOpen() &&
+                        lastIntendedSeat &&
+                        lastIntendedSeat.dateStr === currentChatDateStr &&
+                        (Date.now() - lastChatActivityAt < CHAT_IDLE_MS);
+                    if (canAutoReclaim) {
+                        const picking = chatFilePickerPendingUntil > Date.now();
+                        handleRemoteSeatForfeit({ preserveIntent: true, silent: picking });
+                        if (!picking) {
+                            tryReclaimChatSeat();
+                        }
+                    } else {
+                        handleRemoteSeatForfeit();
+                    }
                     return;
                 }
             }
@@ -4106,6 +4204,15 @@
             window.__shipChatLifecycleBound = true;
             window.addEventListener('beforeunload', () => {
                 if (mySeat) leaveChatRole({ keepOnDisconnect: true });
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && isChatModalOpen()) {
+                    if (mySeat) {
+                        renewChatSeatActiveAt();
+                    } else if (lastIntendedSeat && (Date.now() - lastChatActivityAt < CHAT_IDLE_MS)) {
+                        tryReclaimChatSeat();
+                    }
+                }
             });
             chatDateCheckTimer = setInterval(() => {
                 if (db) listenToChatRoom();
