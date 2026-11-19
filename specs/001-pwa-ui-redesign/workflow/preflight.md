@@ -1,0 +1,33 @@
+# Preflight · 001-pwa-ui-redesign
+
+- **Date**: 2026-11-19
+- **OS / Shell**: Windows / PowerShell
+- **Workspace**: `C:\Users\hilla\Desktop\opencode桌面\奶昔APP`
+- **Git Branch & Commit**:
+  - `main` fast-forwarded locally to `0f74a1134013aa6d088ce7ad0f0da1c62b65449e` (not pushed to `origin/main`).
+  - Active feature branch: `feat/pwa-ui-redesign` branched from `main` at `0f74a1134013aa6d088ce7ad0f0da1c62b65449e`.
+- **Untracked Files at Baseline**:
+  - `.codegraph/`
+  - `plan/2026-11-07/`
+  - `plan/2026-11-08/2026-11-08-formal-rtdb-migration-plan.html`
+  - `plan/2026-11-14/2026-11-14-每日空軍預測排程與重複更新解析.html`
+- **CLI & Toolchain Versions**:
+  - `agy`: `1.5.12`
+  - `node`: `v24.19.0`
+  - `python`: `Python 3.14.7`
+  - `specify.exe`: `C:\Users\hilla\.local\bin\specify.exe` — blocked by Windows Application Control policy (`Program 'specify.exe' failed to run`). Therefore Spec Kit artifacts (`spec.md`, `plan.md`, `tasks.md`, `decisions.md`, `workflow/`, `review/`) are maintained via **compatible manual flow** (`spec-egm-flow` v1.1.0).
+  - Official `egm` plugin (`0.1.1`) enabled (`egm-implementation-readiness`, `egm-codebase-details`, `egm-design`, etc.).
+- **Agent / Subagent Capability & Isolation**:
+  - `invoke_subagent` available; each invocation starts a fresh conversation context (`isolation_mode: native-fresh`), read-only Goldfish prompt passed without parent logs or `handoff.md`.
+  - Quota: `unknown` (not exposed in CLI).
+- **Host Instruction Inventory**:
+  - Project rules: `C:\Users\hilla\Desktop\opencode桌面\奶昔APP\.agents\AGENTS.md`
+  - Global rules: Antigravity CLI global user rules (CodeGraph, `./plan/` & `./docs/` date directories, Light-theme HTML delivery via `answer-me-with-html`, credentials hygiene, bug resolution doc rules).
+  - Note: Neither project nor global instructions require agreeing with待審設計 (no instruction conflict observed).
+- **Test & Build Entry Points (Baseline Verified)**:
+  - `node --test tests/test_gas_conditions.js tests/test_gas_triggers.js tests/test_gas_archive.js` -> 3 suites, 42 scenarios passed (exit 0)
+  - `python -m pytest tests/test_build_hosting.py tests/test_hosting_deploy.py` -> 21 passed (exit 0)
+  - `python deploy/build_hosting.py` -> builds `public/` from `frontend/`
+  - Playwright MCP (`playwright-google` `browser_run_code_unsafe`) against temporary `http://127.0.0.1:4177/` serving `public/`: `tests/frontend-isolated.js`, `tests/frontend-echarts.js`
+- **Authorization & Safety Boundaries**:
+  - Isolated local tests & local `public/` build only; DO NOT connect to live `/formal` RTDB, DO NOT deploy Hosting or GAS, DO NOT push to GitHub without explicit post-acceptance authorization.

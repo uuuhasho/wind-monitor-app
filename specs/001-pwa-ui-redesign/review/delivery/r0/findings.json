@@ -1,0 +1,18 @@
+{
+  "review_id": "delivery-r0",
+  "gate_id": "delivery",
+  "reviewed_revision": "0f74a1134013aa6d088ce7ad0f0da1c62b65449e + dirty working tree (frontend/index.html, gas/monitor.js, tests/frontend-isolated.js, tests/test_gas_archive.js, specs/001-pwa-ui-redesign/, public/ built via build_hosting.py)",
+  "sufficient_inputs": true,
+  "verdict": "needs_changes",
+  "findings": [
+    {
+      "id": "DEL-001",
+      "severity": "major",
+      "location": "gas/monitor.js:986-991 (update_schedule) & frontend/index.html:5458-5508 (saveScheduleAdjustments)",
+      "evidence": "In frontend/index.html:5458-5508, saveScheduleAdjustments() computes a diff against originalScheduleSnapshot and omits unmodified entries from diffList—including an untouched blank-date UNFINISHED_SHIP row (as exercised in tests/frontend-isolated.js:311-386, where UNFIN-SHIP is kept untouched while NEW-SHIP is added and DEMO-W13 is deleted, producing a diffList of length 2 without UNFIN-SHIP). In gas/monitor.js:987, update_schedule unconditionally executes props.deleteProperty('UNFINISHED_SHIP') before calling updateFirebaseScheduleList(true) at line 991. In tests/test_gas_archive.js:760-811 (scenario 32), update_schedule is only tested when UNFIN_A itself is explicitly included in the payload (is_deleted: true), not when an unrelated ship is added, edited, or deleted while UNFINISHED_SHIP remains untouched.",
+      "impact": "When an UNFINISHED_SHIP (d: \"\") is pending in GAS ScriptProperties after a no_entry_reason stop and an operator opens 船期調整 to add, edit, or delete any other ship without modifying the unfinished ship, saving sends a diff that excludes UNFINISHED_SHIP, GAS unconditionally deletes UNFINISHED_SHIP without writing it to schedule_overrides, and updateFirebaseScheduleList(true) silently drops the pending ship from formal/schedule_list.",
+      "recommendation": "In gas/monitor.js (update_schedule, around line 987), delete UNFINISHED_SHIP only when the parsed UNFINISHED_SHIP ship_name (matched via sanitizeKey) appears in the incoming schedule diff list (either updated with a date/attributes or deleted via is_deleted: true), or when resetting via reset=true. Add a test scenario in tests/test_gas_archive.js verifying that updating/deleting another ship while UNFINISHED_SHIP is pending preserves UNFINISHED_SHIP at the top of schedule_list.",
+      "resolution_condition": "gas/monitor.js update_schedule preserves UNFINISHED_SHIP when the incoming diff list does not reference that ship, tests/test_gas_archive.js includes a passing regression scenario for unrelated schedule edits alongside pending UNFINISHED_SHIP, and node --test tests/test_gas_conditions.js tests/test_gas_triggers.js tests/test_gas_archive.js passes after the edit."
+    }
+  ]
+}

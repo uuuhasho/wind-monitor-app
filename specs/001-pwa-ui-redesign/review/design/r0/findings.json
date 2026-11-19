@@ -1,0 +1,81 @@
+{
+  "review_id": "design-r0",
+  "gate_id": "design",
+  "reviewed_revision": "0f74a1134013aa6d088ce7ad0f0da1c62b65449e",
+  "sufficient_inputs": true,
+  "verdict": "needs_changes",
+  "findings": [
+    {
+      "id": "DESIGN-F001",
+      "severity": "blocking",
+      "location": "gas/monitor.js:1440-1446 (updateFirebaseScheduleList); specs/001-pwa-ui-redesign/plan.md:13-26; specs/001-pwa-ui-redesign/spec.md:80-84",
+      "evidence": "updateFirebaseScheduleList() in gas/monitor.js aborts without writing to Firebase when getScheduleList() returns [] ('if (!list || list.length === 0) return;'). Neither plan.md nor spec.md modifies updateFirebaseScheduleList() or specifies how an intentional empty schedule (deleting all remaining ships via update_schedule) is distinguished from a Calendar API fetch failure (apiDataRaw === \"\").",
+      "impact": "When a user deletes the last remaining ship in #scheduleAdjustModal and saves, update_schedule writes the is_deleted: true tombstone and calls updateFirebaseScheduleList(), which hits the empty-list fail-safe and leaves the deleted ship(s) intact in Firebase formal/schedule_list so they remain visible in the PWA.",
+      "recommendation": "Define the fail-safe contract in decisions.md, spec.md (REQ-009), and plan.md: e.g., when updateFirebaseScheduleList() is invoked with a strict/verified Calendar API read (or from update_schedule when SHIP_SCHEDULE_API_URL succeeded or is unset), allow writing [] to Firebase schedule_list when all entries were legitimately filtered/deleted, while still aborting if the external Calendar API fetch failed. Add unit tests in tests/test_gas_archive.js for both deleting the last ship and API-failure retention.",
+      "resolution_condition": "plan.md and spec.md specify the empty-list vs API-failure rule for updateFirebaseScheduleList(), and tasks.md covers unit tests for deleting the last ship and Calendar API failure protection."
+    },
+    {
+      "id": "DESIGN-F002",
+      "severity": "blocking",
+      "location": "frontend/index.html:2260-2280 (openManualModal), 2500-2521 (startFirebaseListeners); specs/001-pwa-ui-redesign/plan.md:48; specs/001-pwa-ui-redesign/spec.md:62-68",
+      "evidence": "In frontend/index.html lines 2500-2521, whenever active_status.app_mode !== 'start', startFirebaseListeners() resets #shipName (unless focused), #limitSpeed (unless focused), and #terminal on every Firebase active_status snapshot (triggered every minute by executeMonitor). In v1.5 (#speedSegmentGroup 12/15/自訂 + #terminalSegmentGroup W12/W13), clicking segmented buttons does not focus #limitSpeed or hidden #terminal. Additionally, openManualModal() lines 2264-2273 unconditionally clears #shipName, #limitSpeed, and #terminal even when app_mode === 'start'.",
+      "impact": "1) While a user is selecting 12, 自訂, or W12 in #manualModal start mode, any background wind update on active_status will silently overwrite their segmented selection back to defaults (15 / W13) before they tap 開始監控. 2) Calling openManualModal() while app_mode === 'start' can clear fields/banner state unless guarded by app_mode.",
+      "recommendation": "Specify in plan.md that startFirebaseListeners() only resets start-mode form inputs and segmented defaults (15, W13, hidden #customLimitSpeedWrap) when #manualModal is closed (style.display !== 'flex') or on an app_mode transition from 'start' to 'stop', and that openManualModal() explicitly branches on currentAppData.app_mode === 'start' (sync #monitoringTargetBanner, clear #pobTime/#noEntryReason) vs start mode (clear #shipName, select speed 15 + terminal W13).",
+      "resolution_condition": "plan.md explicitly defines the openManualModal() start/stop initialization branch and the open-modal guard in startFirebaseListeners() so live active_status ticks cannot reset in-progress user selections."
+    },
+    {
+      "id": "DESIGN-F003",
+      "severity": "major",
+      "location": "frontend/index.html:4832-4880, 4945-5013 (validateDateInput, saveScheduleAdjustments); specs/001-pwa-ui-redesign/plan.md:40, 49; specs/001-pwa-ui-redesign/spec.md:74-78",
+      "evidence": "saveScheduleAdjustments() in frontend/index.html matches originalScheduleSnapshot with untrimmed equality (o.ship_name === item.ship_name, c.ship_name === orig.ship_name) and compares (item.terminal || '') !== (orig.terminal || ''). Meanwhile, REQ-008 converts terminal ''/undefined to a W12/W13 select, requires 1-12 month / 1-31 day validation (currently absent from validateDateInput and saveScheduleAdjustments regex checks), and normalizes 06/09 -> 6/9 before diffing.",
+      "impact": "1) A trailing space on an existing ship name (' ShipA ') fails orig matching, causing Case A to emit is_deleted: false first and Case B to emit is_deleted: true second—so GAS update_schedule overwrites the ship with a deletion tombstone. 2) Editing a legacy terminal='' ship to W12 and back to W13 produces 'W13' !== '' and emits unnecessary overrides. 3) Invalid dates such as 99/99 pass the existing /^\\d{1,2}\\/\\d{1,2}$/ check.",
+      "recommendation": "Update plan.md JS instructions for saveScheduleAdjustments() and validateDateInput() to: (a) enforce 1 <= month <= 12 && 1 <= day <= 31 when date is non-empty, (b) normalize both item.d and orig.d (via normalizeFrontendDateMD) and both item.terminal and orig.terminal (via normalizeScheduleTerminal) during diffing, (c) match originalScheduleSnapshot using trimmed ship_name, and (d) emit is_deleted: true items before is_deleted: false items in diffList.",
+      "resolution_condition": "plan.md documents trimmed ship_name matching, symmetric date/terminal normalization in diffing, 1-12/1-31 bounds validation, and tombstone-before-upsert ordering."
+    },
+    {
+      "id": "DESIGN-F004",
+      "severity": "major",
+      "location": "specs/001-pwa-ui-redesign/spec.md:58, 94; specs/001-pwa-ui-redesign/plan.md:53; tests/frontend-isolated.js:525-535; frontend/index.html:1599",
+      "evidence": "spec.md REQ-006 and AC-005 describe #chatUnreadBadge as a 'static red unread dot', whereas plan.md line 53 commits to running the existing v2 chat room test suite unchanged. tests/frontend-isolated.js lines 532-534 explicitly assert unread1.text === '!', unread1.color === 'rgb(220, 38, 38)', unread1.anim === 'none', and unread1.btnBorder === 'none' on #chatOpenBtn.",
+      "impact": "Replacing the '!' text inside #chatUnreadBadge with an empty CSS dot will break the unchanged v2 chat room assertions in tests/frontend-isolated.js.",
+      "recommendation": "Align spec.md and plan.md: either specify that #chatUnreadBadge retains the static red '!' glyph (e.g., styled as a compact badge/dot indicator inside borderless #chatOpenBtn so v2 tests pass unchanged), or explicitly authorize updating that selector/assertion in tests/frontend-isolated.js.",
+      "resolution_condition": "spec.md and plan.md unambiguously specify #chatUnreadBadge content/styling consistent with the tests/frontend-isolated.js v2 chat assertions."
+    },
+    {
+      "id": "DESIGN-F005",
+      "severity": "major",
+      "location": "specs/001-pwa-ui-redesign/spec.md:36; specs/001-pwa-ui-redesign/plan.md:42, 49, 53; tests/frontend-isolated.js:435-443; frontend/index.html:1993-1994, 4940-4942",
+      "evidence": "1) spec.md REQ-003 writes '浪高 X > 2.5m' / '能見度 Y < 2浬' (no space before unit) while plan.md line 42 says existing .condition-warning contracts are preserved and tests/frontend-isolated.js lines 437-439 check '浪高 ... > 2.5 m' and '能見度 ... < 2 浬' (with spaces). 2) frontend/index.html lines 4940-4942 in addEditItem() reference document.getElementById('adjustTableBody').parentElement.parentElement.scrollTop = 0, which will throw TypeError once #adjustTableBody is replaced by #adjustCardList, and plan.md omits updating addEditItem().",
+      "impact": "Implementer faces conflicting unit-spacing expectations between spec.md and existing test assertions, and addEditItem() will throw a runtime error when clicking '+ 新增' unless updated for #adjustCardList.",
+      "recommendation": "Standardize the exact #dynamicBox sub-line formatting across spec.md, plan.md, and tests/frontend-isolated.js, and explicitly add addEditItem() updates (scroll #adjustCardList to top, default terminal 'W13') to plan.md.",
+      "resolution_condition": "spec.md and plan.md agree on the exact .condition-warning string format and plan.md includes updating addEditItem() for #adjustCardList."
+    },
+    {
+      "id": "DESIGN-F006",
+      "severity": "major",
+      "location": "gas/monitor.js:771, 1213; specs/001-pwa-ui-redesign/plan.md:9-25",
+      "evidence": "plan.md applies normalizeScheduleDateMD() to update_schedule, getScheduleList() Step 2 & Step 4, checkDailySchedule(), and tryHandoffToNextShip(), but leaves getScheduleList() Step 1 (line 1213: 'd: item.d') and archiveAndClearFirebase() line 771 ('item.d && item.d !== todayMD') unnormalized.",
+      "impact": "If SHIP_SCHEDULE_API_URL returns zero-padded dates such as '06/09', schedule_list will still carry unnormalized '06/09' and archiveAndClearFirebase() line 771 will fail to match todayMD ('6/9'), risking erroneous same-day migration logic.",
+      "recommendation": "Normalize d: normalizeScheduleDateMD(item.d) in getScheduleList() Step 1 when mapping futureApiData, and use normalizeScheduleDateMD(item.d) !== todayMD in archiveAndClearFirebase() line 771.",
+      "resolution_condition": "plan.md includes normalizeScheduleDateMD(item.d) in getScheduleList() Step 1 and archiveAndClearFirebase() line 771."
+    },
+    {
+      "id": "DESIGN-F007",
+      "severity": "minor",
+      "location": "tests/test_gas_archive.js:55-59, 95; gas/monitor.js:1163, 1168; specs/001-pwa-ui-redesign/plan.md:52",
+      "evidence": "tests/test_gas_archive.js mocks Utilities.formatDate only for 'HH:mm' and falls back to 'yyyy-MM-dd' for all other patterns, and line 95 stubs context.getScheduleList = () => schedule. Meanwhile, gas/monitor.js getScheduleList() calls Utilities.formatDate(now, 'GMT+8', 'yyyy/MM/dd') and 'M/d'.",
+      "impact": "Implementing T005 tests against real getScheduleList() in tests/test_gas_archive.js requires extending the Utilities.formatDate mock for 'yyyy/MM/dd' and 'M/d' and allowing unstubbed getScheduleList/updateFirebaseScheduleList in the harness.",
+      "recommendation": "Note this test-harness extension in plan.md Section 3 so T005 does not break the existing 29 scenarios.",
+      "resolution_condition": "plan.md Section 3 notes extending createHarness() Utilities.formatDate and optional getScheduleList unstubbing for T005."
+    },
+    {
+      "id": "DESIGN-F008",
+      "severity": "minor",
+      "location": "specs/001-pwa-ui-redesign/plan.md:20; specs/001-pwa-ui-redesign/spec.md:68; .agents/AGENTS.md",
+      "evidence": "1) plan.md line 20 expires undated tombstones (!ov.d && ov.is_deleted === true && ov.created_at < dateStr). If a ship in UNFINISHED_SHIP (d: '') also has a separate future arrival in the external Calendar API within the 10-day window and the user deletes that row, the undated tombstone expires the next day and the future Calendar entry reappears. 2) Note for clarity: spec.md line 68 and frontend/index.html line 4342 allow POB hours 04:00-17:59 (matching current implementation), whereas .agents/AGENTS.md domain notes summarize POB hours as 04:00~17:00.",
+      "impact": "Low-probability reappearance if the exact same ship name has another scheduled voyage within 10 days after an UNFINISHED_SHIP deletion; POB range remains unchanged from v1.4.",
+      "recommendation": "Keep current 04:00-17:59 POB validation unchanged as specified, and record the undated tombstone behavior as known backlog behavior (or preserve any matched Calendar API date when tombstoning UNFINISHED_SHIP).",
+      "resolution_condition": "Acknowledged in backlog or documented in plan.md."
+    }
+  ]
+}

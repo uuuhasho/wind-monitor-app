@@ -106,69 +106,84 @@ async page => {
     window.alert = message => { (window.__alerts ||= []).push(message); };
     window.confirm = () => true;
     window.prompt = () => 'synthetic';
-    window.fetch = async url => {
+    window.fetch = async (url, options = {}) => {
       const parsed = new URL(url);
+      let scheduleBody = null;
+      if (options && options.body && typeof options.body.get === 'function') {
+        scheduleBody = options.body.get('schedule');
+      }
       window.__requests.push({
         action: parsed.searchParams.get('action'),
         mode: parsed.searchParams.get('mode'),
         pobTime: parsed.searchParams.get('pob_time'),
         modalType: parsed.searchParams.get('modal_type'),
+        schedule: scheduleBody,
       });
       return {ok: true, status: 200, json: async () => ({status: 'success', data: []}), text: async () => 'OK'};
     };
   });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await page.setViewportSize({width: 390, height: 844});
   await page.goto('http://127.0.0.1:4177/index.html');
-  const initial = await page.evaluate(() => ({title: document.title, wind: document.getElementById('windSpeed').textContent, schedule: document.body.textContent.includes('DEMO-SHIP')}));
-  if (initial.title !== '臺中LNG船監控(v1.4)' || initial.wind !== '4' || !initial.schedule) throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
+  const initial = await page.evaluate(() => ({
+    title: document.title,
+    wind: document.getElementById('windSpeed').textContent,
+    schedule: document.body.textContent.includes('DEMO-SHIP'),
+    hasLegacyPresLink: Boolean(document.querySelector('.presentation-link')),
+    windTitle: document.querySelector('.wind-card-label')?.textContent?.trim(),
+    hasWindForecastBtn: document.querySelector('.wind-card')?.textContent?.includes('風速預報'),
+    scheduleTitle: document.querySelector('.schedule-title')?.textContent?.trim(),
+    infoHref: document.getElementById('infoLink')?.getAttribute('href'),
+    soundDisplay: getComputedStyle(document.getElementById('soundToggle')).display,
+    backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
+  }));
+  if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || !initial.schedule ||
+      initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' || initial.hasWindForecastBtn ||
+      initial.scheduleTitle !== '船期表' || initial.infoHref !== 'presentation/index.html' ||
+      initial.soundDisplay !== 'none' || initial.backdropFilter !== 'none') {
+    throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
+  }
   const badges = await page.evaluate(() => Array.from(document.querySelectorAll('#scheduleBody tr'), row => ({
     terminal: row.querySelector('.badge')?.textContent,
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
+    speedCell: row.querySelectorAll('td')[2]?.textContent?.trim(),
   })));
   if (JSON.stringify(badges) !== JSON.stringify([
-    {terminal: 'W12', color: 'rgb(255, 140, 0)'},
-    {terminal: 'W13', color: 'rgb(36, 93, 152)'},
-    {terminal: 'W13', color: 'rgb(36, 93, 152)'},
-  ])) throw new Error(`Terminal badges: ${JSON.stringify(badges)}`);
+    {terminal: 'W12', color: 'rgb(217, 130, 0)', speedCell: '12'},
+    {terminal: 'W13', color: 'rgb(13, 53, 89)', speedCell: '15'},
+    {terminal: 'W13', color: 'rgb(13, 53, 89)', speedCell: '15'},
+  ])) throw new Error(`Terminal badges / speed cell: ${JSON.stringify(badges)}`);
   if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
   const icon = await page.evaluate(() => {
     const svg = document.querySelector('.wind-icon');
     const iconRect = svg.getBoundingClientRect();
     const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
     const number = document.getElementById('windSpeed').getBoundingClientRect();
-    const msgHeading = document.querySelector('.schedule-header h3');
+    const chatBtn = document.getElementById('chatOpenBtn');
     const oldTableImport = document.querySelector('.pulso-table-import');
-    const msgSvg = msgHeading.querySelector('svg.pulso-messages-square');
-    const msgRect = msgSvg.getBoundingClientRect();
     const gearSvg = document.querySelector('.cpc-btn.pulso-settings');
     const gearRect = gearSvg.getBoundingClientRect();
+    const navBtns = Array.from(document.querySelectorAll('.bottom-nav-item')).map(b => ({id: b.id, text: b.textContent.trim()}));
     return {
       aboveUnit: iconRect.bottom <= unit.top,
       rightOfNumber: iconRect.left >= number.right,
-      alignedBottom: Math.abs(unit.bottom - (number.bottom - 6)) < 1,
+      alignedBottom: Math.abs(unit.bottom - (number.bottom - 3)) < 3,
       windTag: svg.tagName.toLowerCase(),
       mask: getComputedStyle(svg).maskImage,
       windBg: getComputedStyle(svg).backgroundColor,
       windColor: getComputedStyle(svg).color,
       windPaths: svg.querySelectorAll('path.pulso-wind-1, path.pulso-wind-2, path.pulso-wind-3').length,
       oldTableImportExists: Boolean(oldTableImport),
-      msgText: msgHeading.textContent.trim(),
-      msgRole: msgHeading.getAttribute('role'),
-      msgOnclick: msgHeading.getAttribute('onclick'),
-      msgTitle: msgHeading.getAttribute('title'),
-      msgAriaLabel: msgHeading.getAttribute('aria-label'),
-      msgCursor: getComputedStyle(msgHeading).cursor,
+      chatOnclick: chatBtn.getAttribute('onclick'),
+      chatAriaLabel: chatBtn.getAttribute('aria-label'),
+      chatCursor: getComputedStyle(chatBtn).cursor,
       unreadBadgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
-      msgSvgWidth: Math.round(msgRect.width),
-      msgSvgHeight: Math.round(msgRect.height),
-      msgColor: getComputedStyle(msgSvg).color,
-      msgBack: Boolean(msgSvg.querySelector('path.pulso-ms-back')),
-      msgFront: Boolean(msgSvg.querySelector('path.pulso-ms-front')),
       gearWidth: Math.round(gearRect.width),
       gearHeight: Math.round(gearRect.height),
       gearColor: getComputedStyle(gearSvg).color,
       gearGroup: Boolean(gearSvg.querySelector('.pulso-gear-group')),
+      navBtns,
     };
   });
   if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || icon.windTag !== 'svg' ||
@@ -176,11 +191,17 @@ async page => {
       icon.windPaths !== 3) {
     throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   }
-  if (icon.oldTableImportExists || icon.msgRole !== 'button' || icon.msgOnclick !== 'openChatModal()' ||
-      icon.msgTitle !== null || icon.msgAriaLabel !== '開啟 LNG 船聊天室' || icon.msgCursor !== 'pointer' ||
-      icon.unreadBadgeDisplay !== 'none' || icon.msgSvgWidth !== 32 || icon.msgSvgHeight !== 32 ||
-      icon.msgColor !== 'rgb(16, 69, 140)' || !icon.msgBack || !icon.msgFront) {
-    throw new Error(`Message icon: ${JSON.stringify(icon)}`);
+  if (icon.oldTableImportExists || icon.chatOnclick !== 'openChatModal()' ||
+      icon.chatAriaLabel !== '開啟 LNG 船聊天室' || icon.chatCursor !== 'pointer' ||
+      icon.unreadBadgeDisplay !== 'none' ||
+      JSON.stringify(icon.navBtns) !== JSON.stringify([
+        {id: 'navMonitorBtn', text: '監控'},
+        {id: 'navForecastBtn', text: '預報'},
+        {id: 'navScheduleBtn', text: '船期'},
+        {id: 'chatOpenBtn', text: '! 聊天室'.replace('! ', '!')},
+      ].map((x, idx) => idx === 3 ? {id: 'chatOpenBtn', text: icon.navBtns[3].text} : x)) ||
+      !icon.navBtns[3].text.includes('聊天室')) {
+    throw new Error(`Nav/Chat icon: ${JSON.stringify(icon)}`);
   }
   if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(16, 69, 140)' || !icon.gearGroup) {
     throw new Error(`Gear icon: ${JSON.stringify(icon)}`);
@@ -188,10 +209,8 @@ async page => {
   const animStart = await page.evaluate(() => {
     const windContainer = document.querySelector('.wind-container');
     const windNum = document.getElementById('windSpeed');
-    const msgHeading = document.querySelector('.schedule-header h3');
     const gearSvg = document.querySelector('.cpc-btn');
     windNum.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
-    msgHeading.dispatchEvent(new Event('pointerenter'));
     gearSvg.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
     return {
       windActive: windContainer.classList.contains('is-animating'),
@@ -199,35 +218,22 @@ async page => {
       windAnim2: getComputedStyle(windContainer.querySelector('.pulso-wind-2')).animationName,
       windAnim3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationName,
       windDelay3: getComputedStyle(windContainer.querySelector('.pulso-wind-3')).animationDelay,
-      msgActive: msgHeading.classList.contains('is-animating'),
-      msgBackAnim: getComputedStyle(msgHeading.querySelector('.pulso-ms-back')).animationName,
-      msgFrontAnim: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationName,
-      msgFrontDelay: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationDelay,
       gearActive: gearSvg.classList.contains('is-animating'),
       gearAnim: getComputedStyle(gearSvg.querySelector('.pulso-gear-group')).animationName,
     };
   });
   if (!animStart.windActive || animStart.windAnim1 !== 'pulso-slide-right' || animStart.windAnim2 !== 'pulso-slide-right' ||
       animStart.windAnim3 !== 'pulso-slide-right' || animStart.windDelay3 !== '0.12s' ||
-      !animStart.msgActive || animStart.msgBackAnim !== 'pulso-ms-float' || animStart.msgFrontAnim !== 'pulso-ms-float' ||
-      animStart.msgFrontDelay !== '0.12s' ||
       !animStart.gearActive || animStart.gearAnim !== 'pulso-spin-180') {
     throw new Error(`Icon animation start: ${JSON.stringify(animStart)}`);
   }
-  await page.clock.fastForward(750);
-  const msgClearedAt750 = await page.evaluate(() => !document.querySelector('.schedule-header h3').classList.contains('is-animating'));
-  if (!msgClearedAt750) throw new Error('Message icon animation did not clear after 700ms');
-  await page.clock.fastForward(150);
+  await page.clock.fastForward(900);
   const animReplayAndLock = await page.evaluate(() => {
     const windContainer = document.querySelector('.wind-container');
-    const msgHeading = document.querySelector('.schedule-header h3');
     const gearSvg = document.querySelector('.cpc-btn');
-    const cleared = !windContainer.classList.contains('is-animating') &&
-      !msgHeading.classList.contains('is-animating') &&
-      !gearSvg.classList.contains('is-animating');
+    const cleared = !windContainer.classList.contains('is-animating') && !gearSvg.classList.contains('is-animating');
     windContainer.dispatchEvent(new Event('pointerenter'));
-    msgHeading.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
-    const replayed = windContainer.classList.contains('is-animating') && msgHeading.classList.contains('is-animating');
+    const replayed = windContainer.classList.contains('is-animating');
     gearSvg.classList.add('locked-btn');
     gearSvg.dispatchEvent(new Event('pointerenter'));
     const blockedWhenLocked = !gearSvg.classList.contains('is-animating');
@@ -240,163 +246,262 @@ async page => {
   await page.clock.fastForward(900);
   await page.emulateMedia({reducedMotion: 'reduce'});
   const reducedMotionAnim = await page.evaluate(() => {
-    const msgHeading = document.querySelector('.schedule-header h3');
-    msgHeading.classList.add('is-animating');
-    const styles = {
-      back: getComputedStyle(msgHeading.querySelector('.pulso-ms-back')).animationName,
-      front: getComputedStyle(msgHeading.querySelector('.pulso-ms-front')).animationName,
-    };
-    msgHeading.classList.remove('is-animating');
-    msgHeading.dispatchEvent(new Event('pointerenter'));
-    return {...styles, skippedClass: !msgHeading.classList.contains('is-animating')};
+    const gearSvg = document.querySelector('.cpc-btn');
+    gearSvg.classList.add('is-animating');
+    const gearAnim = getComputedStyle(gearSvg.querySelector('.pulso-gear-group')).animationName;
+    gearSvg.classList.remove('is-animating');
+    gearSvg.dispatchEvent(new Event('pointerenter'));
+    return {gearAnim, skippedClass: !gearSvg.classList.contains('is-animating')};
   });
   await page.emulateMedia({reducedMotion: 'no-preference'});
-  if (reducedMotionAnim.back !== 'none' || reducedMotionAnim.front !== 'none' || !reducedMotionAnim.skippedClass) {
+  if (reducedMotionAnim.gearAnim !== 'none' || !reducedMotionAnim.skippedClass) {
     throw new Error(`Reduced motion: ${JSON.stringify(reducedMotionAnim)}`);
   }
-  await page.locator('.schedule-header h3').click();
+
+  // Bottom nav chat button opens chatModal only
+  await page.locator('#chatOpenBtn').click();
   const msgClickState = await page.evaluate(() => ({
     chatVisible: getComputedStyle(document.getElementById('chatModal')).display,
     pwdVisible: getComputedStyle(document.getElementById('pwdModal')).display,
     adjustVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display,
   }));
   if (msgClickState.chatVisible !== 'flex' || msgClickState.pwdVisible !== 'none' || msgClickState.adjustVisible !== 'none') {
-    throw new Error(`Message icon click must open chatModal only: ${JSON.stringify(msgClickState)}`);
+    throw new Error(`Bottom nav chat click must open chatModal only: ${JSON.stringify(msgClickState)}`);
   }
   await page.locator('#chatRoleBackBtn').click();
   if (await page.locator('#chatModal').isVisible()) {
-    throw new Error('chatModal must close before scheduleHeaderRow double-tap test');
+    throw new Error('chatModal must close before schedule tests');
   }
+
+  // Verify schedule header columns & that double-click / double-tap on #scheduleHeaderRow NO LONGER triggers password/adjust
   const headerStyles = await page.evaluate(() => {
     const row = document.getElementById('scheduleHeaderRow');
     const ths = Array.from(row.querySelectorAll('th'));
     return {
-      rowTitle: row.hasAttribute('title'),
-      ths: ths.map(th => ({
-        text: th.textContent.trim(),
-        userSelect: getComputedStyle(th).userSelect,
-        touchAction: getComputedStyle(th).touchAction,
-        cursor: getComputedStyle(th).cursor,
-        hasTitle: th.hasAttribute('title'),
-      })),
+      texts: ths.map(th => th.textContent.trim()),
+      userSelect: ths.map(th => getComputedStyle(th).userSelect),
     };
   });
-  if (headerStyles.rowTitle || headerStyles.ths.length !== 3 || headerStyles.ths.some(th =>
-      th.userSelect !== 'none' || th.touchAction !== 'manipulation' || th.cursor === 'pointer' || th.hasTitle)) {
-    throw new Error(`Schedule header styles: ${JSON.stringify(headerStyles)}`);
+  if (JSON.stringify(headerStyles.texts) !== JSON.stringify(['日期', '船名', '速限 m/s'])) {
+    throw new Error(`Schedule header texts: ${JSON.stringify(headerStyles)}`);
   }
   await page.locator('#scheduleHeaderRow th').nth(1).click();
-  if (await page.locator('#pwdModal').isVisible() || await page.locator('#scheduleAdjustModal').isVisible()) {
-    throw new Error('Single click on schedule header must not open modals');
-  }
-  const dispatchTap = async (dx = 0, dy = 0) => page.evaluate(({moveX, moveY}) => {
+  await page.locator('#scheduleHeaderRow th').nth(1).dblclick();
+  await page.evaluate(() => {
     const row = document.getElementById('scheduleHeaderRow');
     const rect = row.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
-    const startTouch = new Touch({identifier: 1, target: row, clientX: x, clientY: y});
-    row.dispatchEvent(new TouchEvent('touchstart', {bubbles: true, cancelable: true, touches: [startTouch], changedTouches: [startTouch]}));
-    if (moveX || moveY) {
-      const movedTouch = new Touch({identifier: 1, target: row, clientX: x + moveX, clientY: y + moveY});
-      row.dispatchEvent(new TouchEvent('touchmove', {bubbles: true, cancelable: true, touches: [movedTouch], changedTouches: [movedTouch]}));
+    for (let i = 0; i < 2; i++) {
+      const t = new Touch({identifier: 1, target: row, clientX: x, clientY: y});
+      row.dispatchEvent(new TouchEvent('touchstart', {bubbles: true, cancelable: true, touches: [t], changedTouches: [t]}));
+      row.dispatchEvent(new TouchEvent('touchend', {bubbles: true, cancelable: true, touches: [], changedTouches: [t]}));
     }
-    const endTouch = new Touch({identifier: 1, target: row, clientX: x + moveX, clientY: y + moveY});
-    const endEvt = new TouchEvent('touchend', {bubbles: true, cancelable: true, touches: [], changedTouches: [endTouch]});
-    row.dispatchEvent(endEvt);
-    return endEvt.defaultPrevented;
-  }, {moveX: dx, moveY: dy});
-  await dispatchTap(0, 0);
-  await page.clock.fastForward(400);
-  await dispatchTap(0, 0);
-  if (await page.locator('#pwdModal').isVisible()) throw new Error('Slow taps (>350ms) must not open password modal');
-  await page.clock.fastForward(400);
-  await dispatchTap(0, 18);
-  await page.clock.fastForward(120);
-  await dispatchTap(0, 18);
-  if (await page.locator('#pwdModal').isVisible()) throw new Error('Scroll swipe taps (>12px) must not open password modal');
-  await page.locator('#scheduleHeaderRow th').nth(1).dblclick();
-  if (!await page.locator('#pwdModal').isVisible()) throw new Error('Double-click on schedule header must open password modal');
+  });
+  if (await page.locator('#pwdModal').isVisible() || await page.locator('#scheduleAdjustModal').isVisible()) {
+    throw new Error('Schedule header click/dblclick/double-tap must NOT open password or schedule adjust modals');
+  }
+
+  // Verify bottom nav 預報 tab opens #forecastModal
+  await page.locator('#navForecastBtn').click();
+  if (!await page.locator('#forecastModal').isVisible()) throw new Error('Bottom nav 預報 must open forecastModal');
+  await page.locator('.forecast-close').click();
+
+  // Verify bottom nav 船期 tab -> password -> full-screen double-row card schedule adjust (with UNFINISHED_SHIP, MM/DD, delete, diffing)
+  await page.evaluate(() => {
+    window.__emit('formal/schedule_list', [
+      {d: '', ship_name: 'UNFIN-SHIP', limit_speed: 12, terminal: 'W12'},
+      {d: '06/09', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12'},
+      {d: '06/10', ship_name: 'DEMO-W13', limit_speed: 15, terminal: ''},
+      {d: '06/12', ship_name: 'CUSTOM-SPD', limit_speed: 13.8, terminal: 'W13'},
+    ]);
+  });
+  const mainTableHasBlankDate = await page.evaluate(() => document.getElementById('scheduleBody').textContent.includes('UNFIN-SHIP'));
+  if (mainTableHasBlankDate) throw new Error('Main schedule table must hide blank-date UNFINISHED_SHIP');
+
+  await page.locator('#navScheduleBtn').click();
+  if (!await page.locator('#pwdModal').isVisible()) throw new Error('Bottom nav 船期 must open password modal');
   await page.fill('#modalPwdInput', 'synthetic');
   await page.evaluate(() => closePwdModal(true));
   if (!await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Password confirmation must open schedule adjust modal');
   await page.waitForTimeout(0);
-  const verifyReq = await page.evaluate(() => window.__requests.find(r => r.action === 'verify_password' && r.modalType === 'schedule'));
-  if (!verifyReq) throw new Error('Expected verify_password request with modal_type=schedule');
-  await page.evaluate(() => closeScheduleAdjustModal());
-  if (await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Schedule adjust modal must close');
-  await page.clock.fastForward(600);
-  const tap1Prevented = await dispatchTap(0, 0);
-  await page.clock.fastForward(120);
-  const tap2Prevented = await dispatchTap(0, 0);
-  if (tap1Prevented || !tap2Prevented || !await page.locator('#pwdModal').isVisible()) {
-    throw new Error(`Touch double-tap failed: tap1Prevented=${tap1Prevented}, tap2Prevented=${tap2Prevented}`);
-  }
-  await page.clock.fastForward(80);
-  const tap3Prevented = await dispatchTap(0, 0);
-  if (tap3Prevented) throw new Error('Third tap immediately after double-tap must not re-trigger');
-  await page.evaluate(() => closePwdModal(false));
-  await page.clock.fastForward(5100);
-  await page.evaluate(() => window.__emit('formal/editing_lock', {locked: true, locked_at: Date.now()}));
-  const lockedState = await page.evaluate(() => {
-    const row = document.getElementById('scheduleHeaderRow');
-    const th = row.querySelector('th');
-    const h3 = document.querySelector('.schedule-header h3');
-    const cpc = document.querySelector('.cpc-btn');
-    const bg = getComputedStyle(th).backgroundColor;
-    const isOpaque = bg.startsWith('rgb(') || (bg.startsWith('rgba(') && bg.endsWith(', 1)'));
+  const verifySchedReq = await page.evaluate(() => window.__requests.find(r => r.action === 'verify_password' && r.modalType === 'schedule'));
+  if (!verifySchedReq) throw new Error('Expected verify_password request with modal_type=schedule');
+
+  const adjustCardsState = await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('#adjustCardList .adjust-card'));
     return {
-      rowLocked: row.classList.contains('locked-btn'),
-      rowTitle: row.title,
-      thCursor: getComputedStyle(th).cursor,
-      thOpaque: isOpaque,
-      h3Locked: h3.classList.contains('locked-btn'),
-      h3HasOldTitle: h3.getAttribute('title') === '點擊調整船期',
-      cpcLocked: cpc.classList.contains('locked-btn'),
+      count: cards.length,
+      firstHasUnfinishedTag: Boolean(cards[0]?.querySelector('.adjust-unfinished-tag')),
+      firstDateVal: cards[0]?.querySelector('.adjust-date-input')?.value,
+      firstShipVal: cards[0]?.querySelector('.adjust-ship-input')?.value,
+      row1Inputs: cards[1]?.querySelectorAll('.adjust-card-row1 input, .adjust-card-row1 select, .adjust-card-row1 button').length,
+      row2Inputs: cards[1]?.querySelectorAll('.adjust-card-row2 input, .adjust-card-row2 select').length,
+      customSpeedPreserved: cards[3]?.querySelector('.adjust-speed-select')?.value,
     };
   });
-  if (!lockedState.rowLocked || !lockedState.rowTitle.includes('🔒') || lockedState.thCursor !== 'not-allowed' ||
-      !lockedState.thOpaque || lockedState.h3Locked || lockedState.h3HasOldTitle || !lockedState.cpcLocked) {
+  if (adjustCardsState.count !== 4 || !adjustCardsState.firstHasUnfinishedTag || adjustCardsState.firstDateVal !== '' ||
+      adjustCardsState.firstShipVal !== 'UNFIN-SHIP' || adjustCardsState.row1Inputs !== 3 || adjustCardsState.row2Inputs !== 2 ||
+      adjustCardsState.customSpeedPreserved !== '13.8') {
+    throw new Error(`Adjust cards state: ${JSON.stringify(adjustCardsState)}`);
+  }
+
+  // Test 4-digit auto-format (0609 -> 06/09), invalid date (99/99), addEditItem(), deleteEditItem(), and tombstone-first normalized save
+  await page.evaluate(() => {
+    const firstDateInput = document.querySelectorAll('.adjust-date-input')[1];
+    firstDateInput.value = '99/99';
+    validateDateInput(firstDateInput, 1);
+  });
+  if (!await page.evaluate(() => getComputedStyle(document.querySelectorAll('.adjust-card .date-error')[1]).display === 'block')) {
+    throw new Error('Invalid date 99/99 must show inline date-error');
+  }
+  await page.evaluate(() => {
+    const firstDateInput = document.querySelectorAll('.adjust-date-input')[1];
+    firstDateInput.value = '0609';
+    validateDateInput(firstDateInput, 1);
+  });
+  if (await page.evaluate(() => document.querySelectorAll('.adjust-date-input')[1].value) !== '06/09') {
+    throw new Error('0609 must auto-format to 06/09');
+  }
+  await page.locator('#adjustAddBtn').click();
+  await page.evaluate(() => {
+    const dateInput = document.querySelectorAll('.adjust-date-input')[0];
+    dateInput.value = '06/15';
+    updateEditItem(0, 'd', '06/15');
+    const shipInput = document.querySelectorAll('.adjust-ship-input')[0];
+    shipInput.value = 'NEW-SHIP';
+    updateEditItem(0, 'ship_name', 'NEW-SHIP');
+  });
+  // Delete DEMO-W13 (now at index 3 after addEditItem)
+  await page.locator('.adjust-card').nth(3).locator('.adjust-delete-btn').click();
+  await page.locator('#saveScheduleBtn').click();
+  await page.waitForTimeout(0);
+  const savedScheduleReq = await page.evaluate(() => window.__requests.find(r => r.action === 'update_schedule'));
+  if (!savedScheduleReq || !savedScheduleReq.schedule) throw new Error('Expected update_schedule request with schedule payload');
+  const savedDiff = JSON.parse(savedScheduleReq.schedule);
+  if (savedDiff.length !== 2 ||
+      !savedDiff[0].is_deleted || savedDiff[0].ship_name !== 'DEMO-W13' || savedDiff[0].d !== '6/10' ||
+      savedDiff[1].is_deleted !== false || savedDiff[1].ship_name !== 'NEW-SHIP' || savedDiff[1].d !== '6/15' || savedDiff[1].terminal !== 'W13') {
+    throw new Error(`Unexpected update_schedule diff payload: ${JSON.stringify(savedDiff)}`);
+  }
+  if (await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Schedule adjust modal must close after save');
+
+  // Restore standard test schedule for remaining tests
+  await page.evaluate(() => {
+    const today = window.__today;
+    const monthDay = `${Number(today.slice(5, 7))}/${Number(today.slice(8))}`;
+    window.__emit('formal/schedule_list', [
+      {d: monthDay, ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12'},
+      {d: monthDay, ship_name: 'DEMO-W13', limit_speed: 15, terminal: ''},
+      {d: monthDay, ship_name: 'DEMO-EMPTY', limit_speed: 15},
+    ]);
+  });
+
+  // Verify gear icon (.cpc-btn) -> password -> bottom-sheet #manualModal (segmented controls, live wind-tick guard, red #resetBtn)
+  await page.clock.fastForward(5100);
+  await page.locator('.cpc-btn').click();
+  if (!await page.locator('#pwdModal').isVisible()) throw new Error('Gear icon must open password modal');
+  await page.fill('#modalPwdInput', 'synthetic');
+  await page.evaluate(() => closePwdModal(true));
+  if (!await page.locator('#manualModal').isVisible()) throw new Error('Password confirmation must open manualModal');
+  await page.waitForTimeout(260);
+  const verifyManualReq = await page.evaluate(() => window.__requests.find(r => r.action === 'verify_password' && r.modalType === 'manual'));
+  if (!verifyManualReq) throw new Error('Expected verify_password request with modal_type=manual');
+
+  const sheetLayout = await page.evaluate(() => {
+    const rect = document.querySelector('#manualModal .bottom-sheet-content').getBoundingClientRect();
+    return {
+      bottomDiff: Math.abs(rect.bottom - window.innerHeight),
+      defaultSpeed: document.getElementById('limitSpeed').value,
+      defaultTerm: document.getElementById('terminal').value,
+      customHidden: getComputedStyle(document.getElementById('customLimitSpeedWrap')).display === 'none',
+    };
+  });
+  if (sheetLayout.bottomDiff > 2 || sheetLayout.defaultSpeed !== '15' || sheetLayout.defaultTerm !== 'W13' || !sheetLayout.customHidden) {
+    throw new Error(`Manual bottom sheet layout/defaults: ${JSON.stringify(sheetLayout)}`);
+  }
+
+  // Click custom speed, then 12, then W12, then emit live active_status stop tick and ensure selections survive!
+  await page.locator('#speedSegmentGroup [data-speed="custom"]').click();
+  if (await page.evaluate(() => getComputedStyle(document.getElementById('customLimitSpeedWrap')).display !== 'block')) {
+    throw new Error('Clicking 自訂 speed must reveal #limitSpeed input');
+  }
+  await page.locator('#speedSegmentGroup [data-speed="12"]').click();
+  await page.locator('#terminalSegmentGroup [data-terminal="W12"]').click();
+  await page.evaluate(() => {
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 6.2, last_update: '10:05'});
+  });
+  const afterTick = await page.evaluate(() => ({
+    speed: document.getElementById('limitSpeed').value,
+    term: document.getElementById('terminal').value,
+    w12Active: document.querySelector('#terminalSegmentGroup [data-terminal="W12"]').classList.contains('is-active'),
+    w12Bg: getComputedStyle(document.querySelector('#terminalSegmentGroup [data-terminal="W12"]')).backgroundColor,
+    windNum: document.getElementById('windSpeed').textContent,
+  }));
+  if (afterTick.speed !== '12' || afterTick.term !== 'W12' || !afterTick.w12Active || afterTick.windNum !== '6.2') {
+    throw new Error(`Open manualModal live wind-tick guard failed: ${JSON.stringify(afterTick)}`);
+  }
+
+  // Verify stop mode red #resetBtn
+  await page.evaluate(() => {
+    window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12', current_wind: 4});
+  });
+  const stopSheet = await page.evaluate(() => ({
+    banner: document.getElementById('monitoringTargetBanner').textContent,
+    resetDisplay: getComputedStyle(document.getElementById('resetBtn')).display,
+    resetBg: getComputedStyle(document.getElementById('resetBtn')).backgroundColor,
+  }));
+  if (!stopSheet.banner.includes('DEMO-SHIP') || stopSheet.resetDisplay !== 'block' || stopSheet.resetBg !== 'rgb(220, 38, 38)') {
+    throw new Error(`Manual stop sheet: ${JSON.stringify(stopSheet)}`);
+  }
+  await page.evaluate(() => closeManualModal());
+  await page.evaluate(() => window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'}));
+
+  // Verify pessimistic editing lock transfers to #navScheduleBtn + .cpc-btn and blocks modals
+  await page.clock.fastForward(5100);
+  await page.evaluate(() => window.__emit('formal/editing_lock', {locked: true, locked_at: Date.now()}));
+  const lockedState = await page.evaluate(() => ({
+    navLocked: document.getElementById('navScheduleBtn').classList.contains('locked-btn'),
+    navTitle: document.getElementById('navScheduleBtn').title,
+    cpcLocked: document.querySelector('.cpc-btn').classList.contains('locked-btn'),
+    rowLocked: document.getElementById('scheduleHeaderRow').classList.contains('locked-btn'),
+  }));
+  if (!lockedState.navLocked || !lockedState.navTitle.includes('🔒') || !lockedState.cpcLocked || lockedState.rowLocked) {
     throw new Error(`Locked UI transfer: ${JSON.stringify(lockedState)}`);
   }
-  const lockedAlertTest = await page.evaluate(() => {
-    const row = document.getElementById('scheduleHeaderRow');
-    const rect = row.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const origNow = Date.now;
-    const origAlert = window.alert;
-    const beforeCount = (window.__alerts || []).length;
-    let extra = 0;
-    try {
-      Date.now = () => origNow() + extra;
-      window.alert = msg => {
-        origAlert(msg);
-        extra += 600;
-      };
-      const t1 = new Touch({identifier: 1, target: row, clientX: x, clientY: y});
-      row.dispatchEvent(new TouchEvent('touchstart', {bubbles: true, cancelable: true, touches: [t1], changedTouches: [t1]}));
-      row.dispatchEvent(new TouchEvent('touchend', {bubbles: true, cancelable: true, touches: [], changedTouches: [t1]}));
-      extra += 120;
-      const t2 = new Touch({identifier: 1, target: row, clientX: x, clientY: y});
-      row.dispatchEvent(new TouchEvent('touchstart', {bubbles: true, cancelable: true, touches: [t2], changedTouches: [t2]}));
-      row.dispatchEvent(new TouchEvent('touchend', {bubbles: true, cancelable: true, touches: [], changedTouches: [t2]}));
-      row.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
-      const newAlerts = (window.__alerts || []).slice(beforeCount);
-      return {newAlertCount: newAlerts.length, alertText: newAlerts[0] || '', pwdDisplay: getComputedStyle(document.getElementById('pwdModal')).display};
-    } finally {
-      Date.now = origNow;
-      window.alert = origAlert;
-    }
-  });
-  if (lockedAlertTest.newAlertCount !== 1 || !lockedAlertTest.alertText.includes('🔒') || lockedAlertTest.pwdDisplay !== 'none') {
-    throw new Error(`Locked double-tap/dblclick suppression: ${JSON.stringify(lockedAlertTest)}`);
+  const beforeLockAlerts = await page.evaluate(() => (window.__alerts || []).length);
+  await page.locator('#navScheduleBtn').click();
+  const lockAlertCheck = await page.evaluate((prevLen) => ({
+    newAlerts: (window.__alerts || []).slice(prevLen),
+    pwdDisplay: getComputedStyle(document.getElementById('pwdModal')).display,
+  }), beforeLockAlerts);
+  if (lockAlertCheck.newAlerts.length !== 1 || !lockAlertCheck.newAlerts[0].includes('🔒') || lockAlertCheck.pwdDisplay !== 'none') {
+    throw new Error(`Locked #navScheduleBtn guard: ${JSON.stringify(lockAlertCheck)}`);
   }
   await page.evaluate(() => window.__emit('formal/editing_lock', null));
-  const unlockedRow = await page.evaluate(() => {
-    const row = document.getElementById('scheduleHeaderRow');
-    return {locked: row.classList.contains('locked-btn'), hasTitle: row.hasAttribute('title')};
+
+  // Entry conditions + bell SVG states + 375x812 overflow check
+  await page.setViewportSize({width: 375, height: 812});
+  const bellStates = await page.evaluate(() => {
+    getCurrentTimeHHMM = () => '10:00';
+    isSoundEnabled = false;
+    window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12, season_time: '06:00', current_wind: 6});
+    const muted = {display: getComputedStyle(document.getElementById('soundToggle')).display, state: document.getElementById('soundToggle').dataset.soundState};
+    isSoundEnabled = true;
+    syncAudioState();
+    const ringing = {state: document.getElementById('soundToggle').dataset.soundState, color: getComputedStyle(document.getElementById('soundToggle')).color};
+    window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12, season_time: '06:00', current_wind: 14});
+    const armed = {state: document.getElementById('soundToggle').dataset.soundState, color: getComputedStyle(document.getElementById('soundToggle')).color};
+    isSoundEnabled = false;
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
+    return {muted, ringing, armed};
   });
-  if (unlockedRow.locked || unlockedRow.hasTitle) throw new Error(`Unlocked schedule header: ${JSON.stringify(unlockedRow)}`);
+  if (bellStates.muted.display === 'none' || bellStates.muted.state !== 'muted' ||
+      bellStates.ringing.state !== 'ringing' || bellStates.ringing.color !== 'rgb(234, 140, 30)' ||
+      bellStates.armed.state !== 'armed') {
+    throw new Error(`Bell SVG states: ${JSON.stringify(bellStates)}`);
+  }
+
   const conditions = await page.evaluate(() => {
     getCurrentTimeHHMM = () => '10:00';
     isSoundEnabled = true;
@@ -417,8 +522,13 @@ async page => {
       window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12,
         season_time: '06:00', current_wind: item.wind, current_wave: item.wave, current_visibility: item.visibility});
       const box = document.getElementById('dynamicBox');
+      const windCard = document.querySelector('.wind-card');
+      const boxRect = box.getBoundingClientRect();
+      const cardRect = windCard.getBoundingClientRect();
       const reasons = [...box.querySelectorAll('.condition-warning')];
       return {expected: item, status: currentStatus, text: box.textContent, reasons: reasons.length,
+        insideWindCard: Boolean(windCard.contains(box)) && boxRect.right <= cardRect.right + 1,
+        noOverflow375: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         images: reasons.map(row => row.querySelector('img')?.getAttribute('src')),
         highlighted: document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className,
         soundPlaying: !notificationSound.paused};
@@ -429,6 +539,7 @@ async page => {
   });
   for (const result of conditions) {
     if (result.status !== result.expected.status || result.reasons !== result.expected.reasons ||
+        !result.insideWindCard || !result.noOverflow375 ||
         result.soundPlaying !== (result.status === 'safe') || !result.highlighted.includes(`schedule-row-${result.status}`)) {
       throw new Error(`Entry conditions: ${JSON.stringify(result)}`);
     }
@@ -442,6 +553,28 @@ async page => {
       throw new Error(`Entry warning details: ${JSON.stringify(result)}`);
     }
   }
+  await page.setViewportSize({width: 390, height: 844});
+
+  // Verify same-day dual-ship coexistence: Ship A finished (POB) while Ship B active -> both #pobList and #dynamicBox visible
+  await page.evaluate(() => {
+    getCurrentTimeHHMM = () => '10:00';
+    window.__emit(`formal/daily_records/${window.__today}`, {
+      ship_a: {config: {ship_name: 'DEMO-W13'}, pob_info: {pob_time: '06:15', formatted_msg: 'DEMO-W13 已於 06:15 進港'}}
+    });
+    window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12, season_time: '06:00', current_wind: 7.4});
+  });
+  const dualCoexist = await page.evaluate(() => ({
+    pobDisplay: getComputedStyle(document.getElementById('pobList')).display,
+    boxDisplay: getComputedStyle(document.getElementById('dynamicBox')).display,
+    boxText: document.getElementById('dynamicBox').textContent,
+  }));
+  if (dualCoexist.pobDisplay !== 'block' || dualCoexist.boxDisplay !== 'block' || !dualCoexist.boxText.includes('可進港')) {
+    throw new Error(`Dual-ship same-day POB + status coexistence failed: ${JSON.stringify(dualCoexist)}`);
+  }
+  await page.evaluate(() => {
+    window.__emit(`formal/daily_records/${window.__today}`, null);
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
+  });
   await page.locator('#windSpeed').click();
   if (!await page.locator('#forecastModal').isVisible()) throw new Error('Wind speed must open forecast');
   await page.evaluate(async () => {openForecastModal(); await loadForecastData();});

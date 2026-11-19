@@ -2,12 +2,12 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺中LNG船監控(v1.4)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>臺中LNG船監控(v1.5)</title>
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="apple-touch-icon" href="logo.png">
 
-    <meta name="theme-color" content="#4A90E2"/>
+    <meta name="theme-color" content="#EEF3F7"/>
     <link rel="manifest" href="manifest.json">
     
     <!-- Apple-specific meta tags -->
@@ -33,99 +33,165 @@
 
     <style>
         :root {
-            --bg-color: #EBF3FC;
-            --card-bg: #ffffff;
-            --text-main: #555555;
-            --text-navy: #0A2540; /* 深藍色標題與速度字型 */
-            --text-blue: #10458C; /* 藍色焦點與表頭 */
-            --border-light: #E6EEF8; /* 內邊框 */
-            --primary-color: #10458C;
-            --safe-color: #137333;
-            --warning-color: #C5221F;
-            --waiting-color: #5F6368;
-            --reset-color: #D93025; 
+            --bg-color: #EEF3F7;
+            --card-bg: #FFFFFF;
+            --border-subtle: #E2E8F0;
+            --text-main: #334155;
+            --text-muted: #64748B;
+            --text-navy: #0A2540;
+            --text-blue: #10458C;
+            --border-light: #E2E8F0;
+            --primary-color: #0A2540;
+            --safe-color: #15803D;
+            --warning-color: #B91C1C;
+            --waiting-color: #475569;
+            --reset-color: #DC2626;
         }
 
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at 10% 20%, rgba(216, 241, 230, 0.4) 0.1%, rgba(233, 226, 226, 0.2) 90.1%),
-                        linear-gradient(135deg, #E1EDFA 0%, #F2F7FD 100%);
-            background-attachment: fixed;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'Microsoft JhengHei', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 0;
+            min-height: 100dvh;
             box-sizing: border-box;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .container {
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(20px) saturate(190%);
-            -webkit-backdrop-filter: blur(20px) saturate(190%);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 28px;
-            box-shadow: 0 20px 40px rgba(16, 69, 140, 0.08),
-                        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-            padding: 32px 24px;
+        .app-shell {
             width: 100%;
-            max-width: 400px;
-            text-align: center;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 12px calc(84px + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        h2 { 
-            margin-top: 0; 
-            margin-bottom: 12px;
-            color: var(--text-navy); 
-            font-size: 1.5em; 
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 4px 2px 2px;
         }
-        
-        .presentation-link {
-            margin-bottom: 24px;
-            font-size: 0.95em;
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
         }
-        .presentation-link a {
-            text-decoration: none;
-            color: var(--text-blue);
-            display: inline-flex;
+        .app-logo {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+        }
+        .app-title {
+            margin: 0;
+            font-size: 1.28rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .header-actions {
+            display: flex;
             align-items: center;
             gap: 6px;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
-        .presentation-link a:hover {
-            opacity: 0.8;
-            color: #0D3A75;
-        }
-        
-        .wind-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            margin: 15px 0 5px 0;
+        .header-icon-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: none;
+            border-radius: 999px;
+            background: transparent;
             color: var(--text-navy);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.16s ease, transform 0.16s ease;
         }
-        .wind-speed-num { 
-            font-size: 4.5em; 
-            font-weight: 700; 
-            letter-spacing: -2px;
-            line-height: 1;
+        .header-icon-btn:hover {
+            background-color: rgba(10, 37, 64, 0.06);
+        }
+        .header-icon-btn:active {
+            transform: scale(0.94);
+        }
+        .header-icon-btn svg {
+            width: 23px;
+            height: 23px;
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            box-sizing: border-box;
+        }
+
+        .wind-card {
+            padding: 14px 16px;
+            text-align: left;
+        }
+        .wind-card-label {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+        }
+        .wind-main-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            min-height: 60px;
+        }
+        .wind-container {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 5px;
+            margin: 0;
+            color: var(--text-navy);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .wind-speed-num {
+            font-size: clamp(2.65rem, 11vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 0.95;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            transition: color 0.16s ease;
+        }
+        .wind-speed-num:hover {
+            color: var(--text-blue);
         }
         .wind-detail {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-left: 6px;
-            margin-bottom: 6px;
+            justify-content: flex-end;
+            margin-bottom: 3px;
+            gap: 2px;
         }
         .wind-icon {
-            width: 30px;
-            height: 30px;
+            width: 24px;
+            height: 24px;
             display: block;
         }
         .pulso-icon {
@@ -139,11 +205,12 @@
             display: block;
         }
         .wind-container:focus-visible,
-        .schedule-header h3:focus-visible,
-        .cpc-btn:focus-visible {
-            outline: 2px solid rgba(16, 69, 140, 0.35);
+        .cpc-btn:focus-visible,
+        .header-icon-btn:focus-visible,
+        .bottom-nav-item:focus-visible {
+            outline: 2px solid rgba(16, 69, 140, 0.4);
             outline-offset: 2px;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         .wind-container.is-animating .pulso-wind-1 {
             animation: pulso-slide-right 0.5s ease-in-out 0s 1;
@@ -153,20 +220,6 @@
         }
         .wind-container.is-animating .pulso-wind-3 {
             animation: pulso-slide-right 0.5s ease-in-out 0.12s 1;
-        }
-        .pulso-ms-back {
-            transform-box: view-box;
-            transform-origin: 9px 8.498px;
-        }
-        .pulso-ms-front {
-            transform-box: view-box;
-            transform-origin: 15px 15.498px;
-        }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-back {
-            animation: pulso-ms-float 0.55s ease-in-out 0s 1;
-        }
-        .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-front {
-            animation: pulso-ms-float 0.55s ease-in-out 0.12s 1;
         }
         .pulso-gear-group {
             transform-box: view-box;
@@ -180,11 +233,6 @@
             50% { transform: translateX(1.5px); }
             100% { transform: translateX(0); }
         }
-        @keyframes pulso-ms-float {
-            0% { transform: translateY(0); }
-            45% { transform: translateY(-1.5px); }
-            100% { transform: translateY(0); }
-        }
         @keyframes pulso-spin-180 {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(180deg); }
@@ -193,337 +241,480 @@
             .wind-container.is-animating .pulso-wind-1,
             .wind-container.is-animating .pulso-wind-2,
             .wind-container.is-animating .pulso-wind-3,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-back,
-            .schedule-header h3.is-animating:not(.locked-btn) .pulso-ms-front,
-            .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group {
+            .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group,
+            .bottom-sheet-content {
                 animation: none !important;
             }
         }
-        .wind-speed-unit { 
-            font-size: 1.3em; 
-            font-weight: 500; 
+        .wind-speed-unit {
+            font-size: 1rem;
+            font-weight: 700;
             line-height: 1;
-            color: #6B7A90; 
+            color: var(--text-navy);
         }
-        
-        .time-display { 
-            font-size: 0.85em; 
-            color: #8C9CAE; 
-            margin-bottom: 25px; 
+        .time-display {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            margin: 8px 0 0 0;
         }
 
         .dynamic-box {
-            margin: 20px 0; 
-            padding: 16px; 
-            border-radius: 14px; 
-            font-size: 1.05em;
-            transition: all 0.3s ease; 
             display: none;
+            padding: 9px 13px;
+            border-radius: 12px;
+            font-weight: 700;
             box-sizing: border-box;
-            font-weight: 600;
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            flex-shrink: 1;
+            max-width: 56%;
+            min-width: 0;
+            text-align: center;
         }
-        
-        .status-waiting { 
-            background-color: rgba(241, 243, 244, 0.6); 
-            color: var(--waiting-color); 
-            border: 1px solid rgba(189, 193, 198, 0.5); 
-        }
-        .status-warning { 
-            background-color: rgba(252, 232, 230, 0.7); 
-            color: var(--warning-color); 
-            border: 1px solid rgba(242, 139, 130, 0.6); 
-            animation: breathing-red 2.5s infinite ease-in-out;
-        }
-        .condition-warning {
-            display: flex;
+        .status-pill-main {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            font-size: 0.8em;
+            gap: 6px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
         }
-        .condition-warning img { width: 18px; height: 18px; }
-        .status-safe {
-            background-color: rgba(200, 235, 210, 0.85); 
-            color: var(--safe-color); 
-            border: 1px solid rgba(80, 180, 120, 0.7);
-            animation: breathing 2.5s infinite ease-in-out;
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            flex-shrink: 0;
         }
-
-        @keyframes breathing {
-            0% { box-shadow: 0 0 8px rgba(25, 135, 84, 0.4); }
-            50% { box-shadow: 0 0 24px rgba(25, 135, 84, 0.85); }
-            100% { box-shadow: 0 0 8px rgba(25, 135, 84, 0.4); }
+        .status-dot-safe {
+            background-color: #86EFAC;
         }
-
-        @keyframes breathing-red {
-            0% { box-shadow: 0 0 5px rgba(220, 53, 69, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.6); }
-            100% { box-shadow: 0 0 5px rgba(220, 53, 69, 0.2); }
+        .status-dot-warning {
+            background-color: #FCA5A5;
         }
-
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; font-size: 0.9em; margin-bottom: 6px; font-weight: 600; color: var(--text-navy); }
-        .input-group input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #D5E1F2; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-size: 1em; 
-            transition: all 0.2s ease;
-            color: var(--text-navy);
-            background-color: #FFFFFF;
-        }
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--text-blue);
-            box-shadow: 0 0 0 3px rgba(16, 69, 140, 0.12);
-        }
-        .input-group input:disabled {
-            background-color: #F1F3F4; 
-            color: #888888; 
-            border-color: #E6EEF8; 
-            cursor: not-allowed;
-        }
-        
-        .btn {
-            width: 100%; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 1.05em; 
+        .status-pill-sub {
+            margin-top: 3px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 11.5px;
             font-weight: 600;
-            cursor: pointer; 
-            margin-top: 10px; 
-            color: white; 
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(16, 69, 140, 0.1);
+            line-height: 1.3;
+            color: rgba(255, 255, 255, 0.94);
         }
-        .btn-start { background-color: var(--primary-color); }
-        .btn-start:hover { background-color: #0D3A75; transform: translateY(-1px); }
-        .btn-start:active { transform: translateY(0); }
-        .btn-reset { background-color: var(--reset-color); } 
-        .btn-reset:hover { background-color: #B52218; transform: translateY(-1px); }
-        .btn-reset:active { transform: translateY(0); }
-        
-        #loading { color: #8C9CAE; font-size: 0.9em; margin-top: 15px; margin-bottom: 15px; height: 20px; }
+        .status-reason-line {
+            white-space: nowrap;
+        }
+        .status-waiting {
+            background-color: var(--waiting-color);
+            color: #FFFFFF;
+        }
+        .status-warning {
+            background-color: var(--warning-color);
+            color: #FFFFFF;
+            padding: 8px 11px;
+        }
+        .condition-warning {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11.5px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        .condition-warning img {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+            filter: brightness(0) invert(1);
+        }
+        .status-safe {
+            background-color: var(--safe-color);
+            color: #FFFFFF;
+        }
+        @media (max-width: 390px) {
+            .status-pill-main {
+                font-size: 0.98rem;
+            }
+            .status-pill-sub,
+            .condition-warning {
+                font-size: 11px;
+            }
+        }
 
         .pob-records {
-            margin-top: 15px;
-            margin-left: -12px;
-            margin-right: -12px;
-            padding: 16px;
-            background-color: rgba(230, 244, 234, 0.65); 
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 1px solid rgba(129, 201, 149, 0.5); 
+            padding: 13px 16px;
+            background-color: #DCFCE7;
+            border: 1px solid #86EFAC;
             border-radius: 14px;
             text-align: left;
-            font-size: 0.95em; 
-            font-weight: 600;
-            color: var(--safe-color); 
-            line-height: 1.6;
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #166534;
+            line-height: 1.5;
             display: none;
             box-sizing: border-box;
-            box-shadow: 0 4px 15px rgba(25, 135, 84, 0.04);
+        }
+        .pob-records.is-no-entry-only {
+            background-color: #FEE2E2;
+            border-color: #FCA5A5;
+            color: #B91C1C;
         }
         .pob-records div:last-child {
             margin-bottom: 0 !important;
         }
 
-/* --- 密碼輸入與手動監控設定視窗樣式 (全域磨砂玻璃對話框) --- */
+        .input-group { margin-bottom: 14px; text-align: left; }
+        .input-group label { display: block; font-size: 0.9rem; margin-bottom: 6px; font-weight: 700; color: var(--text-navy); }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 0.98rem;
+            color: var(--text-navy);
+            background-color: #FFFFFF;
+            font-family: inherit;
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--text-navy);
+            box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
+        }
+        .input-group input:disabled,
+        .input-group select:disabled {
+            background-color: #F1F5F9;
+            color: #64748B;
+            border-color: #E2E8F0;
+            cursor: not-allowed;
+        }
+
+        #loading {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        /* --- 彈窗與底部滑出抽屜樣式 --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(10, 37, 64, 0.25); 
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.42);
             display: none;
-            justify-content: center; align-items: center; z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 16px;
+            box-sizing: border-box;
         }
         .modal-content {
-            background: rgba(255, 255, 255, 0.75) !important;
-            backdrop-filter: blur(20px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.45) !important;
-            border-radius: 20px !important;
-            padding: 24px;
-            width: 85%;
-            max-width: 320px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 18px;
+            padding: 22px 20px;
+            width: 100%;
+            max-width: 340px;
             text-align: center;
-            box-shadow: 0 20px 50px rgba(10, 37, 64, 0.12),
-                        inset 0 0 0 1px rgba(255, 255, 255, 0.45) !important;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
             box-sizing: border-box;
-            position: relative; /* 為了絕對定位右上角 X 按鈕 */
-            transition: all 0.3s ease;
+            position: relative;
         }
         .modal-content h3 {
             margin-top: 0;
             color: var(--text-navy);
-            font-weight: 700;
-            font-size: 1.25em;
+            font-weight: 800;
+            font-size: 1.18rem;
         }
         .modal-content input, .modal-content select {
-            width: 100%; 
-            padding: 10px 12px; 
-            margin: 8px 0; 
-            border: 1px solid rgba(16, 69, 140, 0.15);
-            border-radius: 10px; 
-            box-sizing: border-box; 
-            font-size: 0.95em; 
-            text-align: center;
+            width: 100%;
+            padding: 10px 12px;
+            margin: 4px 0;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 0.96rem;
             color: var(--text-navy);
-            background: rgba(255, 255, 255, 0.5);
-            transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            background: #FFFFFF;
+            font-family: inherit;
         }
         .modal-content select {
             appearance: none;
             -webkit-appearance: none;
-            -moz-appearance: none;
-            text-align: center;
-            text-align-last: center;
-            padding: 10px 24px 10px 12px;
-            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2310458c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            padding-right: 28px;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230A2540' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 12px center;
+            background-position: right 10px center;
             background-size: 12px;
             cursor: pointer;
         }
         .modal-content input:focus, .modal-content select:focus {
             outline: none;
-            background: rgba(255, 255, 255, 0.95);
-            border-color: var(--text-blue);
-            box-shadow: 0 0 0 3px rgba(16, 69, 140, 0.1);
+            border-color: var(--text-navy);
+            box-shadow: 0 0 0 3px rgba(10, 37, 64, 0.1);
         }
-        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; }
+        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
         .modal-btn {
-            flex: 1; 
-            padding: 12px; 
-            border: none; 
-            border-radius: 10px; 
-            font-size: 0.95em; 
-            font-weight: 600; 
-            cursor: pointer; 
-            transition: all 0.2s ease;
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background-color 0.16s ease, opacity 0.16s ease;
         }
-        .btn-cancel { 
-            background-color: rgba(255, 193, 7, 0.15); 
-            color: #b27a00; 
-            border: 1px solid rgba(255, 193, 7, 0.3);
+        .btn-cancel {
+            background-color: #F1F5F9;
+            color: #334155;
+            border: 1px solid #CBD5E1;
         }
-        .btn-cancel:hover { 
-            background-color: rgba(255, 193, 7, 0.25); 
-            transform: translateY(-1px);
+        .btn-cancel:hover {
+            background-color: #E2E8F0;
         }
-        .btn-confirm { 
-            background-color: var(--primary-color); 
-            color: white; 
-            box-shadow: 0 4px 10px rgba(16, 69, 140, 0.15);
+        .btn-confirm {
+            background-color: var(--primary-color);
+            color: #FFFFFF;
         }
-        .btn-confirm:hover { 
-            background-color: #0D3A75; 
-            transform: translateY(-1px);
-            box-shadow: 0 6px 14px rgba(16, 69, 140, 0.2);
+        .btn-confirm:hover {
+            background-color: #163A5F;
         }
-
         #resetBtn {
-            background-color: #FF69B4;
-            box-shadow: 0 4px 10px rgba(255, 105, 180, 0.25);
+            background-color: var(--reset-color);
+            color: #FFFFFF;
         }
         #resetBtn:hover {
-            background-color: #FF1493;
-            box-shadow: 0 6px 14px rgba(255, 20, 147, 0.35);
+            background-color: #B91C1C;
         }
 
-        /* 標題右側的圓形 ＋ 按鈕 */
-        .add-row-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--text-blue);
-            color: white;
+        /* 底部滑出抽屜 (#manualModal) */
+        .bottom-sheet-overlay {
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+        }
+        .bottom-sheet-content {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 22px 22px 0 0;
             border: none;
-            font-size: 16px;
-            font-weight: bold;
+            border-top: 1px solid #E2E8F0;
+            padding: 10px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+            text-align: left;
+            max-height: 88dvh;
+            overflow-y: auto;
+            box-shadow: 0 -10px 32px rgba(15, 23, 42, 0.16);
+            animation: sheetSlideUp 0.2s ease-out;
+        }
+        @keyframes sheetSlideUp {
+            from { transform: translateY(24px); opacity: 0.85; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .sheet-handle {
+            width: 40px;
+            height: 4px;
+            border-radius: 999px;
+            background: #CBD5E1;
+            margin: 0 auto 12px;
+        }
+        .sheet-header {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .sheet-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-navy);
+        }
+        .sheet-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            border: none;
+            background: #F1F5F9;
+            color: #475569;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
             cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 2px 6px rgba(16, 69, 140, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .add-row-btn:hover {
-            background: #28a745;
-            transform: scale(1.1) rotate(90deg);
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        .sheet-close-btn:hover {
+            background: #E2E8F0;
+            color: #0F172A;
         }
-        .add-row-btn:active {
-            transform: scale(0.95);
+        .segmented-control {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            padding: 4px;
+            background: #F1F5F9;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+        }
+        .segmented-control.cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .seg-btn {
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: #334155;
+            padding: 9px 8px;
+            font-size: 0.94rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .seg-btn.is-active {
+            background: var(--text-navy);
+            color: #FFFFFF;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+        }
+        .seg-btn[data-terminal="W12"].is-active {
+            background: #D98200;
+            color: #FFFFFF;
+        }
+        .seg-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .monitoring-target-banner {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-navy);
         }
 
-        /* 右上角 X 關閉按鈕 */
+        /* 右上角 X 關閉按鈕 (用於密碼等對話框) */
         .modal-close {
             position: absolute;
-            top: 15px;
-            right: 18px;
+            top: 12px;
+            right: 14px;
             font-size: 22px;
             font-weight: bold;
-            color: #888888;
+            color: #64748B;
             cursor: pointer;
-            transition: all 0.2s ease;
             line-height: 1;
             z-index: 10;
         }
         .modal-close:hover {
-            color: #dc3545;
-            transform: scale(1.15);
+            color: var(--reset-color);
         }
 
         /* 🌟 縮小 POB 時間欄位的提示文字字體 */
         #pobTime::placeholder {
             font-size: 0.85em;
-            color: #A0B0C4;
+            color: #94A3B8;
         }
 
         /* --- 船期表樣式 --- */
         .schedule-section {
-            margin-top: 15px;
-            margin-left: -12px;
-            margin-right: -12px;
-            background: rgba(255, 255, 255, 0.55);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 14px 16px 10px;
             text-align: left;
             box-sizing: border-box;
-            box-shadow: 0 8px 32px rgba(16, 69, 140, 0.04);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
         }
         .schedule-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px; border-bottom: 1px solid rgba(16, 69, 140, 0.08); padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
-        .schedule-header h3 { 
-            margin: 0; 
-            font-size: 1.15em; 
-            color: var(--text-blue); 
-            font-weight: 600;
+        .schedule-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            letter-spacing: -0.01em;
+        }
+
+        /* 固定底部導覽列 */
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 900;
+            background: #FFFFFF;
+            border-top: 1px solid #E2E8F0;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.04);
+        }
+        .bottom-nav-inner {
+            max-width: 480px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            height: 60px;
+        }
+        .bottom-nav-item {
+            border: none;
+            background: transparent;
+            color: #64748B;
+            padding: 6px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
             cursor: pointer;
-            transition: opacity 0.2s ease;
+            font-family: inherit;
+            font-size: 0.74rem;
+            font-weight: 600;
+            line-height: 1.1;
+            transition: color 0.15s ease;
         }
-        .schedule-header h3:hover {
-            opacity: 0.85;
+        .bottom-nav-item.is-active {
+            color: var(--text-navy);
+            font-weight: 800;
+        }
+        .bottom-nav-icon-wrap {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bottom-nav-icon-wrap svg {
+            width: 22px;
+            height: 22px;
+            display: block;
         }
         .chat-unread-badge {
             display: none;
+            position: absolute;
+            top: -1px;
+            right: -3px;
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background-color: #dc2626;
             color: #dc2626;
-            font-size: 15px;
+            font-size: 1px;
             font-weight: 900;
-            line-height: 1;
-            margin-left: 2px;
+            line-height: 9px;
+            overflow: hidden;
             user-select: none;
             animation: none;
         }
@@ -1169,101 +1360,93 @@
         .cpc-btn:not(.locked-btn):active {
             transform: scale(0.92);
         }
-        .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         .badge {
             color: white;
-            padding: 2px 6px;
-            border-radius: 12px;
+            padding: 2px 8px;
+            border-radius: 999px;
             font-size: 11px;
-            font-weight: bold;
+            font-weight: 700;
             display: inline-block;
             vertical-align: middle;
+            margin-top: 3px;
+            letter-spacing: 0.02em;
         }
-        .badge-w12 { background-color: #ff8c00; }
-        .badge-w13 { background-color: #245d98; color: white; }
+        .badge-w12 { background-color: #D98200; color: #FFFFFF; }
+        .badge-w13 { background-color: #0D3559; color: #FFFFFF; }
         .schedule-table th, .schedule-table td {
-            padding: 12px 6px; 
-            border-bottom: 1px solid rgba(16, 69, 140, 0.05); 
+            padding: 10px 6px;
+            border-bottom: 1px solid #EEF2F6;
             text-align: center;
+            vertical-align: middle;
         }
-        .schedule-table th { 
-            color: var(--text-blue); 
-            font-weight: 600; 
-            background-color: #edf3fa; /* 使用不透明的實色背景，遮擋下方滾動的船期 */
+        .schedule-table tbody tr:last-child td {
+            border-bottom: none;
         }
-        .schedule-table th:first-child {
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
-        }
-        .schedule-table th:last-child {
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
+        .schedule-table th {
+            color: #64748B;
+            font-size: 0.84rem;
+            font-weight: 600;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
         .schedule-table thead tr,
         .schedule-table thead th {
             user-select: none;
             -webkit-user-select: none;
-            touch-action: manipulation;
         }
-        #scheduleHeaderRow.locked-btn {
-            opacity: 1;
-            cursor: not-allowed;
-        }
-        #scheduleHeaderRow.locked-btn th {
-            color: rgba(16, 69, 140, 0.45);
-            background-color: #f3f7fc;
-            cursor: not-allowed;
-        }
-        
-        /* 💡 限制第一欄 (日期) 與第三欄 (速限) 寬度並防止換行 */
         .schedule-table th:first-child,
         .schedule-table td:first-child {
-            width: 70px;
+            width: 72px;
             white-space: nowrap;
             text-align: center;
+        }
+        .schedule-table th:nth-child(2),
+        .schedule-table td:nth-child(2) {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 600;
+            color: #0F172A;
+        }
+        .schedule-table th:nth-child(2) {
+            color: #64748B;
+            font-weight: 600;
         }
         .schedule-table th:last-child,
         .schedule-table td:last-child {
-            width: 60px;
+            width: 72px;
             white-space: nowrap;
             text-align: center;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
         }
-        
         .schedule-table td {
-            color: #555555; /* 「日期」、「船名」、「速限」保持深灰字體 */
-        }
-        
-        .schedule-row-safe {
-            background-color: rgba(200, 235, 210, 0.8) !important; 
-            color: var(--safe-color) !important; 
-            font-weight: bold;
-            animation: row-breathing 2s infinite ease-in-out;
-        }
-        .schedule-row-safe td {
-            color: var(--safe-color) !important;
-        }
-        .schedule-row-warning { 
-            background-color: rgba(252, 232, 230, 0.65) !important; 
-            color: var(--warning-color) !important; 
-            font-weight: bold; 
-        }
-        .schedule-row-warning td {
-            color: var(--warning-color) !important;
-        }
-        .schedule-row-waiting { 
-            background-color: rgba(241, 243, 244, 0.65) !important; 
-            color: var(--waiting-color) !important; 
-            font-weight: bold; 
-        }
-        .schedule-row-waiting td {
-            color: var(--waiting-color) !important;
+            color: #0F172A;
         }
 
-        /* 修正 Apple 設備對於 tr 標籤不支援陰影動畫的問題，改為背景色柔和漸變 */
-        @keyframes row-breathing {
-            0% { background-color: rgba(200, 235, 210, 0.6); }
-            50% { background-color: rgba(160, 225, 180, 0.95); }
-            100% { background-color: rgba(200, 235, 210, 0.6); }
+        .schedule-row-safe {
+            background-color: #DCFCE7 !important;
+        }
+        .schedule-row-safe td {
+            color: #15803D !important;
+            font-weight: 700;
+        }
+        .schedule-row-warning {
+            background-color: #FEE2E2 !important;
+        }
+        .schedule-row-warning td {
+            color: #B91C1C !important;
+            font-weight: 700;
+        }
+        .schedule-row-waiting {
+            background-color: #F1F5F9 !important;
+        }
+        .schedule-row-waiting td {
+            color: #475569 !important;
+            font-weight: 700;
         }
 
         @keyframes pulse-highlight {
@@ -1274,24 +1457,17 @@
 
         /* 讓表格區塊可滾動的樣式 (隱藏捲軸，保留滑動功能，高度可容納 6 船) */
         .table-wrapper {
-            max-height: 275px; 
+            max-height: 370px;
             overflow-y: auto;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         .table-wrapper::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-        
-        /* 固定表格標題列 */
-        .schedule-table th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
+            display: none;
         }
 
         #soundToggle:hover {
-            transform: scale(1.15);
+            transform: scale(1.08);
         }
 
         /* 🌟 即時風速數字點擊效果 */
@@ -1466,90 +1642,200 @@
             color: #8b949e;
         }
         
-        /* 船期調整 Modal 樣式 */
-        .adjust-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0;
-            font-size: 13px;
-            color: #333;
-        }
-        .adjust-table th, .adjust-table td {
-            padding: 6px 4px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-        .adjust-table th {
-            font-weight: bold;
-            color: #555;
-            background-color: #f0f4f8;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        .adjust-table input, .adjust-table select {
-            width: 100%;
-            padding: 6px 4px;
-            border: 1px solid rgba(16, 69, 140, 0.15);
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 12px;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.7);
-            color: var(--text-navy);
-            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .adjust-table input:focus, .adjust-table select:focus {
-            outline: none;
-            border-color: var(--text-blue);
-            background: #fff;
-            box-shadow: 0 0 0 2px rgba(16, 69, 140, 0.08);
-        }
-        .adjust-table select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            text-align: center;
-            text-align-last: center;
-            padding-right: 14px !important;
-            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2310458c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 4px center;
-            background-size: 9px;
-            cursor: pointer;
-        }
-        .adjust-actions {
-            display: flex;
+        /* 船期調整全螢幕雙行卡片清單樣式 */
+        .fullscreen-sheet-overlay {
+            padding: 0 !important;
+            background-color: #EEF3F7;
+            align-items: stretch;
             justify-content: center;
+        }
+        .fullscreen-sheet-content {
+            width: 100%;
+            max-width: 480px;
+            height: 100dvh;
+            max-height: 100dvh;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            background: #EEF3F7;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
+            text-align: left;
+            overflow: hidden;
+        }
+        .adjust-topbar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 12px 14px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            flex-shrink: 0;
+        }
+        .adjust-topbar-title {
+            margin: 0;
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            text-align: center;
+        }
+        .adjust-nav-btn {
+            justify-self: start;
+            border: none;
+            background: transparent;
+            color: var(--text-navy);
+            font-size: 0.96rem;
+            font-weight: 700;
+            padding: 6px 4px;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
             gap: 2px;
         }
-        .adjust-btn-small {
-            padding: 2px 4px;
-            font-size: 11px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fdfdfd;
+        .adjust-add-btn {
+            justify-self: end;
+            border: none;
+            background: transparent;
+            color: var(--text-navy);
+            font-size: 0.96rem;
+            font-weight: 700;
+            padding: 6px 4px;
             cursor: pointer;
-            user-select: none;
+            font-family: inherit;
+        }
+        .adjust-card-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+        }
+        .adjust-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+        }
+        .adjust-unfinished-tag {
             display: inline-block;
-            color: #555;
+            align-self: flex-start;
+            background: #FEF3C7;
+            color: #92400E;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
         }
-        .adjust-btn-small:hover {
-            background: #f0f0f0;
+        .adjust-card-row1 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .adjust-btn-danger {
-            color: white;
-            background: #dc3545;
-            border-color: #dc3545;
+        .adjust-card-row2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .adjust-btn-danger:hover {
-            background: #c82333;
-            color: white;
+        .adjust-field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748B;
+            margin-bottom: 3px;
+        }
+        .adjust-card input,
+        .adjust-card select {
+            margin: 0;
+            padding: 9px 10px;
+            font-size: 0.94rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            background: #FFFFFF;
+            color: var(--text-navy);
+            box-sizing: border-box;
+        }
+        .adjust-date-wrap {
+            width: 94px;
+            flex-shrink: 0;
+        }
+        .adjust-date-input {
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        .adjust-terminal-wrap {
+            width: 92px;
+            flex-shrink: 0;
+        }
+        .adjust-terminal-select {
+            font-weight: 700;
+            text-align: center;
+            text-align-last: center;
+        }
+        .adjust-delete-btn {
+            margin-left: auto;
+            margin-top: 16px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 10px;
+            background: #FEE2E2;
+            color: #B91C1C;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s ease;
+        }
+        .adjust-delete-btn:hover {
+            background: #FECACA;
+        }
+        .adjust-ship-wrap {
+            flex: 1;
+            min-width: 0;
+        }
+        .adjust-ship-input {
+            text-align: left;
+            font-weight: 600;
+        }
+        .adjust-speed-wrap {
+            width: 104px;
+            flex-shrink: 0;
+        }
+        .adjust-speed-select {
+            font-weight: 700;
+            text-align: center;
+            text-align-last: center;
+        }
+        .adjust-footer {
+            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+            background: #FFFFFF;
+            border-top: 1px solid #E2E8F0;
+            flex-shrink: 0;
+        }
+        .adjust-empty-state {
+            text-align: center;
+            color: #64748B;
+            padding: 36px 16px;
+            background: #FFFFFF;
+            border: 1px dashed #CBD5E1;
+            border-radius: 14px;
+            font-size: 0.95rem;
         }
 
         /* 🔒 鎖定狀態樣式 (C6) */
-        .locked-btn { opacity: 0.5; cursor: not-allowed; }
+        .locked-btn { opacity: 0.45; cursor: not-allowed; }
     </style>
 
 </head>
@@ -1558,47 +1844,49 @@
         ⚠️ 網路已斷線，畫面風速與狀態可能非最新，正在嘗試重新連線...
     </div>
 
-<div class="container">
-    <h2 style="display: flex; align-items: center; justify-content: center;">
-        <img src="logo.png" style="width: 44px; height: 44px; object-fit: contain; vertical-align: middle; margin-right: 8px;">
-        臺中LNG船監控
-    </h2>
-    <div class="presentation-link">
-        <a href="presentation/index.html" target="_blank">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>操作說明
-        </a>
-    </div>
-    
-    <div class="wind-container" tabindex="0">
-        <div class="wind-speed-num" id="windSpeed">--</div>
-        <div class="wind-detail">
-            <svg class="wind-icon pulso-icon pulso-wind" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-                <path class="pulso-wind-1" d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
-                <path class="pulso-wind-2" d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
-                <path class="pulso-wind-3" d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
-            </svg>
-            <div class="wind-speed-unit">m/s</div>
+<main class="app-shell">
+    <header class="app-header">
+        <div class="app-brand">
+            <img src="logo.png" class="app-logo" alt="臺中LNG船監控">
+            <h1 class="app-title">臺中LNG船監控</h1>
         </div>
-    </div>
-    
-    <div class="time-display" id="dataTime">系統連線中...</div>
+        <div class="header-actions">
+            <button id="soundToggle" type="button" class="header-icon-btn" onclick="toggleSound()" aria-label="提醒音效" title="提醒音效" style="display: none;"></button>
+            <a id="infoLink" class="header-icon-btn" href="presentation/index.html" target="_blank" rel="noopener" aria-label="操作說明" title="操作說明">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.5"/>
+                    <line x1="12" y1="11" x2="12" y2="16.5"/>
+                    <circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+            </a>
+        </div>
+    </header>
 
-    <!-- POB 紀錄板往上移 -->
-    <div id="pobList" class="pob-records" style="margin-bottom: 15px;"></div>
+    <section class="card wind-card" aria-label="北堤風速">
+        <div class="wind-card-label">北堤風速</div>
+        <div class="wind-main-row">
+            <div class="wind-container" tabindex="0">
+                <div class="wind-speed-num" id="windSpeed">--</div>
+                <div class="wind-detail">
+                    <svg class="wind-icon pulso-icon pulso-wind" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                        <path class="pulso-wind-1" d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
+                        <path class="pulso-wind-2" d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
+                        <path class="pulso-wind-3" d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
+                    </svg>
+                    <div class="wind-speed-unit">m/s</div>
+                </div>
+            </div>
+            <div id="dynamicBox" class="dynamic-box"></div>
+        </div>
+        <div class="time-display" id="dataTime">系統連線中...</div>
+    </section>
 
-    <div id="dynamicBox" class="dynamic-box"></div>
+    <div id="pobList" class="pob-records"></div>
 
     <!-- 船期表區塊 -->
-    <div class="schedule-section">
+    <section class="card schedule-section" aria-label="船期表">
         <div class="schedule-header">
-            <h3 id="chatOpenBtn" role="button" tabindex="0" aria-label="開啟 LNG 船聊天室" onclick="openChatModal()" style="display: inline-flex; align-items: center; gap: 2px;">
-                <svg class="pulso-icon pulso-messages-square" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="width: 32px; height: 32px; padding: 4px; box-sizing: border-box;">
-                    <path class="pulso-ms-back" d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    <path class="pulso-ms-front" d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/>
-                </svg>
-                <span id="chatUnreadBadge" class="chat-unread-badge" style="display: none;" aria-label="有未讀新對話">!</span>
-            </h3>
-            <span id="soundToggle" onclick="toggleSound()" style="cursor: pointer; font-size: 1.4em; transition: transform 0.2s; user-select: none; display: none;" title="提醒音效">🔕</span>
+            <h2 class="schedule-title">船期表</h2>
             <svg class="cpc-btn pulso-icon pulso-settings" onclick="triggerOpenManualModal()" tabindex="0" role="button" aria-label="手動設定" width="32" height="32" viewBox="0 0 24 24" title="手動設定" style="padding: 4px; box-sizing: border-box;">
                 <g class="pulso-gear-group">
                     <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
@@ -1609,18 +1897,61 @@
         <div class="table-wrapper">
             <table class="schedule-table">
                 <thead>
-                    <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限</th></tr>
+                    <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限 m/s</th></tr>
                 </thead>
                 <tbody id="scheduleBody">
-                    <tr><td colspan="3" style="text-align:center; color:#888888;">載入中...</td></tr>
+                    <tr><td colspan="3" style="text-align:center; color:#64748B;">載入中...</td></tr>
                 </tbody>
             </table>
         </div>
-    </div>
-
+    </section>
 
     <div id="loading"></div>
-</div>
+</main>
+
+<nav class="bottom-nav" aria-label="主功能導覽">
+    <div class="bottom-nav-inner">
+        <button id="navMonitorBtn" type="button" class="bottom-nav-item is-active" onclick="setActiveNav('monitor'); window.scrollTo({ top: 0, behavior: 'smooth' });">
+            <span class="bottom-nav-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 14l4-4"/>
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+                </svg>
+            </span>
+            <span>監控</span>
+        </button>
+        <button id="navForecastBtn" type="button" class="bottom-nav-item" onclick="openForecastModal()">
+            <span class="bottom-nav-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
+                    <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
+                    <path d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
+                </svg>
+            </span>
+            <span>預報</span>
+        </button>
+        <button id="navScheduleBtn" type="button" class="bottom-nav-item" onclick="triggerOpenScheduleAdjustModal()">
+            <span class="bottom-nav-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+            </span>
+            <span>船期</span>
+        </button>
+        <button id="chatOpenBtn" type="button" class="bottom-nav-item" aria-label="開啟 LNG 船聊天室" onclick="openChatModal()">
+            <span class="bottom-nav-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span id="chatUnreadBadge" class="chat-unread-badge" style="display: none;" aria-label="有未讀新對話">!</span>
+            </span>
+            <span>聊天室</span>
+        </button>
+    </div>
+</nav>
 
 <!-- LNG 船聊天室 Modal (v2 PWA Mobile) -->
 <div id="chatModal" class="modal-overlay" style="display: none; z-index: 2050;">
@@ -1721,34 +2052,48 @@
     </div>
 </div>
 
-<div id="manualModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 320px;">
-        <span class="modal-close" onclick="closeManualModal()">&times;</span>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: var(--text-navy); display: flex; align-items: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                手動監控設定
-            </h3>
+<!-- 手動監控設定 底部滑出抽屜 -->
+<div id="manualModal" class="modal-overlay bottom-sheet-overlay">
+    <div class="modal-content bottom-sheet-content" role="dialog" aria-modal="true" aria-labelledby="manualModalTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <h3 id="manualModalTitle">手動監控設定</h3>
+            <button type="button" class="sheet-close-btn" onclick="closeManualModal()" aria-label="關閉手動監控設定">&times;</button>
         </div>
-        
+
         <div id="startMonitorGroup">
-            <div class="input-group"><label for="shipName">船名</label><input type="text" id="shipName" placeholder="例如: Cobia"></div>
-            <div class="input-group"><label for="limitSpeed">限制風速 (m/s)</label><input type="number" id="limitSpeed" step="0.1" placeholder="例如: 12.0"></div>
             <div class="input-group">
-                <label for="terminal">停靠碼頭</label>
-                <select id="terminal">
-                    <option value=""></option>
-                    <option value="W12">W12</option>
-                </select>
+                <label for="shipName">船名</label>
+                <input type="text" id="shipName" placeholder="例如: Cobia" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>限制風速 (m/s)</label>
+                <div id="speedSegmentGroup" class="segmented-control" role="group" aria-label="限制風速">
+                    <button type="button" class="seg-btn" data-speed="12" onclick="selectLimitSpeedPreset('12')">12.0 m/s</button>
+                    <button type="button" class="seg-btn is-active" data-speed="15" onclick="selectLimitSpeedPreset('15')">15.0 m/s</button>
+                    <button type="button" class="seg-btn" data-speed="custom" onclick="selectLimitSpeedPreset('custom')">自訂</button>
+                </div>
+                <div id="customLimitSpeedWrap" style="display: none; margin-top: 8px;">
+                    <input type="number" id="limitSpeed" step="0.1" value="15" placeholder="請輸入限制風速 (例如: 13.5)">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>停靠碼頭</label>
+                <div id="terminalSegmentGroup" class="segmented-control cols-2" role="group" aria-label="停靠碼頭">
+                    <button type="button" class="seg-btn" data-terminal="W12" onclick="selectTerminalSegment('W12')">W12</button>
+                    <button type="button" class="seg-btn is-active" data-terminal="W13" onclick="selectTerminalSegment('W13')">W13</button>
+                </div>
+                <input type="hidden" id="terminal" value="W13">
             </div>
         </div>
 
         <div id="stopMonitorGroup" style="display: none;">
-            <div class="input-group" id="pobTimeGroup" style="margin-top: 10px; border-top: 1px dashed rgba(16, 69, 140, 0.15); padding-top: 10px;">
-                <label for="pobTime" style="color: var(--primary-color);">🕒 手動輸入 POB 時間 (順利進港)</label>
-                <input type="text" id="pobTime" placeholder="如14:56" maxlength="5" style="text-align: center; font-size: 1.1em; letter-spacing: 1px;" oninput="formatPobTime(this)">
+            <div id="monitoringTargetBanner" class="monitoring-target-banner">目前監控：--</div>
+            <div class="input-group" id="pobTimeGroup">
+                <label for="pobTime" style="color: var(--primary-color);">手動輸入 POB 時間 (順利進港)</label>
+                <input type="text" id="pobTime" placeholder="如 14:56" maxlength="5" style="text-align: center; font-size: 1.08em; letter-spacing: 1px;" oninput="formatPobTime(this)">
             </div>
-            <p style="text-align: center; margin: 8px 0; color: #888; font-size: 12px;">─ 或 ─</p>
+            <p style="text-align: center; margin: 8px 0; color: #64748B; font-size: 12px;">─ 或 ─</p>
             <div class="input-group">
                 <label for="noEntryReason">無法進港原因</label>
                 <select id="noEntryReason" onchange="toggleCustomReason()">
@@ -1758,60 +2103,46 @@
                     <option value="其他">其他...</option>
                 </select>
             </div>
-            <div class="input-group" id="customReasonGroup" style="display: none; margin-top: 10px;">
+            <div class="input-group" id="customReasonGroup" style="display: none;">
                 <label for="customReason">具體原因</label>
                 <input type="text" id="customReason" placeholder="請輸入自訂原因">
             </div>
         </div>
 
-        <button class="modal-btn btn-confirm" id="startBtn" onclick="setMode('start')" style="margin-top: 15px; width: 100%;">▶ 開始監控</button>
-        <button class="modal-btn btn-confirm" id="resetBtn" onclick="setMode('reset')" style="display: none; margin-top: 15px; width: 100%; background-color: #B52218;">⏹ 結束監控</button>
+        <button type="button" class="modal-btn btn-confirm" id="startBtn" onclick="setMode('start')" style="margin-top: 8px; width: 100%;">開始監控</button>
+        <button type="button" class="modal-btn" id="resetBtn" onclick="setMode('reset')" style="display: none; margin-top: 8px; width: 100%;">結束監控</button>
     </div>
 </div>
 
-<!-- 船期調整 Modal -->
-<div id="scheduleAdjustModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 550px; width: 95%; padding: 20px;">
-        <span class="modal-close" onclick="closeScheduleAdjustModal()">&times;</span>
-        <div style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; margin-bottom: 15px; position: relative;">
-            <h3 style="margin: 0; color: var(--text-navy);">船期調整</h3>
-            <button class="add-row-btn" onclick="addEditItem()" title="新增一列">＋</button>
+<!-- 船期調整 全螢幕雙行卡片清單 Modal -->
+<div id="scheduleAdjustModal" class="modal-overlay fullscreen-sheet-overlay">
+    <div class="modal-content fullscreen-sheet-content" role="dialog" aria-modal="true" aria-labelledby="scheduleAdjustTitle">
+        <div class="adjust-topbar">
+            <button id="adjustBackBtn" type="button" class="adjust-nav-btn" onclick="closeScheduleAdjustModal()">&lsaquo; 監控</button>
+            <h3 id="scheduleAdjustTitle" class="adjust-topbar-title">船期調整</h3>
+            <button id="adjustAddBtn" type="button" class="adjust-add-btn" onclick="addEditItem()">＋ 新增</button>
         </div>
-        <div class="adjust-table-container">
-            <table class="adjust-table">
-                <thead>
-                    <tr>
-                        <th style="width: 25%;">日期</th>
-                        <th style="width: 25%;">碼頭</th>
-                        <th style="width: 35%;">船名</th>
-                        <th style="width: 15%;">速限</th>
-                    </tr>
-                </thead>
-                <tbody id="adjustTableBody">
-                    <!-- 動態渲染 -->
-                </tbody>
-            </table>
+        <div id="adjustCardList" class="adjust-card-list">
+            <!-- 動態渲染雙行卡片 -->
         </div>
-        <div class="modal-buttons">
-            <button class="modal-btn btn-confirm" onclick="saveScheduleAdjustments()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>儲存調整
-            </button>
+        <div class="adjust-footer">
+            <button id="saveScheduleBtn" type="button" class="modal-btn btn-confirm" style="width: 100%;" onclick="saveScheduleAdjustments()">儲存調整</button>
         </div>
     </div>
 </div>
 
 <div id="pwdModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 320px;">
         <span class="modal-close" onclick="closePwdModal(false)">&times;</span>
         <h3 style="margin-top: 0; color: var(--text-navy); display: flex; align-items: center; justify-content: center;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             安全驗證
         </h3>
-        <p style="font-size: 0.9em; color: #666; margin-bottom: 5px;">請輸入密碼：</p>
-        <input type="password" id="modalPwdInput" placeholder="輸入密碼">
+        <p style="font-size: 0.9em; color: #64748B; margin-bottom: 8px;">請輸入密碼：</p>
+        <input type="password" id="modalPwdInput" placeholder="輸入密碼" style="text-align: center;">
         <div class="modal-buttons">
-            <button class="modal-btn btn-cancel" onclick="closePwdModal(false)">取消</button>
-            <button class="modal-btn btn-confirm" onclick="closePwdModal(true)">確認</button>
+            <button type="button" class="modal-btn btn-cancel" onclick="closePwdModal(false)">取消</button>
+            <button type="button" class="modal-btn btn-confirm" onclick="closePwdModal(true)">確認</button>
         </div>
     </div>
 </div>
@@ -1935,7 +2266,184 @@
         return getTaiwanDateTime().timeStr;
     }
 
-    // 當 Firebase 資料變更時，更新動態判定框
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function normalizeFrontendDateMD(dStr) {
+        const trimmed = String(dStr == null ? '' : dStr).trim();
+        if (!trimmed) return '';
+        const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})$/);
+        if (!match) return trimmed;
+        const m = parseInt(match[1], 10);
+        const d = parseInt(match[2], 10);
+        if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+            return `${m}/${d}`;
+        }
+        return trimmed;
+    }
+
+    function normalizeScheduleTerminal(val) {
+        return String(val || '').trim().toUpperCase() === 'W12' ? 'W12' : 'W13';
+    }
+
+    function setActiveNav(tab) {
+        const map = {
+            monitor: 'navMonitorBtn',
+            forecast: 'navForecastBtn',
+            schedule: 'navScheduleBtn',
+            chat: 'chatOpenBtn'
+        };
+        Object.entries(map).forEach(([key, id]) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('is-active', key === tab);
+        });
+    }
+
+    function selectLimitSpeedPreset(preset, customValue) {
+        const group = document.getElementById('speedSegmentGroup');
+        const customWrap = document.getElementById('customLimitSpeedWrap');
+        const speedInput = document.getElementById('limitSpeed');
+        if (group) {
+            group.querySelectorAll('.seg-btn').forEach(btn => {
+                btn.classList.toggle('is-active', btn.dataset.speed === preset);
+            });
+        }
+        if (preset === '12' || preset === '15') {
+            if (customWrap) customWrap.style.display = 'none';
+            if (speedInput) speedInput.value = preset;
+        } else {
+            if (customWrap) customWrap.style.display = 'block';
+            if (speedInput) {
+                if (customValue !== undefined) {
+                    speedInput.value = String(customValue);
+                } else if (speedInput.value === '12' || speedInput.value === '15') {
+                    speedInput.value = '';
+                }
+                if (document.getElementById('manualModal')?.style.display === 'flex' && !speedInput.disabled) {
+                    setTimeout(() => { try { speedInput.focus(); } catch (_) {} }, 20);
+                }
+            }
+        }
+    }
+
+    function selectTerminalSegment(terminal) {
+        const normalized = normalizeScheduleTerminal(terminal);
+        const group = document.getElementById('terminalSegmentGroup');
+        const hiddenInput = document.getElementById('terminal');
+        if (group) {
+            group.querySelectorAll('.seg-btn').forEach(btn => {
+                btn.classList.toggle('is-active', btn.dataset.terminal === normalized);
+            });
+        }
+        if (hiddenInput) hiddenInput.value = normalized;
+    }
+
+    function setManualSegmentedDisabled(isDisabled) {
+        document.querySelectorAll('#speedSegmentGroup .seg-btn, #terminalSegmentGroup .seg-btn').forEach(btn => {
+            btn.disabled = Boolean(isDisabled);
+        });
+    }
+
+    function applyManualLimitSpeedValue(val) {
+        const raw = val == null ? '' : String(val).trim();
+        const num = Number(raw);
+        if (!raw || num === 15) {
+            selectLimitSpeedPreset('15');
+        } else if (num === 12) {
+            selectLimitSpeedPreset('12');
+        } else {
+            selectLimitSpeedPreset('custom', raw);
+        }
+    }
+
+    function syncManualMonitoringBanner(data) {
+        const banner = document.getElementById('monitoringTargetBanner');
+        if (!banner) return;
+        if (!data || data.app_mode !== 'start') {
+            banner.textContent = '目前監控：--';
+            return;
+        }
+        const ship = data.ship_name || '--';
+        const speed = data.limit_speed !== undefined && data.limit_speed !== '' ? `${data.limit_speed} m/s` : '--';
+        const term = normalizeScheduleTerminal(data.terminal);
+        banner.textContent = `目前監控：${ship} · ${speed} · ${term}`;
+    }
+
+    function syncManualModalState(data, options = {}) {
+        const forceResetStopFields = Boolean(options.forceResetStopFields);
+        const forceResetStartFields = Boolean(options.forceResetStartFields);
+        const isStart = Boolean(data && data.app_mode === 'start');
+        const startGroup = document.getElementById('startMonitorGroup');
+        const stopGroup = document.getElementById('stopMonitorGroup');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const shipInput = document.getElementById('shipName');
+        const speedInput = document.getElementById('limitSpeed');
+        const terminalInput = document.getElementById('terminal');
+        const pobInput = document.getElementById('pobTime');
+        const reasonSelect = document.getElementById('noEntryReason');
+        const customReasonInput = document.getElementById('customReason');
+
+        if (isStart) {
+            if (startGroup) startGroup.style.display = 'none';
+            if (stopGroup) stopGroup.style.display = 'block';
+            if (startBtn) startBtn.style.display = 'none';
+            if (resetBtn) resetBtn.style.display = 'block';
+            if (shipInput) {
+                shipInput.disabled = true;
+                if (document.activeElement !== shipInput) shipInput.value = data.ship_name || '';
+            }
+            if (speedInput) {
+                speedInput.disabled = true;
+                if (document.activeElement !== speedInput) applyManualLimitSpeedValue(data.limit_speed);
+            }
+            if (terminalInput) {
+                terminalInput.disabled = true;
+                selectTerminalSegment(data.terminal || 'W13');
+            }
+            setManualSegmentedDisabled(true);
+            syncManualMonitoringBanner(data);
+            if (forceResetStopFields) {
+                if (pobInput) pobInput.value = '';
+                if (reasonSelect) {
+                    reasonSelect.value = '';
+                    toggleCustomReason();
+                }
+                if (customReasonInput) customReasonInput.value = '';
+            }
+        } else {
+            if (startGroup) startGroup.style.display = 'block';
+            if (stopGroup) stopGroup.style.display = 'none';
+            if (startBtn) startBtn.style.display = 'block';
+            if (resetBtn) resetBtn.style.display = 'none';
+            if (shipInput) shipInput.disabled = false;
+            if (speedInput) speedInput.disabled = false;
+            if (terminalInput) terminalInput.disabled = false;
+            setManualSegmentedDisabled(false);
+            syncManualMonitoringBanner(null);
+
+            if (forceResetStartFields) {
+                if (shipInput && document.activeElement !== shipInput) shipInput.value = '';
+                selectLimitSpeedPreset('15');
+                selectTerminalSegment('W13');
+            }
+            if (forceResetStopFields) {
+                if (pobInput) pobInput.value = '';
+                if (reasonSelect) {
+                    reasonSelect.value = '';
+                    toggleCustomReason();
+                }
+                if (customReasonInput) customReasonInput.value = '';
+            }
+        }
+    }
+
     // 當 Firebase 資料變更時，更新動態判定框
     function updateDynamicBox(data) {
         currentAppData = data;
@@ -1946,16 +2454,12 @@
         
         // 🌟 核心優化：檢查當前監控的船隻在當日紀錄中是否已有 pob_info (代表實務上已結束)
         let isShipFinished = false;
-        let finishedPobTime = "";
-        let finishedNoEntryReason = "";
 
         if (shipName && currentDailyRecords) {
             // 遍歷卡片找出對應這艘船的 pob_info
             Object.values(currentDailyRecords).forEach(card => {
                 if (card.config && card.config.ship_name === shipName && card.pob_info) {
                     isShipFinished = true;
-                    finishedPobTime = card.pob_info.pob_time || "";
-                    finishedNoEntryReason = card.pob_info.no_entry_reason || "";
                 }
             });
         }
@@ -1979,32 +2483,34 @@
             if (seasonTime === "--:--" || currentTime < "04:00") {
                 currentStatusClass = 'schedule-row-waiting';
                 box.className = "dynamic-box status-waiting";
-                box.innerHTML = `<strong>${shipName} 等待進港</strong>`;
+                box.innerHTML = `<div class="status-pill-main">等待進港</div>`;
                 currentStatus = "waiting";
             } else if (currentSpeed > limitSpeed) {
-                // 🔴 無法進港：恢復紅底白字，且只顯示 (風速超標)，不顯示比較數值！
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
-                box.innerHTML = `<strong>${shipName} 無法進港</strong><br><span style="font-size:0.8em;">(風速超標)</span>`;
+                box.innerHTML = `<div class="status-pill-main">無法進港<span class="status-dot status-dot-warning" aria-hidden="true"></span></div><div class="status-pill-sub"><span class="status-reason-line">風速超標</span></div>`;
                 currentStatus = "warning";
             } else if (waveExceeded || visibilityLow) {
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
-                const waveWarning = waveExceeded ? `<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 ${data.current_wave} &gt; 2.5 m</span>` : '';
-                const visibilityWarning = visibilityLow ? `<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 ${data.current_visibility} &lt; 2 浬</span>` : '';
-                box.innerHTML = `<strong>${shipName} 無法進港</strong>${waveWarning}${visibilityWarning}`;
+                const waveWarning = waveExceeded ? `<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 ${escapeHtml(String(data.current_wave))} &gt; 2.5 m</span>` : '';
+                const visibilityWarning = visibilityLow ? `<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 ${escapeHtml(String(data.current_visibility))} &lt; 2 浬</span>` : '';
+                box.innerHTML = `<div class="status-pill-main">無法進港<span class="status-dot status-dot-warning" aria-hidden="true"></span></div><div class="status-pill-sub">${waveWarning}${visibilityWarning}</div>`;
                 currentStatus = "warning";
             } else {
-                // 🟢 可進港：恢復綠底白字
                 currentStatusClass = 'schedule-row-safe';
                 box.className = "dynamic-box status-safe";
-                box.innerHTML = `<strong style="font-size:1.3em;">${shipName} 可進港</strong>`;
+                box.innerHTML = `<div class="status-pill-main">可進港<span class="status-dot status-dot-safe" aria-hidden="true"></span></div>`;
                 currentStatus = "safe";
             }
         }
         updateTableHighlight(currentStatusClass);
-        syncAudioState(); // 🌟 同步音效與喇叭圖示狀態
+        syncAudioState(); // 🌟 同步音效與鈴鐺圖示狀態
     }
+
+    const BELL_SVG_MUTED = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/></svg>`;
+    const BELL_SVG_ARMED = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>`;
+    const BELL_SVG_RINGING = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0" fill="none"/><path d="M6 8a6 6 0 0 1 12 0c0 4.499 1.411 5.956 2.738 7.326A1 1 0 0 1 20 17H4a1 1 0 0 1-.738-1.674C4.589 13.956 6 12.499 6 8z"/><path d="M2 8c0-2.2.8-4.2 2.2-5.6" fill="none"/><path d="M22 8c0-2.2-.8-4.2-2.2-5.6" fill="none"/></svg>`;
 
     // 🌟 狀態同步核心：處理鈴鐺顯示以及音效播放狀態
     function syncAudioState() {
@@ -2026,10 +2532,23 @@
         
         // 1. 鈴鐺 icon 的顯示/隱藏與內容控制
         if (soundToggle) {
-            // 有船監控時才顯示，否則隱藏
-            soundToggle.style.display = isMonitoring ? 'inline-block' : 'none';
-            // 根據開啟/關閉狀態顯示不同的鈴鐺圖示 (🔔=開啟, 🔕=關閉)
-            soundToggle.innerText = isSoundEnabled ? '🔔' : '🔕';
+            soundToggle.style.display = isMonitoring ? 'inline-flex' : 'none';
+            if (!isSoundEnabled) {
+                soundToggle.dataset.soundState = 'muted';
+                soundToggle.style.color = '#94A3B8';
+                soundToggle.innerHTML = BELL_SVG_MUTED;
+                soundToggle.setAttribute('aria-label', '開啟進港提醒音效');
+            } else if (currentStatus === 'safe') {
+                soundToggle.dataset.soundState = 'ringing';
+                soundToggle.style.color = '#EA8C1E';
+                soundToggle.innerHTML = BELL_SVG_RINGING;
+                soundToggle.setAttribute('aria-label', '關閉進港提醒音效');
+            } else {
+                soundToggle.dataset.soundState = 'armed';
+                soundToggle.style.color = '#0A2540';
+                soundToggle.innerHTML = BELL_SVG_ARMED;
+                soundToggle.setAttribute('aria-label', '關閉進港提醒音效');
+            }
         }
 
         // 2. 音效播放邏輯
@@ -2070,21 +2589,24 @@
     function renderScheduleTable() {
         const tbody = document.getElementById('scheduleBody');
         if (!scheduleDataList || scheduleDataList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888;">目前無未來船期資料</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748B;">目前無未來船期資料</td></tr>';
             return;
         }
         let html = '';
         scheduleDataList.forEach(item => {
             if (!item.d) return; // 🌟 核心過濾：日期空白的船期不顯示在主畫面船期表上
-            const terminal = item.terminal === 'W12' ? 'W12' : 'W13';
+            const terminal = normalizeScheduleTerminal(item.terminal);
             const badgeHtml = `<br><span class="badge badge-${terminal.toLowerCase()}">${terminal}</span>`;
-            html += `<tr data-shipname="${item.ship_name}">
-                        <td>${item.d}${badgeHtml}</td>
-                        <td><span style="vertical-align: middle;">${item.ship_name}</span></td>
-                        <td>${item.limit_speed}</td>
+            const safeShipName = escapeHtml(item.ship_name || '');
+            const safeDate = escapeHtml(item.d || '');
+            const safeSpeed = escapeHtml(item.limit_speed ?? '');
+            html += `<tr data-shipname="${safeShipName}">
+                        <td>${safeDate}${badgeHtml}</td>
+                        <td><span style="vertical-align: middle;">${safeShipName}</span></td>
+                        <td>${safeSpeed}</td>
                      </tr>`;
         });
-        tbody.innerHTML = html;
+        tbody.innerHTML = html || '<tr><td colspan="3" style="text-align:center; color:#64748B;">目前無未來船期資料</td></tr>';
         updateDynamicBox(currentAppData); // 重繪表格燈號避免被洗掉
     }
 
@@ -2100,7 +2622,7 @@
         } catch (error) {
             console.error("從 GAS 獲取船期表失敗:", error);
             const tbody = document.getElementById('scheduleBody');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#dc3545;">載入失敗，請檢查網路連線</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#B91C1C;">載入失敗，請檢查網路連線</td></tr>';
         }
     }
 
@@ -2147,13 +2669,14 @@
     
     // I11: 監聽視窗關閉或重整時自動釋放編輯鎖
     window.addEventListener('beforeunload', () => {
-        if (document.getElementById('scheduleAdjustModal').style.display !== 'none') {
+        const adjustModal = document.getElementById('scheduleAdjustModal');
+        if (adjustModal && adjustModal.style.display === 'flex') {
             releaseLock();
         }
     });
 
     function updateLockUI() {
-        const scheduleHeaderRow = document.getElementById('scheduleHeaderRow');
+        const navScheduleBtn = document.getElementById('navScheduleBtn');
         const svg = document.querySelector('.cpc-btn');
         const now = new Date().getTime() + serverTimeOffset; // I12: 使用伺服器時間
         let isLocked = currentLockState && currentLockState.locked && (now - currentLockState.locked_at < 180000);
@@ -2164,18 +2687,18 @@
         }
         
         if (isLocked) {
-            if (scheduleHeaderRow) {
-                scheduleHeaderRow.classList.add('locked-btn');
-                scheduleHeaderRow.title = "🔒 目前有其他使用者正在編輯";
+            if (navScheduleBtn) {
+                navScheduleBtn.classList.add('locked-btn');
+                navScheduleBtn.title = "🔒 目前有其他使用者正在編輯";
             }
             if (svg) {
                 svg.classList.add('locked-btn');
                 svg.title = "🔒 目前有其他使用者正在編輯";
             }
         } else {
-            if (scheduleHeaderRow) {
-                scheduleHeaderRow.classList.remove('locked-btn');
-                scheduleHeaderRow.removeAttribute('title');
+            if (navScheduleBtn) {
+                navScheduleBtn.classList.remove('locked-btn');
+                navScheduleBtn.removeAttribute('title');
             }
             if (svg) {
                 svg.classList.remove('locked-btn');
@@ -2258,25 +2781,11 @@
     }
 
     function openManualModal() { 
-        document.getElementById('manualModal').style.display = 'flex'; 
-        
-        // 🌟 修正：開啟手動設定時，自動清空欄位，避免舊資料殘留
-        const shipNameInput = document.getElementById('shipName');
-        const limitSpeedInput = document.getElementById('limitSpeed');
-        const terminalSelect = document.getElementById('terminal');
-        const pobTimeInput = document.getElementById('pobTime');
-        const noEntryReasonSelect = document.getElementById('noEntryReason');
-        const customReasonInput = document.getElementById('customReason');
-        
-        if (shipNameInput) shipNameInput.value = "";
-        if (limitSpeedInput) limitSpeedInput.value = "";
-        if (terminalSelect) terminalSelect.value = "";
-        if (pobTimeInput) pobTimeInput.value = "";
-        if (noEntryReasonSelect) {
-            noEntryReasonSelect.value = "";
-            toggleCustomReason(); // 重置自訂原因輸入框的顯示
-        }
-        if (customReasonInput) customReasonInput.value = "";
+        document.getElementById('manualModal').style.display = 'flex';
+        syncManualModalState(currentAppData || {}, {
+            forceResetStartFields: !(currentAppData && currentAppData.app_mode === 'start'),
+            forceResetStopFields: true
+        });
     }
     
     function closeManualModal() { 
@@ -2344,14 +2853,18 @@
 
             const pobList = document.getElementById('pobList');
             let html = "";
+            let totalEntries = 0;
+            let noEntryCount = 0;
 
             if (records) {
                 // 遍歷當日所有卡片，取出 pob_info
                 Object.values(records).forEach(card => {
                     if (card.pob_info && card.pob_info.formatted_msg) {
+                        totalEntries += 1;
                         // 🌟 修正：若是無法進港訊息則顯示紅色，已 POB 進港則維持綠色
-                        const isNoEntry = card.pob_info.no_entry_reason || card.pob_info.formatted_msg.indexOf("無法進港") !== -1;
-                        const textColor = isNoEntry ? "#dc3545" : "#198754";
+                        const isNoEntry = Boolean(card.pob_info.no_entry_reason || card.pob_info.formatted_msg.indexOf("無法進港") !== -1);
+                        if (isNoEntry) noEntryCount += 1;
+                        const textColor = isNoEntry ? "#B91C1C" : "#166534";
                         
                         let displayMsg = card.pob_info.formatted_msg;
                         if (!isNoEntry) {
@@ -2360,15 +2873,17 @@
                             displayMsg = `${shipName} 已於 ${pobTime} 進港`;
                         }
                         
-                        html += `<div style="margin-bottom: 8px; color: ${textColor}; font-weight: bold;">• ${displayMsg}</div>`;
+                        html += `<div style="margin-bottom: 6px; color: ${textColor}; font-weight: 700;">• ${escapeHtml(displayMsg)}</div>`;
                     }
                 });
             }
 
             if (html !== "") {
+                pobList.classList.toggle('is-no-entry-only', totalEntries > 0 && noEntryCount === totalEntries);
                 pobList.innerHTML = html;
                 pobList.style.display = "block";
             } else {
+                pobList.classList.remove('is-no-entry-only');
                 pobList.style.display = "none";
             }
 
@@ -2382,12 +2897,13 @@
     function formatLastUpdateTime(timeStr) {
         if (!timeStr) return "無資料";
         try {
-            const match = timeStr.match(/^(\d{4}\/\d{1,2}\/\d{1,2})\s+(上午|下午)\s*(\d{1,2}):(\d{2})/);
+            const match = timeStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)\s*(\d{1,2}):(\d{2})/);
             if (match) {
-                const datePart = match[1];
-                const ampm = match[2];
-                let hour = parseInt(match[3], 10);
-                const minute = match[4];
+                const m = parseInt(match[2], 10);
+                const d = parseInt(match[3], 10);
+                const ampm = match[4];
+                let hour = parseInt(match[5], 10);
+                const minute = match[6];
                 
                 if (ampm === "下午" && hour < 12) {
                     hour += 12;
@@ -2396,7 +2912,7 @@
                 }
                 
                 const hourStr = String(hour).padStart(2, '0');
-                return `${datePart} ${hourStr}:${minute}`;
+                return `${m}/${d} ${hourStr}:${minute}`;
             }
         } catch (e) {
             console.error("Format time failed:", e);
@@ -2408,6 +2924,7 @@
     let forecastLease = null;
     let forecastLeaseTimer = null;
     let forecastUpdateStatus = {};
+    let lastObservedAppMode = null;
 
     function refreshForecastUpdateButton() {
         const button = document.getElementById('forecastUpdateBtn');
@@ -2474,53 +2991,20 @@
             
             // 更新風速與時間
             document.getElementById('windSpeed').innerText = data.current_wind !== undefined ? data.current_wind : "--";
-            document.getElementById('dataTime').innerText = "最後更新: " + formatLastUpdateTime(data.last_update);
-            
-            const shipInput = document.getElementById('shipName');
-            const speedInput = document.getElementById('limitSpeed');
+            document.getElementById('dataTime').innerText = "最後更新 " + formatLastUpdateTime(data.last_update);
 
-            // 更新 UI 狀態 (避免幽靈資料)
-            if (data.app_mode === 'start') {
-                document.getElementById('startMonitorGroup').style.display = 'none';
-                document.getElementById('stopMonitorGroup').style.display = 'block';
-                document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('resetBtn').style.display = 'block';
-                
-                shipInput.disabled = true;
-                speedInput.disabled = true;
-                
-                if (document.activeElement !== shipInput) shipInput.value = data.ship_name || "";
-                if (document.activeElement !== speedInput) speedInput.value = data.limit_speed || "";
-                
-                const terminalSelect = document.getElementById('terminal');
-                if (terminalSelect) {
-                    terminalSelect.value = data.terminal || "";
-                    terminalSelect.disabled = true;
-                }
-            } else {
-                document.getElementById('startMonitorGroup').style.display = 'block';
-                document.getElementById('stopMonitorGroup').style.display = 'none';
-                document.getElementById('startBtn').style.display = 'block';
-                document.getElementById('resetBtn').style.display = 'none';
-                
-                shipInput.disabled = false;
-                speedInput.disabled = false;
-                
-                if (document.activeElement !== shipInput) shipInput.value = "";
-                if (document.activeElement !== speedInput) speedInput.value = "";
-                
-                const terminalSelect = document.getElementById('terminal');
-                if (terminalSelect) {
-                    terminalSelect.value = "";
-                    terminalSelect.disabled = false;
-                }
-                document.getElementById('pobTime').value = ""; // 清空
-                document.getElementById('noEntryReason').value = "";
-                document.getElementById('customReasonGroup').style.display = 'none';
-                document.getElementById('customReason').value = "";
-            }
+            const manualModal = document.getElementById('manualModal');
+            const isManualOpen = Boolean(manualModal && manualModal.style.display === 'flex');
+            const nextMode = data.app_mode === 'start' ? 'start' : 'stop';
+            const modeChanged = lastObservedAppMode !== nextMode;
 
-            // 更新呼吸燈
+            syncManualModalState(data, {
+                forceResetStartFields: nextMode !== 'start' && (!isManualOpen || modeChanged),
+                forceResetStopFields: !isManualOpen || modeChanged
+            });
+            lastObservedAppMode = nextMode;
+
+            // 更新動態狀態與音效
             updateDynamicBox(data);
 
             forecastUpdateStatus = data;
@@ -2557,7 +3041,6 @@
     function bindPulsoIconTriggers() {
         const targets = [
             { selector: '.wind-container', duration: 680 },
-            { selector: '.schedule-header h3', duration: 700 },
             { selector: '.cpc-btn', duration: 840 }
         ];
         targets.forEach(({ selector, duration }) => {
@@ -2567,79 +3050,6 @@
                 el.addEventListener(evt, () => triggerPulsoAnimation(el, duration), { passive: true });
             });
         });
-    }
-
-    function bindScheduleHeaderDoubleActivate() {
-        const headerRow = document.getElementById('scheduleHeaderRow');
-        if (!headerRow) return;
-
-        const MODAL_IDS = ['pwdModal', 'scheduleAdjustModal', 'manualModal', 'forecastModal', 'chatModal', 'chatPreviewModal'];
-        const isAnyModalOpen = () => MODAL_IDS.some(id => {
-            const el = document.getElementById(id);
-            return el && el.style.display === 'flex';
-        });
-
-        let lastTriggerAt = 0;
-        let lastTap = { time: 0, x: 0, y: 0 };
-        let touchTracking = { active: false, startX: 0, startY: 0, moved: false };
-
-        const tryOpenScheduleAdjust = (now) => {
-            if (isAnyModalOpen()) return;
-            if (now - lastTriggerAt < 500) return;
-            lastTriggerAt = now;
-            triggerOpenScheduleAdjustModal();
-            lastTriggerAt = Date.now();
-        };
-
-        headerRow.addEventListener('dblclick', (e) => {
-            e.preventDefault();
-            tryOpenScheduleAdjust(Date.now());
-        });
-
-        headerRow.addEventListener('touchstart', (e) => {
-            if (e.touches && e.touches.length === 1) {
-                const t = e.touches[0];
-                touchTracking = { active: true, startX: t.clientX, startY: t.clientY, moved: false };
-            } else {
-                touchTracking.active = false;
-            }
-        }, { passive: true });
-
-        headerRow.addEventListener('touchmove', (e) => {
-            if (!touchTracking.active || !e.touches || e.touches.length !== 1) {
-                touchTracking.active = false;
-                return;
-            }
-            const t = e.touches[0];
-            if (Math.hypot(t.clientX - touchTracking.startX, t.clientY - touchTracking.startY) > 12) {
-                touchTracking.moved = true;
-            }
-        }, { passive: true });
-
-        headerRow.addEventListener('touchcancel', () => {
-            touchTracking = { active: false, startX: 0, startY: 0, moved: false };
-        }, { passive: true });
-
-        headerRow.addEventListener('touchend', (e) => {
-            const remainingTouches = e.touches ? e.touches.length : 0;
-            const changedTouches = e.changedTouches ? e.changedTouches.length : 0;
-            if (remainingTouches !== 0 || changedTouches !== 1 || !touchTracking.active || touchTracking.moved) {
-                touchTracking.active = false;
-                return;
-            }
-            touchTracking.active = false;
-            const t = e.changedTouches[0];
-            const now = Date.now();
-            const delta = now - lastTap.time;
-            const dist = Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y);
-            if (lastTap.time > 0 && delta >= 0 && delta <= 350 && dist <= 40) {
-                lastTap = { time: 0, x: 0, y: 0 };
-                e.preventDefault();
-                tryOpenScheduleAdjust(now);
-            } else {
-                lastTap = { time: now, x: t.clientX, y: t.clientY };
-            }
-        }, { passive: false });
     }
 
     // ==================== LNG 船聊天室 (v2 PWA Mobile) ====================
@@ -4075,6 +4485,7 @@
     }
 
     function openChatModal() {
+        setActiveNav('chat');
         clearChatStatus();
         listenToChatRoom();
         recordChatActivity();
@@ -4100,6 +4511,7 @@
     }
 
     function closeChatModal() {
+        setActiveNav('monitor');
         markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
         closeChatPreviewModal();
         closeChatNameSheet();
@@ -4226,7 +4638,25 @@
         initShipChat();
         startFirebaseListeners();
         bindPulsoIconTriggers();
-        bindScheduleHeaderDoubleActivate();
+
+        const gearBtn = document.querySelector('.cpc-btn');
+        if (gearBtn && !gearBtn.dataset.keyBound) {
+            gearBtn.dataset.keyBound = '1';
+            gearBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+                    e.preventDefault();
+                    triggerOpenManualModal();
+                }
+            });
+        }
+
+        const manualModalEl = document.getElementById('manualModal');
+        if (manualModalEl && !manualModalEl.dataset.backdropBound) {
+            manualModalEl.dataset.backdropBound = '1';
+            manualModalEl.addEventListener('click', (e) => {
+                if (e.target === manualModalEl) closeManualModal();
+            });
+        }
         
         // 🌟 點擊即時風速數字，開啟天氣預報視窗
         document.getElementById('windSpeed').addEventListener('click', openForecastModal);
@@ -4420,6 +4850,7 @@
     }
 
     function openForecastModal() {
+        setActiveNav('forecast');
         document.getElementById('forecastModal').style.display = 'flex';
         populateShipForecastSelect();
         initForecastChart();
@@ -4434,6 +4865,7 @@
     }
 
     function closeForecastModal() {
+        setActiveNav('monitor');
         document.getElementById('forecastModal').style.display = 'none';
         
         // 解除 resize 監聽，節省手機 CPU 消耗
@@ -4817,22 +5249,32 @@
     let originalScheduleSnapshot = [];
     
     function openScheduleAdjustModal() {
+        setActiveNav('schedule');
         editScheduleList = JSON.parse(JSON.stringify(scheduleDataList));
         originalScheduleSnapshot = JSON.parse(JSON.stringify(scheduleDataList));
         document.getElementById('scheduleAdjustModal').style.display = 'flex';
-        renderAdjustTable();
+        renderAdjustCards();
     }
     
     function closeScheduleAdjustModal() {
+        setActiveNav('monitor');
         document.getElementById('scheduleAdjustModal').style.display = 'none';
         releaseLock();
         cachedSessionPassword = ""; // 🌟 關閉船期調整時清空快取密碼
     }
     
+    function isValidScheduleDate(val) {
+        const match = String(val || '').trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+        if (!match) return false;
+        const m = parseInt(match[1], 10);
+        const d = parseInt(match[2], 10);
+        return m >= 1 && m <= 12 && d >= 1 && d <= 31;
+    }
+
     function validateDateInput(input, index) {
         let val = input.value.trim();
         
-        // 💡 自動格式化：如果只輸入數字且長度為 3 或 4 (例如 623 -> 6/23, 1025 -> 10/25)
+        // 💡 自動格式化：若輸入 3 或 4 位數字 (例如 0609 -> 06/09, 623 -> 6/23, 1025 -> 10/25)
         if (/^\d{3,4}$/.test(val)) {
             let m, d;
             if (val.length === 3) {
@@ -4852,7 +5294,7 @@
             const monthVal = parseInt(m, 10);
             const dayVal = parseInt(d, 10);
             if (monthVal >= 1 && monthVal <= 12 && dayVal >= 1 && dayVal <= 31) {
-                val = `${monthVal}/${dayVal}`;
+                val = `${m}/${d}`;
                 input.value = val;
                 if (index !== undefined) {
                     updateEditItem(index, 'd', val);
@@ -4860,7 +5302,8 @@
             }
         }
         
-        const errorDiv = input.nextElementSibling;
+        const card = input.closest('.adjust-card');
+        const errorDiv = card ? card.querySelector('.date-error') : null;
         if (!errorDiv) return;
         
         if (val === "") {
@@ -4869,53 +5312,81 @@
             return;
         }
         
-        const dateRegex = /^\d{1,2}\/\d{1,2}$/;
-        if (!dateRegex.test(val)) {
+        if (!isValidScheduleDate(val)) {
             errorDiv.style.display = "block";
-            input.style.borderColor = "#dc3545";
+            input.style.borderColor = "#DC2626";
         } else {
             errorDiv.style.display = "none";
             input.style.borderColor = "";
         }
     }
 
-    function renderAdjustTable() {
-        const tbody = document.getElementById('adjustTableBody');
+    function renderAdjustCards() {
+        const container = document.getElementById('adjustCardList');
+        if (!container) return;
+        if (!editScheduleList || editScheduleList.length === 0) {
+            container.innerHTML = '<div class="adjust-empty-state">目前編輯清單為空，請點擊右上角「＋ 新增」建立船期</div>';
+            return;
+        }
         let html = '';
-        if (editScheduleList.length === 0) {
-            html = '<tr><td colspan="4" style="text-align:center; color:#888; padding: 15px;">目前編輯清單為空，請點擊新增一列</td></tr>';
-        } else {
-            editScheduleList.forEach((item, index) => {
-                html += `
-                <tr>
-                    <td style="position: relative;">
-                        <input type="text" value="${item.d || ''}" placeholder="如 6/14" style="width: 100%;" 
+        editScheduleList.forEach((item, index) => {
+            const safeDate = escapeHtml(item.d || '');
+            const safeName = escapeHtml(item.ship_name || '');
+            const term = normalizeScheduleTerminal(item.terminal);
+            const speedNum = Number(item.limit_speed);
+            const hasCustomSpeed = Number.isFinite(speedNum) && speedNum > 0 && speedNum !== 12 && speedNum !== 15;
+            const unfinishedTag = !String(item.d || '').trim()
+                ? '<span class="adjust-unfinished-tag">未進港待排期</span>'
+                : '';
+            const customSpeedOpt = hasCustomSpeed
+                ? `<option value="${escapeHtml(String(speedNum))}" selected>${escapeHtml(String(speedNum))}</option>`
+                : '';
+            html += `
+            <div class="adjust-card" data-adjust-index="${index}">
+                ${unfinishedTag}
+                <div class="adjust-card-row1">
+                    <div class="adjust-date-wrap">
+                        <label class="adjust-field-label">日期</label>
+                        <input type="text" class="adjust-date-input" value="${safeDate}" placeholder="MM/DD" inputmode="numeric"
                                onchange="updateEditItem(${index}, 'd', this.value)"
                                onblur="validateDateInput(this, ${index})">
-                        <div class="date-error" style="color: #dc3545; font-size: 10px; text-align: left; margin-top: 2px; display: none;">格式須為M/D</div>
-                    </td>
-                    <td>
-                        <select style="width: 100%;" onchange="updateEditItem(${index}, 'terminal', this.value)">
-                            <option value="" ${item.terminal === '' ? 'selected' : ''}></option>
-                            <option value="W12" ${item.terminal === 'W12' ? 'selected' : ''}>W12</option>
+                    </div>
+                    <div class="adjust-terminal-wrap">
+                        <label class="adjust-field-label">碼頭</label>
+                        <select class="adjust-terminal-select" onchange="updateEditItem(${index}, 'terminal', this.value)">
+                            <option value="W12" ${term === 'W12' ? 'selected' : ''}>W12</option>
+                            <option value="W13" ${term === 'W13' ? 'selected' : ''}>W13</option>
                         </select>
-                    </td>
-                    <td>
-                        <input type="text" value="${item.ship_name || ''}" placeholder="船名" style="width: 100%; text-align: left; padding-left: 4px;" onchange="updateEditItem(${index}, 'ship_name', this.value)">
-                    </td>
-                    <td>
-                        <select style="width: 100%;" onchange="updateEditItem(${index}, 'limit_speed', this.value)">
-                            <option value="15" ${Number(item.limit_speed) === 15.0 ? 'selected' : ''}>15</option>
-                            <option value="12" ${Number(item.limit_speed) === 12.0 ? 'selected' : ''}>12</option>
+                    </div>
+                    <button type="button" class="adjust-delete-btn" onclick="deleteEditItem(${index})" aria-label="刪除此船期" title="刪除此船期">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="date-error" style="color: #DC2626; font-size: 11px; margin-top: -6px; display: none;">格式須為 MM/DD 且月份 1~12、日期 1~31</div>
+                <div class="adjust-card-row2">
+                    <div class="adjust-ship-wrap">
+                        <label class="adjust-field-label">船名</label>
+                        <input type="text" class="adjust-ship-input" value="${safeName}" placeholder="船名"
+                               onchange="updateEditItem(${index}, 'ship_name', this.value)">
+                    </div>
+                    <div class="adjust-speed-wrap">
+                        <label class="adjust-field-label">速限 m/s</label>
+                        <select class="adjust-speed-select" onchange="updateEditItem(${index}, 'limit_speed', this.value)">
+                            <option value="15" ${speedNum === 15.0 ? 'selected' : ''}>15</option>
+                            <option value="12" ${speedNum === 12.0 ? 'selected' : ''}>12</option>
+                            ${customSpeedOpt}
                         </select>
-                    </td>
-                </tr>
-                `;
-            });
-        }
-        tbody.innerHTML = html;
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+        container.innerHTML = html;
     }
-    
+
     function updateEditItem(index, key, val) {
         if (editScheduleList[index]) {
             if (key === 'limit_speed') {
@@ -4925,25 +5396,34 @@
             }
         }
     }
+
+    function deleteEditItem(index) {
+        const item = editScheduleList[index];
+        if (!item) return;
+        const label = (item.ship_name || '').trim() || '未命名船期';
+        if (!confirm(`確定要刪除「${label}」嗎？`)) return;
+        editScheduleList.splice(index, 1);
+        renderAdjustCards();
+    }
     
     function addEditItem() {
         editScheduleList.unshift({
             d: '',
             ship_name: '',
             limit_speed: 15.0,
-            terminal: '',
+            terminal: 'W13',
             source: 'manual'
         });
-        renderAdjustTable();
+        renderAdjustCards();
         
         // 滾動到最上方
-        const tbody = document.getElementById('adjustTableBody');
-        const tableContainer = tbody.parentElement.parentElement;
-        tableContainer.scrollTop = 0;
+        const container = document.getElementById('adjustCardList');
+        if (container) container.scrollTop = 0;
     }
     
     async function saveScheduleAdjustments() {
         // 1. 驗證資料
+        const seenNames = new Set();
         for (let i = 0; i < editScheduleList.length; i++) {
             const item = editScheduleList[i];
             const cleanD = (item.d || "").trim();
@@ -4953,14 +5433,18 @@
                 alert(`❌ 第 ${i+1} 筆資料船名不能為空！`);
                 return;
             }
+
+            const nameKey = cleanName.toLowerCase();
+            if (seenNames.has(nameKey)) {
+                alert(`❌ 船名 [${cleanName}] 重複，請確認每筆船期船名唯一！`);
+                return;
+            }
+            seenNames.add(nameKey);
             
-            // 日期驗證：允許日期空白 (如 UNFINISHED_SHIP)，若填寫則需符合 M/D 格式
-            if (cleanD !== "") {
-                const dateRegex = /^\d{1,2}\/\d{1,2}$/;
-                if (!dateRegex.test(cleanD)) {
-                    alert(`❌ 第 ${i+1} 筆資料日期 [${cleanD}] 格式不正確，應為 M/D (例如: 6/14)`);
-                    return;
-                }
+            // 日期驗證：允許日期空白 (如 UNFINISHED_SHIP)，若填寫則需符合 MM/DD 或 M/D 且合法月/日範圍
+            if (cleanD !== "" && !isValidScheduleDate(cleanD)) {
+                alert(`❌ 第 ${i+1} 筆資料日期 [${cleanD}] 格式不正確，應為 MM/DD 或 M/D（月份 1~12、日期 1~31）`);
+                return;
             }
         }
         
@@ -4971,46 +5455,57 @@
             return;
         }
         
-        // 3. 計算差異 (Diff) 項目送給 GAS，避免覆寫未修改的日曆項目
-        const diffList = [];
+        // 3. 計算差異 (Diff) 項目送給 GAS，避免覆寫未修改的日曆項目；先送出刪除再送出新增/修改
+        const deleteList = [];
+        const upsertList = [];
         
-        // A. 找出新增或修改的船隻
-        editScheduleList.forEach(item => {
-            const orig = originalScheduleSnapshot.find(o => o.ship_name === item.ship_name);
-            if (!orig) {
-                // 新增項目
-                diffList.push({
-                    d: item.d.trim(),
-                    ship_name: item.ship_name.trim(),
-                    limit_speed: Number(item.limit_speed),
-                    terminal: item.terminal || "",
-                    is_deleted: false
-                });
-            } else if (item.d.trim() !== orig.d.trim() || 
-                       Number(item.limit_speed) !== Number(orig.limit_speed) || 
-                       (item.terminal || "") !== (orig.terminal || "")) {
-                // 修改項目
-                diffList.push({
-                    d: item.d.trim(),
-                    ship_name: item.ship_name.trim(),
-                    limit_speed: Number(item.limit_speed),
-                    terminal: item.terminal || "",
-                    is_deleted: false
-                });
-            }
-        });
-        
-        // B. 找出被刪除的船隻
+        // A. 找出被刪除的船隻 (依去空白後船名比對)
         originalScheduleSnapshot.forEach(orig => {
-            const current = editScheduleList.find(c => c.ship_name === orig.ship_name);
+            const origName = (orig.ship_name || "").trim();
+            if (!origName) return;
+            const current = editScheduleList.find(c => (c.ship_name || "").trim() === origName);
             if (!current) {
-                diffList.push({
-                    ship_name: orig.ship_name,
-                    d: orig.d,
+                deleteList.push({
+                    ship_name: origName,
+                    d: normalizeFrontendDateMD(orig.d || ""),
                     is_deleted: true
                 });
             }
         });
+
+        // B. 找出新增或修改的船隻
+        editScheduleList.forEach(item => {
+            const cleanName = (item.ship_name || "").trim();
+            const normDate = normalizeFrontendDateMD(item.d || "");
+            const normTerm = normalizeScheduleTerminal(item.terminal);
+            const normSpeed = Number(item.limit_speed) || 15.0;
+            const orig = originalScheduleSnapshot.find(o => (o.ship_name || "").trim() === cleanName);
+
+            if (!orig) {
+                upsertList.push({
+                    d: normDate,
+                    ship_name: cleanName,
+                    limit_speed: normSpeed,
+                    terminal: normTerm,
+                    is_deleted: false
+                });
+            } else {
+                const origDate = normalizeFrontendDateMD(orig.d || "");
+                const origTerm = normalizeScheduleTerminal(orig.terminal);
+                const origSpeed = Number(orig.limit_speed) || 15.0;
+                if (normDate !== origDate || normSpeed !== origSpeed || normTerm !== origTerm) {
+                    upsertList.push({
+                        d: normDate,
+                        ship_name: cleanName,
+                        limit_speed: normSpeed,
+                        terminal: normTerm,
+                        is_deleted: false
+                    });
+                }
+            }
+        });
+
+        const diffList = deleteList.concat(upsertList);
         
         if (diffList.length === 0) {
             alert("ℹ️ 未偵測到任何修改！");
@@ -5018,7 +5513,7 @@
             return;
         }
         
-        const saveBtn = document.querySelector('#scheduleAdjustModal .btn-confirm');
+        const saveBtn = document.getElementById('saveScheduleBtn');
         let originalText = "";
         if (saveBtn) {
             originalText = saveBtn.innerHTML;

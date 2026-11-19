@@ -1,0 +1,8 @@
+{
+  "review_id": "design-r1",
+  "gate_id": "design",
+  "reviewed_revision": "0f74a1134013aa6d088ce7ad0f0da1c62b65449e",
+  "sufficient_inputs": true,
+  "verdict": "pass",
+  "findings": []
+}

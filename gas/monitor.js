@@ -30,6 +30,19 @@ function getJsonProp(key, defaultVal) {
   return val ? safeJsonParse(val, defaultVal) : defaultVal;
 }
 function sanitizeKey(str) { return str.replace(/[\.\s\#\$\[\]\/]/g, "_"); }
+function normalizeScheduleDateMD(dStr) {
+  if (!dStr || typeof dStr !== "string") return "";
+  const trimmed = dStr.trim();
+  if (!trimmed) return "";
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!match) return trimmed;
+  const m = parseInt(match[1], 10);
+  const d = parseInt(match[2], 10);
+  if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+    return `${m}/${d}`;
+  }
+  return trimmed;
+}
 function releaseEditingLock() {
   callFirebase("editing_lock", { locked: false, locked_at: 0 }, "put");
 }
@@ -297,7 +310,7 @@ function checkDailySchedule() {
   // 💡 讀取最新合併船期表 (已包含手動調整覆蓋與日曆)
   try {
     const list = getScheduleList();
-    const todayShip = list.find(item => item.d === todayM_D);
+    const todayShip = list.find(item => normalizeScheduleDateMD(item.d) === todayM_D);
     if (todayShip) {
       apiShipName = todayShip.ship_name;
       apiLimitSpeed = Number(todayShip.limit_speed) || 15.0;
@@ -768,7 +781,7 @@ function archiveAndClearFirebase(simDate = null) {
           SpreadsheetApp.flush();
         } else {
           let migration = receipt && receipt.mode === "migration" ? receipt : null;
-          const scheduled = schedule.find(item => item.ship_name === shipName && item.d && item.d !== todayMD);
+          const scheduled = schedule.find(item => item.ship_name === shipName && normalizeScheduleDateMD(item.d) && normalizeScheduleDateMD(item.d) !== todayMD);
           if (!migration && !pob.pob_time && scheduled) {
             const targetDate = rescheduledDate(scheduled.d, new Date(`${dateStr}T12:00:00+08:00`));
             const targetKey = `${targetDate}_${sanitizeKey(shipName)}`;
@@ -943,28 +956,52 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({status: "error", msg: "schedule 必須是陣列"})).setMimeType(ContentService.MimeType.JSON);
     }
     
+    const unfinishedRaw = props.getProperty('UNFINISHED_SHIP');
+    const unfinishedObj = unfinishedRaw ? safeJsonParse(unfinishedRaw, null) : null;
+    const unfinishedKey = (unfinishedObj && unfinishedObj.ship_name) ? sanitizeKey(String(unfinishedObj.ship_name).trim()) : "";
+    let unfinishedTouched = false;
+
     // 逐筆更新 overrides
     for (let i = 0; i < list.length; i++) {
       const item = list[i];
       const shipName = (item.ship_name || "").trim();
       if (!shipName) continue;
       const key = sanitizeKey(shipName);
+      if (unfinishedKey && key === unfinishedKey) {
+        unfinishedTouched = true;
+      }
       
-      // 新增或修改
-      callFirebase(`schedule_overrides/${key}`, {
-        d: item.d || "",
-        ship_name: shipName,
-        limit_speed: item.limit_speed ? Number(item.limit_speed) : 15.0,
-        terminal: item.terminal || "",
-        created_at: getTwDateStr(new Date(), "yyyy-MM-dd")
-      }, "put");
+      if (item.is_deleted === true) {
+        callFirebase(`schedule_overrides/${key}`, {
+          d: normalizeScheduleDateMD(item.d || ""),
+          ship_name: shipName,
+          is_deleted: true,
+          created_at: getTwDateStr(new Date(), "yyyy-MM-dd")
+        }, "put");
+      } else {
+        // 新增或修改
+        callFirebase(`schedule_overrides/${key}`, {
+          d: normalizeScheduleDateMD(item.d || ""),
+          ship_name: shipName,
+          limit_speed: item.limit_speed ? Number(item.limit_speed) : 15.0,
+          terminal: item.terminal === "W12" ? "W12" : (item.terminal === "W13" ? "W13" : ""),
+          is_deleted: false,
+          created_at: getTwDateStr(new Date(), "yyyy-MM-dd")
+        }, "put");
+      }
     }
     
-    // 🌟 需求 1.5: 儲存調整時，自動清空 UNFINISHED_SHIP 暫存
-    props.deleteProperty('UNFINISHED_SHIP');
+    // 🌟 僅當該未進港船隻本身被調整或刪除時才清除 UNFINISHED_SHIP 暫存；編輯其他船期時予以保留
+    if (unfinishedTouched) {
+      props.deleteProperty('UNFINISHED_SHIP');
+    }
     
-    // 🌟 新增：手動更新儲存後，主動執行 updateFirebaseScheduleList() 來進行排序並再次同步
-    updateFirebaseScheduleList();
+    // 🌟 新增：手動更新儲存後，主動執行 updateFirebaseScheduleList(true) 來進行排序並同步（允許全刪時清空列表，API 故障則保留既有列表）
+    try {
+      updateFirebaseScheduleList(true);
+    } catch (syncErr) {
+      console.warn("⚠️ update_schedule 同步 schedule_list 失敗，保留既有列表: " + syncErr.message);
+    }
     
     // 🌟 核心修復：在 GAS 端自動釋放鎖定
     releaseEditingLock();
@@ -1034,7 +1071,8 @@ function doGet(e) {
         // 🌟 需求 1: 寫入 UNFINISHED_SHIP 指令碼屬性，以便出現在調整頁面第一列
         props.setProperty('UNFINISHED_SHIP', JSON.stringify({
           ship_name: lastShipName,
-          limit_speed: lastLimitSpeed
+          limit_speed: lastLimitSpeed,
+          terminal: activeStatus.terminal || ""
         }));
         
         Utilities.sleep(1000);
@@ -1210,7 +1248,7 @@ function getScheduleList(strict = false) {
       const nameMatch = item.n.match(/^(.*?)\((.*?)\)/);
       const shipName = nameMatch ? nameMatch[1].trim() : item.n.trim();
       const limitSpeed = SHIP_TYPE_MAPPING[nameMatch ? nameMatch[2].trim() : ""] || 15.0; 
-      return { d: item.d, ship_name: shipName, limit_speed: limitSpeed, terminal: item.t || "" };
+      return { d: normalizeScheduleDateMD(item.d), ship_name: shipName, limit_speed: limitSpeed, terminal: item.t || "" };
     });
   }
 
@@ -1229,7 +1267,7 @@ function getScheduleList(strict = false) {
   for (const key of Object.keys(overridesMap)) {
     const ov = overridesMap[key];
     if (ov && ov.d) {
-      const parts = ov.d.split('/');
+      const parts = normalizeScheduleDateMD(ov.d).split('/');
       if (parts.length >= 2) {
         let m = parseInt(parts[0], 10);
         let d = parseInt(parts[1], 10);
@@ -1248,6 +1286,14 @@ function getScheduleList(strict = false) {
           }
         }
       }
+    } else if (ov && !ov.d && ov.is_deleted === true && ov.created_at && ov.created_at < dateStr) {
+      // 無日期之刪除 tombstone 於隔日後自動清理
+      delete overridesMap[key];
+      try {
+        callFirebase(`schedule_overrides/${key}`, null, "delete");
+      } catch(err) {
+        console.error(`刪除過期 tombstone [${key}]: ` + err.message);
+      }
     }
   }
 
@@ -1256,8 +1302,14 @@ function getScheduleList(strict = false) {
   for (const [key, ov] of Object.entries(overridesMap)) {
     if (!ov) continue;
     const targetIdx = filteredList.findIndex(item => sanitizeKey(item.ship_name) === key);
+    if (ov.is_deleted === true) {
+      if (targetIdx >= 0) {
+        filteredList.splice(targetIdx, 1);
+      }
+      continue;
+    }
     const cleanedOv = {
-      d: ov.d || "",
+      d: normalizeScheduleDateMD(ov.d || ""),
       ship_name: ov.ship_name || "",
       limit_speed: ov.limit_speed ? Number(ov.limit_speed) : 15.0,
       terminal: ov.terminal || ""
@@ -1297,7 +1349,7 @@ function getScheduleList(strict = false) {
      const ship = mappedList[i];
      
      // 只要日期是今天，就檢查是否 POB
-     if (ship.d === todayM_D) {
+     if (normalizeScheduleDateMD(ship.d) === todayM_D) {
          // 若該船今日已歸檔，直接剔除
          if (archivedShips.includes(ship.ship_name)) {
             mappedList.splice(i, 1);
@@ -1328,7 +1380,12 @@ function getScheduleList(strict = false) {
         // 若清單已有該船名(可能為舊資料)，先篩選掉防重複
         mappedList = mappedList.filter(item => item.ship_name !== unfinished.ship_name);
         // 將無法進港任務強制塞入且日期為空 (d: "")
-        mappedList.unshift({ d: "", ship_name: unfinished.ship_name, limit_speed: Number(unfinished.limit_speed) });
+        mappedList.unshift({
+          d: "",
+          ship_name: unfinished.ship_name,
+          limit_speed: Number(unfinished.limit_speed),
+          terminal: unfinished.terminal || ""
+        });
      }
   }
   
@@ -1375,7 +1432,7 @@ function getScheduleList(strict = false) {
 function tryHandoffToNextShip(reasonContext) {
   const currentList = getScheduleList();
   const todayM_D = `${new Date().getMonth() + 1}/${new Date().getDate()}`;
-  const todayShips = currentList.filter(item => item.d === todayM_D);
+  const todayShips = currentList.filter(item => normalizeScheduleDateMD(item.d) === todayM_D);
   
   todayShips.sort((a, b) => {
     const aIsW12 = (a.terminal === "W12");
@@ -1437,19 +1494,20 @@ function pauseSystemTriggers() {
   return {deletedCount: handlers.length, handlers};
 }
 
-function updateFirebaseScheduleList() {
+function updateFirebaseScheduleList(allowEmptyOnVerifiedApi = false) {
   try {
-    const list = getScheduleList();
-    if (!list || list.length === 0) {
+    const list = getScheduleList(Boolean(allowEmptyOnVerifiedApi));
+    if (!allowEmptyOnVerifiedApi && (!list || list.length === 0)) {
       console.warn("⚠️ [Fail-Safe] 取得之船期表為空，放棄覆蓋 Firebase schedule_list，保護既有資料！");
       return;
     }
-    const res = callFirebase("schedule_list", list, "put");
+    const payloadList = Array.isArray(list) ? list : [];
+    const res = callFirebase("schedule_list", payloadList, "put");
     const code = res.getResponseCode();
     if (code < 200 || code >= 300) {
       throw new Error(`Firebase write failed with status ${code}: ${res.getContentText()}`);
     }
-    console.log("✅ 成功更新 Firebase 船期表資料，筆數: " + list.length);
+    console.log("✅ 成功更新 Firebase 船期表資料，筆數: " + payloadList.length);
   } catch (e) {
     console.error("❌ 更新 Firebase 船期表資料失敗: " + e.message);
     throw e;
