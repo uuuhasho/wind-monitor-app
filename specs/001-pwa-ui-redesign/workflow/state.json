@@ -30,5 +30,5 @@
     "visual screenshot inspection at 390x844, 375x812, and 1280x800"
   ],
   "user_acceptance": null,
-  "next_action": "Await user manual acceptance of the updated 4-step checklist in acceptance.md (Scheme A + 6 refinements) and explicit authorization before GitHub push, Firebase Hosting deploy, or GAS clasp push/deploy"
+  "next_action": "Canary deployed from feat/pwa-ui-redesign; observe 11/24-11/26 vessels and merge into main only after user confirms"
 }

@@ -28,3 +28,7 @@
 - [x] **T017** (REQ-007, REQ-008): Restrict `#manualModal` speed selector to `12` | `15` (removing `m/s` and `自訂` option/wrap while keeping hidden `#limitSpeed`), update `#scheduleAdjustModal` to arrow-only `#adjustBackBtn`, circular `.add-row-btn` with green hover spin, and uniform 480px inner column alignment across topbar/cards/footer.
 - [x] **T018** (AC-001–AC-007, AC-009, AC-010): Update `tests/frontend-isolated.js`, rebuild `public/` via `deploy/build_hosting.py`, run GAS/pytest/Playwright suites, and capture & inspect updated mobile + desktop screenshots (`00`–`09`).
 - [x] **T019** (Gate & Report): Run fresh read-only `egm-codebase-details` delivery review (`r2`), consolidate Round-2 updates into `plan/2026-11-19/2026-11-19-PWA畫面風格與操作改版報告.html`, and commit locally on `feat/pwa-ui-redesign`.
+
+## Phase 6 — Pre-Deploy Micro-Adjustments & Live Canary Release (Hold `main` Until 11/24–11/26 Observation)
+- [x] **T020** (D7): Remove active yellow badge from `#navMonitorBtn`, move `#dataTime` below wind speed readout (centered idle / left-aligned active), and enlarge/bold `.wind-card-label` (`1.2rem`, `800`).
+- [x] **T021** (D7): Re-verify local build, GAS/pytest/Playwright suites, and updated screenshots; consolidate report; push `feat/pwa-ui-redesign` (do NOT merge/push `main`); deploy Firebase Hosting and GAS (`clasp push` + `clasp deploy -i`).

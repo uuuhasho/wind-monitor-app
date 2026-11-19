@@ -175,18 +175,12 @@
             padding: 13px 16px 14px;
             text-align: left;
         }
-        .wind-card-top {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 8px;
-            margin: 0 0 6px 0;
-        }
         .wind-card-label {
-            font-size: 0.92rem;
+            font-size: 1.2rem;
             font-weight: 800;
-            color: var(--text-main);
-            margin: 0;
+            color: var(--text-navy);
+            letter-spacing: -0.01em;
+            margin: 0 0 6px 0;
         }
         .wind-main-row {
             display: flex;
@@ -298,12 +292,16 @@
             color: var(--text-navy);
         }
         .time-display {
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin: 0;
+            margin: 8px 0 0 0;
+            text-align: center;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
+        }
+        .wind-card.has-status-pill .time-display {
+            text-align: left;
         }
 
         .dynamic-box {
@@ -798,6 +796,11 @@
         .bottom-nav-item.is-active .bottom-nav-icon-wrap {
             background-color: var(--accent-gold-bg);
             border-color: var(--accent-gold-border);
+            color: var(--text-navy);
+        }
+        #navMonitorBtn.is-active .bottom-nav-icon-wrap {
+            background-color: transparent;
+            border-color: transparent;
             color: var(--text-navy);
         }
         .bottom-nav-item.is-active .bottom-nav-icon-wrap svg {
@@ -2008,10 +2011,7 @@
 
 <main class="app-shell">
     <section class="card wind-card" aria-label="北堤風速">
-        <div class="wind-card-top">
-            <div class="wind-card-label">北堤風速</div>
-            <div class="time-display" id="dataTime">系統連線中...</div>
-        </div>
+        <div class="wind-card-label">北堤風速</div>
         <div class="wind-main-row">
             <div class="wind-container" tabindex="0">
                 <div class="wind-speed-num" id="windSpeed">--</div>
@@ -2026,6 +2026,7 @@
             </div>
             <div id="dynamicBox" class="dynamic-box"></div>
         </div>
+        <div class="time-display" id="dataTime">系統連線中...</div>
     </section>
 
     <div id="pobList" class="pob-records"></div>

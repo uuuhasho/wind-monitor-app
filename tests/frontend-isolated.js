@@ -126,34 +126,51 @@ async page => {
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({width: 390, height: 844});
   await page.goto('http://127.0.0.1:4177/index.html');
-  const initial = await page.evaluate(() => ({
-    title: document.title,
-    wind: document.getElementById('windSpeed').textContent,
-    schedule: document.body.textContent.includes('DEMO-SHIP'),
-    hasLegacyPresLink: Boolean(document.querySelector('.presentation-link')),
-    windTitle: document.querySelector('.wind-card-label')?.textContent?.trim(),
-    hasWindForecastBtn: document.querySelector('.wind-card')?.textContent?.includes('風速預報'),
-    scheduleTitle: document.querySelector('.schedule-title')?.textContent?.trim(),
-    infoHref: document.getElementById('infoLink')?.getAttribute('href'),
-    headerBarBg: getComputedStyle(document.querySelector('.app-header-bar')).backgroundColor,
-    headerHasBell: Boolean(document.querySelector('.app-header #soundToggle')),
-    scheduleHasBell: Boolean(document.querySelector('.schedule-header #soundToggle')),
-    windCardIdleHasPillClass: document.querySelector('.wind-card').classList.contains('has-status-pill'),
-    windMainRowIdleJustify: getComputedStyle(document.querySelector('.wind-main-row')).justifyContent,
-    tableHeadBg: getComputedStyle(document.querySelector('#scheduleHeaderRow th')).backgroundColor,
-    activeNavWrapBg: getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap')).backgroundColor,
-    activeNavWrapBorder: getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap')).borderColor,
-    inactiveNavWrapBg: getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap')).backgroundColor,
-    soundDisplay: getComputedStyle(document.getElementById('soundToggle')).display,
-    backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
-  }));
+  const initial = await page.evaluate(() => {
+    const labelStyle = getComputedStyle(document.querySelector('.wind-card-label'));
+    const timeEl = document.getElementById('dataTime');
+    const timeStyle = getComputedStyle(timeEl);
+    const timeRect = timeEl.getBoundingClientRect();
+    const speedRect = document.getElementById('windSpeed').getBoundingClientRect();
+    const monitorWrapStyle = getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap'));
+    const forecastWrapStyle = getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap'));
+    return {
+      title: document.title,
+      wind: document.getElementById('windSpeed').textContent,
+      schedule: document.body.textContent.includes('DEMO-SHIP'),
+      hasLegacyPresLink: Boolean(document.querySelector('.presentation-link')),
+      windTitle: document.querySelector('.wind-card-label')?.textContent?.trim(),
+      windLabelFontSize: parseFloat(labelStyle.fontSize),
+      windLabelFontWeight: Number(labelStyle.fontWeight),
+      hasWindForecastBtn: document.querySelector('.wind-card')?.textContent?.includes('風速預報'),
+      scheduleTitle: document.querySelector('.schedule-title')?.textContent?.trim(),
+      infoHref: document.getElementById('infoLink')?.getAttribute('href'),
+      headerBarBg: getComputedStyle(document.querySelector('.app-header-bar')).backgroundColor,
+      headerHasBell: Boolean(document.querySelector('.app-header #soundToggle')),
+      scheduleHasBell: Boolean(document.querySelector('.schedule-header #soundToggle')),
+      windCardIdleHasPillClass: document.querySelector('.wind-card').classList.contains('has-status-pill'),
+      windMainRowIdleJustify: getComputedStyle(document.querySelector('.wind-main-row')).justifyContent,
+      timeBelowSpeed: timeRect.top >= speedRect.bottom - 2,
+      timeIdleAlign: timeStyle.textAlign,
+      tableHeadBg: getComputedStyle(document.querySelector('#scheduleHeaderRow th')).backgroundColor,
+      monitorNavWrapBg: monitorWrapStyle.backgroundColor,
+      monitorNavWrapBorder: monitorWrapStyle.borderColor,
+      monitorNavWrapColor: monitorWrapStyle.color,
+      inactiveNavWrapBg: forecastWrapStyle.backgroundColor,
+      soundDisplay: getComputedStyle(document.getElementById('soundToggle')).display,
+      backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
+    };
+  });
   if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || !initial.schedule ||
-      initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' || initial.hasWindForecastBtn ||
+      initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' ||
+      initial.windLabelFontSize < 18 || initial.windLabelFontWeight < 800 || initial.hasWindForecastBtn ||
       initial.scheduleTitle !== '船期表' || initial.infoHref !== 'presentation/index.html' ||
       initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerHasBell || !initial.scheduleHasBell ||
       initial.windCardIdleHasPillClass || initial.windMainRowIdleJustify !== 'center' ||
+      !initial.timeBelowSpeed || initial.timeIdleAlign !== 'center' ||
       initial.tableHeadBg !== 'rgb(220, 229, 240)' ||
-      initial.activeNavWrapBg !== 'rgb(254, 243, 199)' || initial.activeNavWrapBorder !== 'rgb(245, 158, 11)' ||
+      initial.monitorNavWrapBg !== 'rgba(0, 0, 0, 0)' || initial.monitorNavWrapBorder !== 'rgba(0, 0, 0, 0)' ||
+      initial.monitorNavWrapColor !== 'rgb(11, 41, 72)' ||
       initial.inactiveNavWrapBg !== 'rgba(0, 0, 0, 0)' ||
       initial.soundDisplay !== 'none' || initial.backdropFilter !== 'none') {
     throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
@@ -316,9 +333,17 @@ async page => {
     throw new Error('Schedule header click/dblclick/double-tap must NOT open password or schedule adjust modals');
   }
 
-  // Verify bottom nav 預報 tab opens #forecastModal
+  // Verify bottom nav 預報 tab opens #forecastModal and illuminates amber active capsule
   await page.locator('#navForecastBtn').click();
   if (!await page.locator('#forecastModal').isVisible()) throw new Error('Bottom nav 預報 must open forecastModal');
+  await page.waitForTimeout(220);
+  const forecastNavWrap = await page.evaluate(() => {
+    const s = getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap'));
+    return {bg: s.backgroundColor, border: s.borderColor, active: document.getElementById('navForecastBtn').classList.contains('is-active')};
+  });
+  if (!forecastNavWrap.active || forecastNavWrap.bg !== 'rgb(254, 243, 199)' || forecastNavWrap.border !== 'rgb(245, 158, 11)') {
+    throw new Error(`Forecast active nav capsule: ${JSON.stringify(forecastNavWrap)}`);
+  }
   await page.locator('.forecast-close').click();
 
   // Verify bottom nav 船期 tab -> password -> full-screen double-row card schedule adjust (with UNFINISHED_SHIP, MM/DD, delete, diffing)
@@ -581,6 +606,7 @@ async page => {
         insideWindCard: Boolean(windCard.contains(box)) && boxRect.right <= cardRect.right + 1,
         hasStatusPillClass: windCard.classList.contains('has-status-pill'),
         mainRowJustify: getComputedStyle(windCard.querySelector('.wind-main-row')).justifyContent,
+        timeActiveAlign: getComputedStyle(document.getElementById('dataTime')).textAlign,
         noOverflow375: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         images: reasons.map(row => row.querySelector('img')?.getAttribute('src')),
         highlighted: document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className,
@@ -597,7 +623,7 @@ async page => {
   for (const result of conditions) {
     if (result.status !== result.expected.status || result.reasons !== result.expected.reasons ||
         !result.insideWindCard || !result.hasStatusPillClass || result.mainRowJustify !== 'space-between' ||
-        !result.noOverflow375 ||
+        result.timeActiveAlign !== 'left' || !result.noOverflow375 ||
         result.soundPlaying !== (result.status === 'safe') || !result.highlighted.includes(`schedule-row-${result.status}`)) {
       throw new Error(`Entry conditions: ${JSON.stringify(result)}`);
     }
