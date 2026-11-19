@@ -128,15 +128,18 @@ async page => {
   await page.goto('http://127.0.0.1:4177/index.html');
   const initial = await page.evaluate(() => {
     const labelStyle = getComputedStyle(document.querySelector('.wind-card-label'));
+    const windSpeedEl = document.getElementById('windSpeed');
+    const windRowStyle = getComputedStyle(document.querySelector('.wind-main-row'));
     const timeEl = document.getElementById('dataTime');
     const timeStyle = getComputedStyle(timeEl);
     const timeRect = timeEl.getBoundingClientRect();
-    const speedRect = document.getElementById('windSpeed').getBoundingClientRect();
+    const speedRect = windSpeedEl.getBoundingClientRect();
     const monitorWrapStyle = getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap'));
     const forecastWrapStyle = getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap'));
     return {
       title: document.title,
-      wind: document.getElementById('windSpeed').textContent,
+      wind: windSpeedEl.textContent,
+      windSpeedFontSize: parseFloat(getComputedStyle(windSpeedEl).fontSize),
       schedule: document.body.textContent.includes('DEMO-SHIP'),
       hasLegacyPresLink: Boolean(document.querySelector('.presentation-link')),
       windTitle: document.querySelector('.wind-card-label')?.textContent?.trim(),
@@ -149,9 +152,11 @@ async page => {
       headerHasBell: Boolean(document.querySelector('.app-header #soundToggle')),
       scheduleHasBell: Boolean(document.querySelector('.schedule-header #soundToggle')),
       windCardIdleHasPillClass: document.querySelector('.wind-card').classList.contains('has-status-pill'),
-      windMainRowIdleJustify: getComputedStyle(document.querySelector('.wind-main-row')).justifyContent,
+      windMainRowIdleJustify: windRowStyle.justifyContent,
+      windMainRowIdlePadLeft: parseFloat(windRowStyle.paddingLeft),
       timeBelowSpeed: timeRect.top >= speedRect.bottom - 2,
       timeIdleAlign: timeStyle.textAlign,
+      timeIdlePadLeft: parseFloat(timeStyle.paddingLeft),
       tableHeadBg: getComputedStyle(document.querySelector('#scheduleHeaderRow th')).backgroundColor,
       monitorNavWrapBg: monitorWrapStyle.backgroundColor,
       monitorNavWrapBorder: monitorWrapStyle.borderColor,
@@ -161,13 +166,15 @@ async page => {
       backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
     };
   });
-  if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || !initial.schedule ||
+  if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || initial.windSpeedFontSize < 50 || !initial.schedule ||
       initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' ||
       initial.windLabelFontSize < 18 || initial.windLabelFontWeight < 800 || initial.hasWindForecastBtn ||
       initial.scheduleTitle !== '船期表' || initial.infoHref !== 'presentation/index.html' ||
       initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerHasBell || !initial.scheduleHasBell ||
-      initial.windCardIdleHasPillClass || initial.windMainRowIdleJustify !== 'center' ||
-      !initial.timeBelowSpeed || initial.timeIdleAlign !== 'center' ||
+      initial.windCardIdleHasPillClass || initial.windMainRowIdleJustify !== 'flex-start' ||
+      initial.windMainRowIdlePadLeft < 24 ||
+      !initial.timeBelowSpeed || initial.timeIdleAlign !== 'left' ||
+      Math.abs(initial.timeIdlePadLeft - initial.windMainRowIdlePadLeft) > 1 ||
       initial.tableHeadBg !== 'rgb(220, 229, 240)' ||
       initial.monitorNavWrapBg !== 'rgba(0, 0, 0, 0)' || initial.monitorNavWrapBorder !== 'rgba(0, 0, 0, 0)' ||
       initial.monitorNavWrapColor !== 'rgb(11, 41, 72)' ||
@@ -614,9 +621,11 @@ async page => {
     });
     isSoundEnabled = false;
     window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
-    const idleJustify = getComputedStyle(document.querySelector('.wind-card .wind-main-row')).justifyContent;
-    if (document.querySelector('.wind-card').classList.contains('has-status-pill') || idleJustify !== 'center') {
-      throw new Error(`Expected idle centered wind-card after stop, got ${idleJustify}`);
+    const idleRowStyle = getComputedStyle(document.querySelector('.wind-card .wind-main-row'));
+    const idleJustify = idleRowStyle.justifyContent;
+    const idlePadLeft = parseFloat(idleRowStyle.paddingLeft);
+    if (document.querySelector('.wind-card').classList.contains('has-status-pill') || idleJustify !== 'flex-start' || idlePadLeft < 24) {
+      throw new Error(`Expected left-of-center idle wind-card after stop, got ${idleJustify}, padLeft=${idlePadLeft}`);
     }
     return results;
   });

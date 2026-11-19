@@ -68,3 +68,9 @@
   - `#navMonitorBtn.is-active .bottom-nav-icon-wrap` 維持透明無底色／無黃框（僅保留海軍藍粗體字與加粗圖示線條）；`預報`、`船期`、`聊天室` 選中時維持 `#FEF3C7`／`#F59E0B` 膠囊標記。
   - `.wind-card-label` 放大加粗為 `1.2rem` / `font-weight: 800` / `#0B2948`；`#dataTime` 移回風速主列下方，非監控置中（對齊置中風速）、監控中隨 `.has-status-pill` 靠左對齊（對齊左側風速）。
   - 本輪維持在 `feat/pwa-ui-redesign` 上推送 GitHub 並部署 Hosting 與 GAS；`main` 維持在 `0f74a11`（遠端 `origin/main` `5408cad`），待 11/24–11/26 觀察無誤後再另行確認合併主線。
+
+## D8 — 風速數字再放大並與更新時間一同微調靠左
+- **User Decision**: 「風速數字再放大，數字與更新時間位置往左靠一點」。
+- **Adopted Behavior**:
+  - `.wind-speed-num` 放大為 `clamp(3.35rem, 14vw, 4.25rem)`（監控中 `.has-status-pill` 採用 `clamp(3.05rem, 12.2vw, 3.85rem)` 兼顧 `375px` 雙行警告不溢位），`.wind-icon` 調整為 `26px`、`.wind-speed-unit` 調整為 `1.08rem`。
+  - 未監控時 `.wind-main-row` 與 `#dataTime` 統一以 `padding-left: clamp(24px, 12%, 48px)`、`justify-content: flex-start` / `text-align: left` 呈現微靠左而不貼邊的平衡對齊；進入監控顯示 `.has-status-pill` 時回復 `padding-left: 2px` 與左右分散。

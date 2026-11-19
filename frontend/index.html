@@ -185,13 +185,14 @@
         .wind-main-row {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 10px;
-            min-height: 64px;
-            padding: 4px 0 2px;
+            min-height: 68px;
+            padding: 4px 0 2px clamp(24px, 12%, 48px);
         }
         .wind-card.has-status-pill .wind-main-row {
             justify-content: space-between;
+            padding-left: 2px;
         }
         .wind-container {
             display: inline-flex;
@@ -203,13 +204,16 @@
             cursor: pointer;
         }
         .wind-speed-num {
-            font-size: clamp(2.65rem, 11vw, 3.5rem);
+            font-size: clamp(3.35rem, 14vw, 4.25rem);
             font-weight: 800;
             letter-spacing: -0.03em;
             line-height: 0.95;
             font-variant-numeric: tabular-nums;
             cursor: pointer;
             transition: color 0.16s ease;
+        }
+        .wind-card.has-status-pill .wind-speed-num {
+            font-size: clamp(3.05rem, 12.2vw, 3.85rem);
         }
         .wind-speed-num:hover {
             color: var(--text-blue);
@@ -223,8 +227,8 @@
             gap: 2px;
         }
         .wind-icon {
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             display: block;
         }
         .pulso-icon {
@@ -286,7 +290,7 @@
             }
         }
         .wind-speed-unit {
-            font-size: 1rem;
+            font-size: 1.08rem;
             font-weight: 700;
             line-height: 1;
             color: var(--text-navy);
@@ -296,12 +300,14 @@
             font-weight: 600;
             color: var(--text-muted);
             margin: 8px 0 0 0;
-            text-align: center;
+            padding-left: clamp(24px, 12%, 48px);
+            text-align: left;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
         .wind-card.has-status-pill .time-display {
             text-align: left;
+            padding-left: 2px;
         }
 
         .dynamic-box {
