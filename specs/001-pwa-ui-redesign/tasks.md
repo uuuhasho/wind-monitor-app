@@ -21,3 +21,10 @@
 - [x] **T012** (AC-001–AC-007, AC-010): Update `tests/frontend-isolated.js`, run `frontend-isolated.js` & `frontend-echarts.js` via Playwright against `public/`, and capture & inspect `390x844` / `375x812` screenshots.
 - [x] **T013** (Gate): Write `evidence/verification.md` & `acceptance.md`, prepare `review/delivery/r0/request.md`, and pass fresh read-only Goldfish delivery review (`egm-codebase-details`, `blocking = 0`). (Resolved `DEL-001`, passed at `delivery-r1`, `findings = []`).
 - [x] **T014** (Handoff): Commit local changes on `feat/pwa-ui-redesign`, generate Light-theme Blueprint HTML report under `plan/2026-11-19/`, set status `awaiting_acceptance`, and request user acceptance + deployment/push authorization.
+
+## Phase 5 — Round-2 Refinement (Scheme A Maritime Blue-Gray-Gold + 6 UI/UX Fixes)
+- [x] **T015** (D6): Document Scheme A palette decision + 6 refinements in `decisions.md`, `spec.md`, `plan.md`, and `tasks.md`.
+- [x] **T016** (REQ-001–REQ-006): Apply Scheme A (`#0B2948` navy bar + `#EAB308` gold trim, `#E9EEF4` canvas, `#DCE5F0` table header, `#FEF3C7`/`#F59E0B` active nav pill) in `frontend/index.html`, center idle `.wind-card`, add tinted `#scheduleHeaderRow th`, move `#soundToggle` back to `.schedule-header` center, and add amber active capsule styling on `.bottom-nav`.
+- [x] **T017** (REQ-007, REQ-008): Restrict `#manualModal` speed selector to `12` | `15` (removing `m/s` and `自訂` option/wrap while keeping hidden `#limitSpeed`), update `#scheduleAdjustModal` to arrow-only `#adjustBackBtn`, circular `.add-row-btn` with green hover spin, and uniform 480px inner column alignment across topbar/cards/footer.
+- [x] **T018** (AC-001–AC-007, AC-009, AC-010): Update `tests/frontend-isolated.js`, rebuild `public/` via `deploy/build_hosting.py`, run GAS/pytest/Playwright suites, and capture & inspect updated mobile + desktop screenshots (`00`–`09`).
+- [x] **T019** (Gate & Report): Run fresh read-only `egm-codebase-details` delivery review (`r2`), consolidate Round-2 updates into `plan/2026-11-19/2026-11-19-PWA畫面風格與操作改版報告.html`, and commit locally on `feat/pwa-ui-redesign`.

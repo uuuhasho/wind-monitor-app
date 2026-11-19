@@ -135,12 +135,26 @@ async page => {
     hasWindForecastBtn: document.querySelector('.wind-card')?.textContent?.includes('風速預報'),
     scheduleTitle: document.querySelector('.schedule-title')?.textContent?.trim(),
     infoHref: document.getElementById('infoLink')?.getAttribute('href'),
+    headerBarBg: getComputedStyle(document.querySelector('.app-header-bar')).backgroundColor,
+    headerHasBell: Boolean(document.querySelector('.app-header #soundToggle')),
+    scheduleHasBell: Boolean(document.querySelector('.schedule-header #soundToggle')),
+    windCardIdleHasPillClass: document.querySelector('.wind-card').classList.contains('has-status-pill'),
+    windMainRowIdleJustify: getComputedStyle(document.querySelector('.wind-main-row')).justifyContent,
+    tableHeadBg: getComputedStyle(document.querySelector('#scheduleHeaderRow th')).backgroundColor,
+    activeNavWrapBg: getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap')).backgroundColor,
+    activeNavWrapBorder: getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap')).borderColor,
+    inactiveNavWrapBg: getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap')).backgroundColor,
     soundDisplay: getComputedStyle(document.getElementById('soundToggle')).display,
     backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
   }));
   if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || !initial.schedule ||
       initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' || initial.hasWindForecastBtn ||
       initial.scheduleTitle !== '船期表' || initial.infoHref !== 'presentation/index.html' ||
+      initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerHasBell || !initial.scheduleHasBell ||
+      initial.windCardIdleHasPillClass || initial.windMainRowIdleJustify !== 'center' ||
+      initial.tableHeadBg !== 'rgb(220, 229, 240)' ||
+      initial.activeNavWrapBg !== 'rgb(254, 243, 199)' || initial.activeNavWrapBorder !== 'rgb(245, 158, 11)' ||
+      initial.inactiveNavWrapBg !== 'rgba(0, 0, 0, 0)' ||
       initial.soundDisplay !== 'none' || initial.backdropFilter !== 'none') {
     throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
   }
@@ -150,9 +164,9 @@ async page => {
     speedCell: row.querySelectorAll('td')[2]?.textContent?.trim(),
   })));
   if (JSON.stringify(badges) !== JSON.stringify([
-    {terminal: 'W12', color: 'rgb(217, 130, 0)', speedCell: '12'},
-    {terminal: 'W13', color: 'rgb(13, 53, 89)', speedCell: '15'},
-    {terminal: 'W13', color: 'rgb(13, 53, 89)', speedCell: '15'},
+    {terminal: 'W12', color: 'rgb(217, 119, 6)', speedCell: '12'},
+    {terminal: 'W13', color: 'rgb(11, 41, 72)', speedCell: '15'},
+    {terminal: 'W13', color: 'rgb(11, 41, 72)', speedCell: '15'},
   ])) throw new Error(`Terminal badges / speed cell: ${JSON.stringify(badges)}`);
   if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
   const icon = await page.evaluate(() => {
@@ -187,7 +201,7 @@ async page => {
     };
   });
   if (!icon.aboveUnit || !icon.rightOfNumber || !icon.alignedBottom || icon.windTag !== 'svg' ||
-      icon.mask !== 'none' || icon.windBg !== 'rgba(0, 0, 0, 0)' || icon.windColor !== 'rgb(16, 69, 140)' ||
+      icon.mask !== 'none' || icon.windBg !== 'rgba(0, 0, 0, 0)' || icon.windColor !== 'rgb(22, 78, 138)' ||
       icon.windPaths !== 3) {
     throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   }
@@ -203,7 +217,7 @@ async page => {
       !icon.navBtns[3].text.includes('聊天室')) {
     throw new Error(`Nav/Chat icon: ${JSON.stringify(icon)}`);
   }
-  if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(16, 69, 140)' || !icon.gearGroup) {
+  if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(22, 78, 138)' || !icon.gearGroup) {
     throw new Error(`Gear icon: ${JSON.stringify(icon)}`);
   }
   const animStart = await page.evaluate(() => {
@@ -330,6 +344,12 @@ async page => {
 
   const adjustCardsState = await page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll('#adjustCardList .adjust-card'));
+    const backBtn = document.getElementById('adjustBackBtn');
+    const addBtn = document.getElementById('adjustAddBtn');
+    const topInner = document.querySelector('.adjust-topbar-inner').getBoundingClientRect();
+    const firstCardRect = cards[0].getBoundingClientRect();
+    const saveRect = document.getElementById('saveScheduleBtn').getBoundingClientRect();
+    const addRect = addBtn.getBoundingClientRect();
     return {
       count: cards.length,
       firstHasUnfinishedTag: Boolean(cards[0]?.querySelector('.adjust-unfinished-tag')),
@@ -338,12 +358,44 @@ async page => {
       row1Inputs: cards[1]?.querySelectorAll('.adjust-card-row1 input, .adjust-card-row1 select, .adjust-card-row1 button').length,
       row2Inputs: cards[1]?.querySelectorAll('.adjust-card-row2 input, .adjust-card-row2 select').length,
       customSpeedPreserved: cards[3]?.querySelector('.adjust-speed-select')?.value,
+      backBtnText: backBtn.textContent.trim(),
+      addBtnClass: addBtn.classList.contains('add-row-btn'),
+      addBtnRadius: getComputedStyle(addBtn).borderRadius,
+      addBtnCircular: Math.abs(addRect.width - addRect.height) < 1 && Math.round(addRect.width) === 30,
+      cardMatchesSaveLeft: Math.abs(firstCardRect.left - saveRect.left) <= 1,
+      cardMatchesSaveRight: Math.abs(firstCardRect.right - saveRect.right) <= 1,
+      cardMatchesTopLeft: Math.abs(firstCardRect.left - topInner.left - 14) <= 1,
+      cardMatchesTopRight: Math.abs((topInner.right - 14) - firstCardRect.right) <= 1,
     };
   });
   if (adjustCardsState.count !== 4 || !adjustCardsState.firstHasUnfinishedTag || adjustCardsState.firstDateVal !== '' ||
       adjustCardsState.firstShipVal !== 'UNFIN-SHIP' || adjustCardsState.row1Inputs !== 3 || adjustCardsState.row2Inputs !== 2 ||
-      adjustCardsState.customSpeedPreserved !== '13.8') {
+      adjustCardsState.customSpeedPreserved !== '13.8' || adjustCardsState.backBtnText !== '' ||
+      !adjustCardsState.addBtnClass || adjustCardsState.addBtnRadius !== '50%' || !adjustCardsState.addBtnCircular ||
+      !adjustCardsState.cardMatchesSaveLeft || !adjustCardsState.cardMatchesSaveRight ||
+      !adjustCardsState.cardMatchesTopLeft || !adjustCardsState.cardMatchesTopRight) {
     throw new Error(`Adjust cards state: ${JSON.stringify(adjustCardsState)}`);
+  }
+
+  // Verify 1280x800 desktop alignment for #scheduleAdjustModal topbar, middle cards, and 儲存調整 footer
+  await page.setViewportSize({width: 1280, height: 800});
+  const desktopAdjustAlign = await page.evaluate(() => {
+    const topInner = document.querySelector('.adjust-topbar-inner').getBoundingClientRect();
+    const card = document.querySelector('#adjustCardList .adjust-card').getBoundingClientRect();
+    const saveBtn = document.getElementById('saveScheduleBtn').getBoundingClientRect();
+    return {
+      cardWidth: Math.round(card.width),
+      saveWidth: Math.round(saveBtn.width),
+      cardLeftVsSaveLeft: Math.abs(card.left - saveBtn.left),
+      cardRightVsSaveRight: Math.abs(card.right - saveBtn.right),
+      topLeftVsCardLeft: Math.abs((card.left - 14) - topInner.left),
+      topRightVsCardRight: Math.abs(topInner.right - (card.right + 14)),
+    };
+  });
+  await page.setViewportSize({width: 390, height: 844});
+  if (desktopAdjustAlign.cardLeftVsSaveLeft > 1 || desktopAdjustAlign.cardRightVsSaveRight > 1 ||
+      desktopAdjustAlign.topLeftVsCardLeft > 1 || desktopAdjustAlign.topRightVsCardRight > 1) {
+    throw new Error(`Desktop #scheduleAdjustModal alignment: ${JSON.stringify(desktopAdjustAlign)}`);
   }
 
   // Test 4-digit auto-format (0609 -> 06/09), invalid date (99/99), addEditItem(), deleteEditItem(), and tombstone-first normalized save
@@ -410,22 +462,21 @@ async page => {
 
   const sheetLayout = await page.evaluate(() => {
     const rect = document.querySelector('#manualModal .bottom-sheet-content').getBoundingClientRect();
+    const speedBtns = Array.from(document.querySelectorAll('#speedSegmentGroup .seg-btn')).map(b => b.textContent.trim());
     return {
       bottomDiff: Math.abs(rect.bottom - window.innerHeight),
       defaultSpeed: document.getElementById('limitSpeed').value,
       defaultTerm: document.getElementById('terminal').value,
-      customHidden: getComputedStyle(document.getElementById('customLimitSpeedWrap')).display === 'none',
+      speedBtns,
+      customWrapExists: Boolean(document.getElementById('customLimitSpeedWrap')),
     };
   });
-  if (sheetLayout.bottomDiff > 2 || sheetLayout.defaultSpeed !== '15' || sheetLayout.defaultTerm !== 'W13' || !sheetLayout.customHidden) {
+  if (sheetLayout.bottomDiff > 2 || sheetLayout.defaultSpeed !== '15' || sheetLayout.defaultTerm !== 'W13' ||
+      JSON.stringify(sheetLayout.speedBtns) !== JSON.stringify(['12', '15']) || sheetLayout.customWrapExists) {
     throw new Error(`Manual bottom sheet layout/defaults: ${JSON.stringify(sheetLayout)}`);
   }
 
-  // Click custom speed, then 12, then W12, then emit live active_status stop tick and ensure selections survive!
-  await page.locator('#speedSegmentGroup [data-speed="custom"]').click();
-  if (await page.evaluate(() => getComputedStyle(document.getElementById('customLimitSpeedWrap')).display !== 'block')) {
-    throw new Error('Clicking 自訂 speed must reveal #limitSpeed input');
-  }
+  // Click 12, then W12, then emit live active_status stop tick and ensure selections survive!
   await page.locator('#speedSegmentGroup [data-speed="12"]').click();
   await page.locator('#terminalSegmentGroup [data-terminal="W12"]').click();
   await page.evaluate(() => {
@@ -528,6 +579,8 @@ async page => {
       const reasons = [...box.querySelectorAll('.condition-warning')];
       return {expected: item, status: currentStatus, text: box.textContent, reasons: reasons.length,
         insideWindCard: Boolean(windCard.contains(box)) && boxRect.right <= cardRect.right + 1,
+        hasStatusPillClass: windCard.classList.contains('has-status-pill'),
+        mainRowJustify: getComputedStyle(windCard.querySelector('.wind-main-row')).justifyContent,
         noOverflow375: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         images: reasons.map(row => row.querySelector('img')?.getAttribute('src')),
         highlighted: document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className,
@@ -535,11 +588,16 @@ async page => {
     });
     isSoundEnabled = false;
     window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
+    const idleJustify = getComputedStyle(document.querySelector('.wind-card .wind-main-row')).justifyContent;
+    if (document.querySelector('.wind-card').classList.contains('has-status-pill') || idleJustify !== 'center') {
+      throw new Error(`Expected idle centered wind-card after stop, got ${idleJustify}`);
+    }
     return results;
   });
   for (const result of conditions) {
     if (result.status !== result.expected.status || result.reasons !== result.expected.reasons ||
-        !result.insideWindCard || !result.noOverflow375 ||
+        !result.insideWindCard || !result.hasStatusPillClass || result.mainRowJustify !== 'space-between' ||
+        !result.noOverflow375 ||
         result.soundPlaying !== (result.status === 'safe') || !result.highlighted.includes(`schedule-row-${result.status}`)) {
       throw new Error(`Entry conditions: ${JSON.stringify(result)}`);
     }

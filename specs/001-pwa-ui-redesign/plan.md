@@ -1,7 +1,7 @@
 # Technical Plan · 001-pwa-ui-redesign
 
 - **Canonical Spec**: `specs/001-pwa-ui-redesign/spec.md` (`REQ-001`–`REQ-010`, `AC-001`–`AC-010`)
-- **Decisions**: `specs/001-pwa-ui-redesign/decisions.md` (`D1`–`D5`)
+- **Decisions**: `specs/001-pwa-ui-redesign/decisions.md` (`D1`–`D6`)
 
 ## Architecture & File Changes
 
@@ -81,3 +81,13 @@
 
 ### 4. Verification & Visual Check
 - Run `node --test`, `pytest`, Playwright `frontend-isolated.js` and `frontend-echarts.js`, plus capture mobile screenshots (`390x844` and `375x812`) via Playwright for direct visual inspection.
+
+### 5. Round-2 Addendum (Scheme A Maritime Blue-Gray-Gold + 6 Refinements)
+- Update `frontend/index.html` palette & tokens to **方案 A（港務藍灰金 60-30-10）**: `<meta name="theme-color" content="#0B2948"/>`, `--bg-color: #E9EEF4`, `--border-subtle: #D5DFEA`, `--text-navy: #0B2948`, `--text-blue: #164E8A`, `--accent-gold: #EAB308`, `--accent-gold-bg: #FEF3C7`, `--accent-gold-border: #F59E0B`, `--table-head-bg: #DCE5F0`, `--table-head-text: #1E3A5F`, `--w12: #D97706`, `--w13: #0B2948`.
+- Replace `.app-header` with full-width `.app-header-bar` (`#0B2948` + `3px solid #EAB308` bottom accent, circular white `logo.png` badge, white title, ONLY `#infoLink` on right); restore `#soundToggle` to `.schedule-header` center column (`grid-template-columns: 1fr auto 1fr`).
+- Pair `.wind-card-top` (`北堤風速` left + `#dataTime` right); center `.wind-main-row` when `.wind-card` lacks `.has-status-pill` and split `space-between` when active monitoring.
+- Style `#scheduleHeaderRow th` with opaque `#DCE5F0` fill and `#1E3A5F` bold text inside bordered `.table-wrapper`.
+- Style `.bottom-nav-item.is-active .bottom-nav-icon-wrap` with `#FEF3C7` background, `#F59E0B` border, and scaled `#0B2948` SVG stroke.
+- Simplify `#manualModal` limit speed to 2-column `12` | `15` (removing `自訂` button and `#customLimitSpeedWrap`, retaining hidden `#limitSpeed`).
+- Refactor `#scheduleAdjustModal` to arrow-only `#adjustBackBtn`, circular `.add-row-btn` with green `#28a745` hover spin (`rotate(90deg) scale(1.1)`), and centered `max-width: 480px` horizontal column alignment across `.adjust-topbar-inner`, `.adjust-card-list`, and `.adjust-footer-inner`.
+- Update `tests/frontend-isolated.js`, rebuild `public/`, run full verification + desktop/mobile screenshots (`00`–`09`), pass fresh `egm-codebase-details` audit (`r2`), consolidate same-day HTML report, and commit locally.

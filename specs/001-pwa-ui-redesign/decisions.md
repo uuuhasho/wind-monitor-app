@@ -42,3 +42,19 @@
   - Non-goals (untouched): `#forecastModal` internal dark chart styling & ECharts logic, `#chatModal` / `#chatPreviewModal` internal UI & Firebase logic, `backend/`, `frontend/presentation/index.html`.
   - Manual drawer defaults: Bottom-sheet drawer (`#manualModal`); speed segmented control `12` | `15` | `自訂` (default `15`; clicking `自訂` reveals `#limitSpeed` number input); terminal segmented control `W12` | `W13` (default `W13`; active state changes color); stop-monitoring mode preserves POB time / no-entry reason + solid red `#DC2626` `#resetBtn` (removing legacy `#FF69B4` pink).
   - Schedule adjust defaults: Full-screen double-row card list (`#scheduleAdjustModal`); Row 1 = date (`MM/DD` or `M/D`, normalized `06/09` -> `6/9` on save and in GAS) + `W12`/`W13` select + delete icon button; Row 2 = ship name input + `12`/`15` speed limit select (preserving any non-12/15 custom speed value dynamically). Preserve `UNFINISHED_SHIP` at top with blank date.
+
+## D6 — 第二輪畫面配色（方案 A 港務藍灰金）與 6 項操作／版面調整
+- **User Decision**: 選定「**A**」（方案 A：港務藍灰金「60-30-10 海事儀表風」），並執行第 1–6 項調整要求。
+- **Adopted Behavior**:
+  1. **手動設定（`#manualModal`）**：限制風速分段按鈕僅保留 **`12` | `15`**（2 欄 `cols-2`，按鈕文字不加 `m/s` 後綴，取消「自訂」選項與 `#customLimitSpeedWrap`），保留 `<input type="hidden" id="limitSpeed" value="15">` 與 `12`/`15` 正規化切換邏輯以維持 `setMode('start')` 與隔離測試相容。
+  2. **船期調整畫面（`#scheduleAdjustModal`）**：
+     - 左上角 `#adjustBackBtn` 僅保留向左箭頭 SVG（`aria-label="返回監控"`），移除「監控」二字。
+     - 右上角 `#adjustAddBtn` 刪除「＋ 新增」文字按鈕，改回原有 `.add-row-btn` 圓形「＋」按鈕（藍色圓底白字，hover 時旋轉 `90deg`、放大 `1.1` 並變成綠色 `#28a745`）。
+     - 統一上下固定條與中間卡片欄位水平邊界：`.adjust-topbar-inner`、`.adjust-card-list` 與 `.adjust-footer-inner` 皆置中套用 `max-width: 480px` 與一致的左右內距（`14px`），卡片內 2 行以 CSS Grid 切齊，消除手機與桌機寬度不協調問題。
+  3. **監控畫面（`.wind-card` 與 `船期表`）**：
+     - `.wind-card` 頂列將「北堤風速」與 `#dataTime` 左右並排；當 `#dynamicBox` 隱藏（非監控／已完成）時，`.wind-main-row` 置中顯示風速讀數，避免左側貼邊造成右側大塊空白；進入監控顯示 `#dynamicBox` 時切換 `.has-status-pill`，自動改為左右平衡排列（左側風速讀數＋右側狀態膠囊）。
+     - `船期表` 標題列 `#scheduleHeaderRow th` 加入霧藍灰不透明底色（`#DCE5F0`，文字 `#1E3A5F`）與外框圓角分隔，黏性捲動時完整遮罩下方資料列。
+  4. **下方固定四選項（`.bottom-nav`）**：選中分頁（`.bottom-nav-item.is-active`）於圖示外框 `.bottom-nav-icon-wrap` 顯示暖琥珀金黃膠囊底色（`#FEF3C7`）＋金色邊框（`#F59E0B`），並加深海軍藍圖示線條與微幅放大（`stroke-width: 2.35; transform: scale(1.05)`）。
+  5. **監控鈴鐺（`#soundToggle`）移回原位置**：將 `#soundToggle` 移出 `.app-header`（右上角只留 `#infoLink` 說明圖示，避免誤觸），恢復置於 `.schedule-header` 標題列中央（`grid-template-columns: 1fr auto 1fr`：`[船期表]` ｜ `[🔔]` ｜ `[⚙️]`），保留既有 `muted` / `armed` / 亮橘 `ringing` 三態 SVG 與 v1.4 顯示／音效邏輯。
+  6. **方案 A「港務藍灰金 60-30-10」整體配色系統**：
+     - `<meta name="theme-color" content="#0B2948">`、頁面底色 `#E9EEF4`（60% 冷霧灰）、滿版深海軍藍頂部頁首 `.app-header-bar`（`#0B2948` 配圓形白底 `logo.png` 徽章與 `3px solid #EAB308` 琥珀金下緣邊線）、純白卡片 `#FFFFFF`（邊框 `#D5DFEA`）、海洋藍圖示強調色 `#164E8A`、霧藍船期表頭 `#DCE5F0`、暖金選中導覽膠囊 `#FEF3C7`/`#F59E0B`、`W12` 橘色 `#D97706`／`W13` 海軍藍 `#0B2948` 碼頭標籤與 `#0B2948` 主要確認按鈕；`#forecastModal` 與 `#chatModal` 內部樣式維持不變。

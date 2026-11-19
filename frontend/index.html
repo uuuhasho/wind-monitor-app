@@ -7,7 +7,7 @@
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="apple-touch-icon" href="logo.png">
 
-    <meta name="theme-color" content="#EEF3F7"/>
+    <meta name="theme-color" content="#0B2948"/>
     <link rel="manifest" href="manifest.json">
     
     <!-- Apple-specific meta tags -->
@@ -33,15 +33,20 @@
 
     <style>
         :root {
-            --bg-color: #EEF3F7;
+            --bg-color: #E9EEF4;
             --card-bg: #FFFFFF;
-            --border-subtle: #E2E8F0;
-            --text-main: #334155;
-            --text-muted: #64748B;
-            --text-navy: #0A2540;
-            --text-blue: #10458C;
-            --border-light: #E2E8F0;
-            --primary-color: #0A2540;
+            --border-subtle: #D5DFEA;
+            --text-main: #1E293B;
+            --text-muted: #52657A;
+            --text-navy: #0B2948;
+            --text-blue: #164E8A;
+            --border-light: #D5DFEA;
+            --primary-color: #0B2948;
+            --accent-gold: #EAB308;
+            --accent-gold-bg: #FEF3C7;
+            --accent-gold-border: #F59E0B;
+            --table-head-bg: #DCE5F0;
+            --table-head-text: #1E3A5F;
             --safe-color: #15803D;
             --warning-color: #B91C1C;
             --waiting-color: #475569;
@@ -60,11 +65,17 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        .app-header-bar {
+            width: 100%;
+            background: var(--text-navy);
+            border-bottom: 3px solid var(--accent-gold);
+            box-shadow: 0 2px 10px rgba(11, 41, 72, 0.14);
+        }
         .app-shell {
             width: 100%;
             max-width: 480px;
             margin: 0 auto;
-            padding: 12px 12px calc(84px + env(safe-area-inset-bottom, 0px));
+            padding: 12px 14px calc(86px + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -72,11 +83,15 @@
         }
 
         .app-header {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 4px 2px 2px;
+            padding: 10px 14px;
+            box-sizing: border-box;
         }
         .app-brand {
             display: flex;
@@ -84,18 +99,31 @@
             gap: 10px;
             min-width: 0;
         }
-        .app-logo {
-            width: 38px;
-            height: 38px;
-            object-fit: contain;
+        .app-logo-wrap {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            padding: 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+            box-sizing: border-box;
+        }
+        .app-logo {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: contain;
             display: block;
         }
         .app-title {
             margin: 0;
-            font-size: 1.28rem;
+            font-size: 1.24rem;
             font-weight: 800;
-            color: var(--text-navy);
+            color: #FFFFFF;
             letter-spacing: -0.02em;
             line-height: 1.2;
             white-space: nowrap;
@@ -115,7 +143,7 @@
             border: none;
             border-radius: 999px;
             background: transparent;
-            color: var(--text-navy);
+            color: #FFFFFF;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -124,7 +152,7 @@
             transition: background-color 0.16s ease, transform 0.16s ease;
         }
         .header-icon-btn:hover {
-            background-color: rgba(10, 37, 64, 0.06);
+            background-color: rgba(255, 255, 255, 0.14);
         }
         .header-icon-btn:active {
             transform: scale(0.94);
@@ -139,26 +167,37 @@
             background: var(--card-bg);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.05);
             box-sizing: border-box;
         }
 
         .wind-card {
-            padding: 14px 16px;
+            padding: 13px 16px 14px;
             text-align: left;
+        }
+        .wind-card-top {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 0 0 6px 0;
         }
         .wind-card-label {
             font-size: 0.92rem;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-main);
-            margin: 0 0 6px 0;
+            margin: 0;
         }
         .wind-main-row {
             display: flex;
             align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 64px;
+            padding: 4px 0 2px;
+        }
+        .wind-card.has-status-pill .wind-main-row {
             justify-content: space-between;
-            gap: 8px;
-            min-height: 60px;
         }
         .wind-container {
             display: inline-flex;
@@ -206,11 +245,17 @@
         }
         .wind-container:focus-visible,
         .cpc-btn:focus-visible,
+        .schedule-bell-btn:focus-visible,
+        .adjust-nav-btn:focus-visible,
+        .add-row-btn:focus-visible,
         .header-icon-btn:focus-visible,
         .bottom-nav-item:focus-visible {
-            outline: 2px solid rgba(16, 69, 140, 0.4);
+            outline: 2px solid rgba(22, 78, 138, 0.45);
             outline-offset: 2px;
             border-radius: 8px;
+        }
+        .header-icon-btn:focus-visible {
+            outline-color: rgba(234, 179, 8, 0.75);
         }
         .wind-container.is-animating .pulso-wind-1 {
             animation: pulso-slide-right 0.5s ease-in-out 0s 1;
@@ -253,9 +298,12 @@
             color: var(--text-navy);
         }
         .time-display {
-            font-size: 0.84rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             color: var(--text-muted);
-            margin: 8px 0 0 0;
+            margin: 0;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
 
         .dynamic-box {
@@ -584,7 +632,7 @@
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
         }
         .seg-btn[data-terminal="W12"].is-active {
-            background: #D98200;
+            background: #D97706;
             color: #FFFFFF;
         }
         .seg-btn:disabled {
@@ -629,23 +677,65 @@
             background: var(--card-bg);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            padding: 14px 16px 10px;
+            padding: 14px 16px 12px;
             text-align: left;
             box-sizing: border-box;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.05);
         }
         .schedule-header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .schedule-title {
+            grid-column: 1;
+            justify-self: start;
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.24rem;
             font-weight: 800;
             color: var(--text-navy);
             letter-spacing: -0.01em;
+        }
+        .schedule-bell-btn {
+            grid-column: 2;
+            justify-self: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 999px;
+            border: 1px solid #E2E8F0;
+            background: #F1F5F9;
+            color: #94A3B8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+        }
+        .schedule-bell-btn[data-sound-state="armed"] {
+            background: #EFF6FF;
+            border-color: #BFDBFE;
+        }
+        .schedule-bell-btn[data-sound-state="ringing"] {
+            background: #FFF7ED;
+            border-color: #FED7AA;
+        }
+        .schedule-bell-btn:hover {
+            transform: scale(1.08);
+        }
+        .schedule-bell-btn:active {
+            transform: scale(0.95);
+        }
+        .schedule-bell-btn svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+        }
+        .schedule-header .cpc-btn {
+            grid-column: 3;
+            justify-self: end;
         }
 
         /* 固定底部導覽列 */
@@ -656,22 +746,22 @@
             bottom: 0;
             z-index: 900;
             background: #FFFFFF;
-            border-top: 1px solid #E2E8F0;
+            border-top: 1px solid var(--border-subtle);
             padding-bottom: env(safe-area-inset-bottom, 0px);
-            box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 -2px 10px rgba(11, 41, 72, 0.06);
         }
         .bottom-nav-inner {
             max-width: 480px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            height: 60px;
+            height: 64px;
         }
         .bottom-nav-item {
             border: none;
             background: transparent;
             color: #64748B;
-            padding: 6px 4px;
+            padding: 5px 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -682,7 +772,7 @@
             font-size: 0.74rem;
             font-weight: 600;
             line-height: 1.1;
-            transition: color 0.15s ease;
+            transition: color 0.16s ease;
         }
         .bottom-nav-item.is-active {
             color: var(--text-navy);
@@ -690,22 +780,35 @@
         }
         .bottom-nav-icon-wrap {
             position: relative;
-            width: 24px;
-            height: 24px;
+            width: 52px;
+            height: 30px;
+            border-radius: 999px;
+            border: 1px solid transparent;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
         }
         .bottom-nav-icon-wrap svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             display: block;
+            transition: transform 0.16s ease, stroke-width 0.16s ease;
+        }
+        .bottom-nav-item.is-active .bottom-nav-icon-wrap {
+            background-color: var(--accent-gold-bg);
+            border-color: var(--accent-gold-border);
+            color: var(--text-navy);
+        }
+        .bottom-nav-item.is-active .bottom-nav-icon-wrap svg {
+            stroke-width: 2.35;
+            transform: scale(1.05);
         }
         .chat-unread-badge {
             display: none;
             position: absolute;
-            top: -1px;
-            right: -3px;
+            top: 2px;
+            right: 11px;
             width: 9px;
             height: 9px;
             border-radius: 999px;
@@ -1372,8 +1475,8 @@
             margin-top: 3px;
             letter-spacing: 0.02em;
         }
-        .badge-w12 { background-color: #D98200; color: #FFFFFF; }
-        .badge-w13 { background-color: #0D3559; color: #FFFFFF; }
+        .badge-w12 { background-color: #D97706; color: #FFFFFF; }
+        .badge-w13 { background-color: #0B2948; color: #FFFFFF; }
         .schedule-table th, .schedule-table td {
             padding: 10px 6px;
             border-bottom: 1px solid #EEF2F6;
@@ -1384,11 +1487,11 @@
             border-bottom: none;
         }
         .schedule-table th {
-            color: #64748B;
+            color: var(--table-head-text);
             font-size: 0.84rem;
-            font-weight: 600;
-            background-color: #FFFFFF;
-            border-bottom: 1px solid #E2E8F0;
+            font-weight: 700;
+            background-color: var(--table-head-bg);
+            border-bottom: 1px solid #C8D6E5;
             position: sticky;
             top: 0;
             z-index: 2;
@@ -1412,8 +1515,8 @@
             color: #0F172A;
         }
         .schedule-table th:nth-child(2) {
-            color: #64748B;
-            font-weight: 600;
+            color: var(--table-head-text);
+            font-weight: 700;
         }
         .schedule-table th:last-child,
         .schedule-table td:last-child {
@@ -1461,23 +1564,21 @@
             overflow-y: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
         }
         .table-wrapper::-webkit-scrollbar {
             display: none;
         }
 
-        #soundToggle:hover {
-            transform: scale(1.08);
-        }
-
         /* 🌟 即時風速數字點擊效果 */
         .wind-speed-num {
             cursor: pointer;
-            transition: transform 0.2s ease, text-shadow 0.2s ease;
+            transition: transform 0.2s ease, text-shadow 0.2s ease, color 0.16s ease;
         }
         .wind-speed-num:hover {
             transform: scale(1.05);
-            text-shadow: 0 0 12px rgba(16, 69, 140, 0.2);
+            text-shadow: 0 0 12px rgba(22, 78, 138, 0.2);
         }
 
         /* 🌟 天氣預報彈窗特定樣式 */
@@ -1645,19 +1746,19 @@
         /* 船期調整全螢幕雙行卡片清單樣式 */
         .fullscreen-sheet-overlay {
             padding: 0 !important;
-            background-color: #EEF3F7;
+            background-color: var(--bg-color);
             align-items: stretch;
             justify-content: center;
         }
         .fullscreen-sheet-content {
             width: 100%;
-            max-width: 480px;
+            max-width: 100%;
             height: 100dvh;
             max-height: 100dvh;
             padding: 0;
             border: none;
             border-radius: 0;
-            background: #EEF3F7;
+            background: var(--bg-color);
             display: flex;
             flex-direction: column;
             box-shadow: none;
@@ -1665,13 +1766,20 @@
             overflow: hidden;
         }
         .adjust-topbar {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            padding: 12px 14px;
+            width: 100%;
             background: #FFFFFF;
-            border-bottom: 1px solid #E2E8F0;
+            border-bottom: 1px solid var(--border-subtle);
             flex-shrink: 0;
+        }
+        .adjust-topbar-inner {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 11px 14px;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 36px 1fr 36px;
+            align-items: center;
         }
         .adjust-topbar-title {
             margin: 0;
@@ -1682,34 +1790,71 @@
         }
         .adjust-nav-btn {
             justify-self: start;
+            width: 34px;
+            height: 34px;
             border: none;
+            border-radius: 999px;
             background: transparent;
             color: var(--text-navy);
-            font-size: 0.96rem;
-            font-weight: 700;
-            padding: 6px 4px;
+            padding: 0;
             cursor: pointer;
             font-family: inherit;
             display: inline-flex;
             align-items: center;
-            gap: 2px;
+            justify-content: center;
+            transition: background-color 0.16s ease, transform 0.16s ease;
         }
-        .adjust-add-btn {
+        .adjust-nav-btn:hover {
+            background-color: #F1F5F9;
+        }
+        .adjust-nav-btn:active {
+            transform: scale(0.94);
+        }
+        /* 右上角圓形 ＋ 按鈕 (保留舊版滑過綠色旋轉效果) */
+        .add-row-btn {
             justify-self: end;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--text-blue);
+            color: #FFFFFF;
             border: none;
-            background: transparent;
-            color: var(--text-navy);
-            font-size: 0.96rem;
+            font-size: 18px;
             font-weight: 700;
-            padding: 6px 4px;
+            line-height: 1;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             font-family: inherit;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(11, 41, 72, 0.22);
         }
-        .adjust-card-list {
+        .add-row-btn:hover {
+            background: #28a745;
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.32);
+        }
+        .add-row-btn:active {
+            transform: scale(0.95);
+        }
+        .adjust-body-scroll {
             flex: 1;
             min-height: 0;
             overflow-y: auto;
-            padding: 12px;
+            width: 100%;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .adjust-body-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .adjust-card-list {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 14px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1717,10 +1862,10 @@
         }
         .adjust-card {
             background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+            border: 1px solid var(--border-subtle);
             border-radius: 14px;
             padding: 12px;
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+            box-shadow: 0 1px 4px rgba(11, 41, 72, 0.05);
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1737,14 +1882,16 @@
             border-radius: 999px;
         }
         .adjust-card-row1 {
-            display: flex;
-            align-items: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr 38px;
             gap: 8px;
+            align-items: end;
         }
         .adjust-card-row2 {
-            display: flex;
-            align-items: center;
+            display: grid;
+            grid-template-columns: 1fr 98px;
             gap: 8px;
+            align-items: end;
         }
         .adjust-field-label {
             display: block;
@@ -1764,18 +1911,17 @@
             color: var(--text-navy);
             box-sizing: border-box;
         }
-        .adjust-date-wrap {
-            width: 94px;
-            flex-shrink: 0;
+        .adjust-date-wrap,
+        .adjust-terminal-wrap,
+        .adjust-ship-wrap,
+        .adjust-speed-wrap {
+            width: auto;
+            min-width: 0;
         }
         .adjust-date-input {
             text-align: center;
             font-variant-numeric: tabular-nums;
             font-weight: 600;
-        }
-        .adjust-terminal-wrap {
-            width: 92px;
-            flex-shrink: 0;
         }
         .adjust-terminal-select {
             font-weight: 700;
@@ -1783,10 +1929,9 @@
             text-align-last: center;
         }
         .adjust-delete-btn {
-            margin-left: auto;
-            margin-top: 16px;
-            width: 36px;
-            height: 36px;
+            margin: 0;
+            width: 38px;
+            height: 38px;
             border: none;
             border-radius: 10px;
             background: #FEE2E2;
@@ -1801,17 +1946,9 @@
         .adjust-delete-btn:hover {
             background: #FECACA;
         }
-        .adjust-ship-wrap {
-            flex: 1;
-            min-width: 0;
-        }
         .adjust-ship-input {
             text-align: left;
             font-weight: 600;
-        }
-        .adjust-speed-wrap {
-            width: 104px;
-            flex-shrink: 0;
         }
         .adjust-speed-select {
             font-weight: 700;
@@ -1819,10 +1956,17 @@
             text-align-last: center;
         }
         .adjust-footer {
-            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+            width: 100%;
             background: #FFFFFF;
-            border-top: 1px solid #E2E8F0;
+            border-top: 1px solid var(--border-subtle);
             flex-shrink: 0;
+        }
+        .adjust-footer-inner {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box;
         }
         .adjust-empty-state {
             text-align: center;
@@ -1844,14 +1988,13 @@
         ⚠️ 網路已斷線，畫面風速與狀態可能非最新，正在嘗試重新連線...
     </div>
 
-<main class="app-shell">
-    <header class="app-header">
+<header class="app-header-bar">
+    <div class="app-header">
         <div class="app-brand">
-            <img src="logo.png" class="app-logo" alt="臺中LNG船監控">
+            <span class="app-logo-wrap"><img src="logo.png" class="app-logo" alt="臺中LNG船監控"></span>
             <h1 class="app-title">臺中LNG船監控</h1>
         </div>
         <div class="header-actions">
-            <button id="soundToggle" type="button" class="header-icon-btn" onclick="toggleSound()" aria-label="提醒音效" title="提醒音效" style="display: none;"></button>
             <a id="infoLink" class="header-icon-btn" href="presentation/index.html" target="_blank" rel="noopener" aria-label="操作說明" title="操作說明">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="9.5"/>
@@ -1860,10 +2003,15 @@
                 </svg>
             </a>
         </div>
-    </header>
+    </div>
+</header>
 
+<main class="app-shell">
     <section class="card wind-card" aria-label="北堤風速">
-        <div class="wind-card-label">北堤風速</div>
+        <div class="wind-card-top">
+            <div class="wind-card-label">北堤風速</div>
+            <div class="time-display" id="dataTime">系統連線中...</div>
+        </div>
         <div class="wind-main-row">
             <div class="wind-container" tabindex="0">
                 <div class="wind-speed-num" id="windSpeed">--</div>
@@ -1878,7 +2026,6 @@
             </div>
             <div id="dynamicBox" class="dynamic-box"></div>
         </div>
-        <div class="time-display" id="dataTime">系統連線中...</div>
     </section>
 
     <div id="pobList" class="pob-records"></div>
@@ -1887,6 +2034,7 @@
     <section class="card schedule-section" aria-label="船期表">
         <div class="schedule-header">
             <h2 class="schedule-title">船期表</h2>
+            <button id="soundToggle" type="button" class="schedule-bell-btn" onclick="toggleSound()" aria-label="提醒音效" title="提醒音效" style="display: none;"></button>
             <svg class="cpc-btn pulso-icon pulso-settings" onclick="triggerOpenManualModal()" tabindex="0" role="button" aria-label="手動設定" width="32" height="32" viewBox="0 0 24 24" title="手動設定" style="padding: 4px; box-sizing: border-box;">
                 <g class="pulso-gear-group">
                     <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/>
@@ -2068,14 +2216,11 @@
             </div>
             <div class="input-group">
                 <label>限制風速 (m/s)</label>
-                <div id="speedSegmentGroup" class="segmented-control" role="group" aria-label="限制風速">
-                    <button type="button" class="seg-btn" data-speed="12" onclick="selectLimitSpeedPreset('12')">12.0 m/s</button>
-                    <button type="button" class="seg-btn is-active" data-speed="15" onclick="selectLimitSpeedPreset('15')">15.0 m/s</button>
-                    <button type="button" class="seg-btn" data-speed="custom" onclick="selectLimitSpeedPreset('custom')">自訂</button>
+                <div id="speedSegmentGroup" class="segmented-control cols-2" role="group" aria-label="限制風速">
+                    <button type="button" class="seg-btn" data-speed="12" onclick="selectLimitSpeedPreset('12')">12</button>
+                    <button type="button" class="seg-btn is-active" data-speed="15" onclick="selectLimitSpeedPreset('15')">15</button>
                 </div>
-                <div id="customLimitSpeedWrap" style="display: none; margin-top: 8px;">
-                    <input type="number" id="limitSpeed" step="0.1" value="15" placeholder="請輸入限制風速 (例如: 13.5)">
-                </div>
+                <input type="hidden" id="limitSpeed" value="15">
             </div>
             <div class="input-group">
                 <label>停靠碼頭</label>
@@ -2118,15 +2263,25 @@
 <div id="scheduleAdjustModal" class="modal-overlay fullscreen-sheet-overlay">
     <div class="modal-content fullscreen-sheet-content" role="dialog" aria-modal="true" aria-labelledby="scheduleAdjustTitle">
         <div class="adjust-topbar">
-            <button id="adjustBackBtn" type="button" class="adjust-nav-btn" onclick="closeScheduleAdjustModal()">&lsaquo; 監控</button>
-            <h3 id="scheduleAdjustTitle" class="adjust-topbar-title">船期調整</h3>
-            <button id="adjustAddBtn" type="button" class="adjust-add-btn" onclick="addEditItem()">＋ 新增</button>
+            <div class="adjust-topbar-inner">
+                <button id="adjustBackBtn" type="button" class="adjust-nav-btn" onclick="closeScheduleAdjustModal()" aria-label="返回監控" title="返回監控">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <h3 id="scheduleAdjustTitle" class="adjust-topbar-title">船期調整</h3>
+                <button id="adjustAddBtn" type="button" class="add-row-btn" onclick="addEditItem()" aria-label="新增船期" title="新增一列">＋</button>
+            </div>
         </div>
-        <div id="adjustCardList" class="adjust-card-list">
-            <!-- 動態渲染雙行卡片 -->
+        <div class="adjust-body-scroll">
+            <div id="adjustCardList" class="adjust-card-list">
+                <!-- 動態渲染雙行卡片 -->
+            </div>
         </div>
         <div class="adjust-footer">
-            <button id="saveScheduleBtn" type="button" class="modal-btn btn-confirm" style="width: 100%;" onclick="saveScheduleAdjustments()">儲存調整</button>
+            <div class="adjust-footer-inner">
+                <button id="saveScheduleBtn" type="button" class="modal-btn btn-confirm" style="width: 100%;" onclick="saveScheduleAdjustments()">儲存調整</button>
+            </div>
         </div>
     </div>
 </div>
@@ -2305,31 +2460,16 @@
         });
     }
 
-    function selectLimitSpeedPreset(preset, customValue) {
+    function selectLimitSpeedPreset(preset) {
+        const normalized = String(preset) === '12' ? '12' : '15';
         const group = document.getElementById('speedSegmentGroup');
-        const customWrap = document.getElementById('customLimitSpeedWrap');
         const speedInput = document.getElementById('limitSpeed');
         if (group) {
             group.querySelectorAll('.seg-btn').forEach(btn => {
-                btn.classList.toggle('is-active', btn.dataset.speed === preset);
+                btn.classList.toggle('is-active', btn.dataset.speed === normalized);
             });
         }
-        if (preset === '12' || preset === '15') {
-            if (customWrap) customWrap.style.display = 'none';
-            if (speedInput) speedInput.value = preset;
-        } else {
-            if (customWrap) customWrap.style.display = 'block';
-            if (speedInput) {
-                if (customValue !== undefined) {
-                    speedInput.value = String(customValue);
-                } else if (speedInput.value === '12' || speedInput.value === '15') {
-                    speedInput.value = '';
-                }
-                if (document.getElementById('manualModal')?.style.display === 'flex' && !speedInput.disabled) {
-                    setTimeout(() => { try { speedInput.focus(); } catch (_) {} }, 20);
-                }
-            }
-        }
+        if (speedInput) speedInput.value = normalized;
     }
 
     function selectTerminalSegment(terminal) {
@@ -2351,15 +2491,8 @@
     }
 
     function applyManualLimitSpeedValue(val) {
-        const raw = val == null ? '' : String(val).trim();
-        const num = Number(raw);
-        if (!raw || num === 15) {
-            selectLimitSpeedPreset('15');
-        } else if (num === 12) {
-            selectLimitSpeedPreset('12');
-        } else {
-            selectLimitSpeedPreset('custom', raw);
-        }
+        const num = Number(val == null ? '' : String(val).trim());
+        selectLimitSpeedPreset(num === 12 ? '12' : '15');
     }
 
     function syncManualMonitoringBanner(data) {
@@ -2464,11 +2597,15 @@
             });
         }
 
+        const windCard = document.querySelector('.wind-card');
+
         // 判斷是否要判定為「停止」或「已結束」狀態
         if (!data || data.app_mode !== 'start' || isShipFinished) {
+            if (windCard) windCard.classList.remove('has-status-pill');
             box.style.display = 'none';
             currentStatus = "stopped";
         } else {
+            if (windCard) windCard.classList.add('has-status-pill');
             // 監控中，且該船尚未有 pob_info
             const limitSpeed = parseFloat(data.limit_speed) || 0;
             const currentSpeed = parseFloat(data.current_wind) || 0;
@@ -2545,7 +2682,7 @@
                 soundToggle.setAttribute('aria-label', '關閉進港提醒音效');
             } else {
                 soundToggle.dataset.soundState = 'armed';
-                soundToggle.style.color = '#0A2540';
+                soundToggle.style.color = '#0B2948';
                 soundToggle.innerHTML = BELL_SVG_ARMED;
                 soundToggle.setAttribute('aria-label', '關閉進港提醒音效');
             }
@@ -5325,7 +5462,7 @@
         const container = document.getElementById('adjustCardList');
         if (!container) return;
         if (!editScheduleList || editScheduleList.length === 0) {
-            container.innerHTML = '<div class="adjust-empty-state">目前編輯清單為空，請點擊右上角「＋ 新增」建立船期</div>';
+            container.innerHTML = '<div class="adjust-empty-state">目前編輯清單為空，請點擊右上角「＋」建立船期</div>';
             return;
         }
         let html = '';
@@ -5417,8 +5554,8 @@
         renderAdjustCards();
         
         // 滾動到最上方
-        const container = document.getElementById('adjustCardList');
-        if (container) container.scrollTop = 0;
+        const scroller = document.querySelector('.adjust-body-scroll') || document.getElementById('adjustCardList');
+        if (scroller) scroller.scrollTop = 0;
     }
     
     async function saveScheduleAdjustments() {

@@ -16,7 +16,8 @@
       "repair_rounds_used": 1,
       "repair_rounds_max": 2,
       "verdict": "pass",
-      "reviewed_revision": "0f74a1134013aa6d088ce7ad0f0da1c62b65449e"
+      "r2_post_acceptance_verdict": "pass",
+      "reviewed_revision": "0256d1eebec9e8494a341e80586919e07d6b0f65+"
     }
   },
   "blocking_findings": [],
@@ -26,8 +27,8 @@
     "python -m pytest tests/test_build_hosting.py tests/test_hosting_deploy.py tests/test_backend_safety.py tests/test_pob_handler.py",
     "playwright tests/frontend-isolated.js",
     "playwright tests/frontend-echarts.js",
-    "visual screenshot inspection at 390x844 and 375x812"
+    "visual screenshot inspection at 390x844, 375x812, and 1280x800"
   ],
   "user_acceptance": null,
-  "next_action": "Await user manual acceptance of the 4-step checklist and explicit authorization before GitHub push, Firebase Hosting deploy, or GAS clasp push/deploy"
+  "next_action": "Await user manual acceptance of the updated 4-step checklist in acceptance.md (Scheme A + 6 refinements) and explicit authorization before GitHub push, Firebase Hosting deploy, or GAS clasp push/deploy"
 }
