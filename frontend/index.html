@@ -33,29 +33,38 @@
 
     <style>
         :root {
-            --bg-color: #E9EEF4;
+            --bg-color: #EBF3FC;
+            --bg-gradient: linear-gradient(180deg, #E8F1FA 0%, #EEF5FC 55%, #E3EEF9 100%);
+            --header-navy: #0B2948;
+            --header-h: 56px;
+            --bottom-nav-h: 66px;
             --card-bg: #FFFFFF;
-            --border-subtle: #D5DFEA;
+            --border-subtle: #DCE6F2;
             --text-main: #1E293B;
             --text-muted: #52657A;
             --text-navy: #0B2948;
             --text-blue: #164E8A;
-            --border-light: #D5DFEA;
+            --border-light: #DCE6F2;
             --primary-color: #0B2948;
-            --accent-gold: #EAB308;
-            --accent-gold-bg: #FEF3C7;
-            --accent-gold-border: #F59E0B;
-            --table-head-bg: #DCE5F0;
+            --primary-blue: #0066E6;
+            --nav-active-bg: #D9ECFF;
+            --nav-active-color: #1877F2;
+            --table-head-bg: #E2EEFA;
             --table-head-text: #1E3A5F;
+            --safe-bg: #DCFCE7;
             --safe-color: #15803D;
+            --warning-bg: #FEE2E2;
             --warning-color: #B91C1C;
+            --waiting-bg: #E2E8F0;
             --waiting-color: #475569;
             --reset-color: #DC2626;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'Microsoft JhengHei', Helvetica, Arial, sans-serif;
+            background: var(--bg-gradient);
             background-color: var(--bg-color);
+            background-attachment: fixed;
             color: var(--text-main);
             margin: 0;
             padding: 0;
@@ -66,17 +75,23 @@
         }
 
         .app-header-bar {
-            width: 100%;
-            background: var(--text-navy);
-            border-bottom: 3px solid var(--accent-gold);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-h);
+            z-index: 950;
+            background: var(--header-navy);
             box-shadow: 0 2px 10px rgba(11, 41, 72, 0.14);
         }
-        .app-shell {
+        .tab-view {
             width: 100%;
             max-width: 480px;
             margin: 0 auto;
-            padding: 12px 14px calc(86px + env(safe-area-inset-bottom, 0px));
+            padding: calc(var(--header-h) + 14px) 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
+        }
+        .app-shell {
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -85,12 +100,13 @@
         .app-header {
             width: 100%;
             max-width: 480px;
+            height: 100%;
             margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 10px 14px;
+            padding: 0 14px;
             box-sizing: border-box;
         }
         .app-brand {
@@ -119,9 +135,15 @@
             object-fit: contain;
             display: block;
         }
+        .app-brand-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.35);
+            flex-shrink: 0;
+        }
         .app-title {
             margin: 0;
-            font-size: 1.24rem;
+            font-size: 1.15rem;
             font-weight: 800;
             color: #FFFFFF;
             letter-spacing: -0.02em;
@@ -136,87 +158,80 @@
             gap: 6px;
             flex-shrink: 0;
         }
-        .header-icon-btn {
-            width: 36px;
-            height: 36px;
-            padding: 0;
+        .header-info-link {
+            height: 34px;
+            padding: 0 8px;
             border: none;
             border-radius: 999px;
             background: transparent;
             color: #FFFFFF;
+            font-size: 0.92rem;
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 6px;
             cursor: pointer;
             text-decoration: none;
+            white-space: nowrap;
             transition: background-color 0.16s ease, transform 0.16s ease;
         }
-        .header-icon-btn:hover {
+        .header-info-link:hover {
             background-color: rgba(255, 255, 255, 0.14);
         }
-        .header-icon-btn:active {
-            transform: scale(0.94);
+        .header-info-link:active {
+            transform: scale(0.95);
         }
-        .header-icon-btn svg {
-            width: 23px;
-            height: 23px;
+        .header-info-link svg {
+            width: 20px;
+            height: 20px;
             display: block;
+            flex-shrink: 0;
         }
 
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.05);
+            box-shadow: 0 3px 12px rgba(11, 41, 72, 0.06);
             box-sizing: border-box;
         }
 
         .wind-card {
-            padding: 13px 16px 14px;
-            text-align: left;
+            padding: 16px 16px 14px;
+            text-align: center;
         }
         .wind-card-label {
-            font-size: 1.2rem;
+            font-size: 1.18rem;
             font-weight: 800;
             color: var(--text-navy);
             letter-spacing: -0.01em;
             margin: 0 0 6px 0;
+            text-align: center;
         }
         .wind-main-row {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             gap: 10px;
             min-height: 68px;
-            padding: 4px 0 2px clamp(24px, 12%, 48px);
-        }
-        .wind-card.has-status-pill .wind-main-row {
-            justify-content: space-between;
-            padding-left: 2px;
+            padding: 4px 0 2px;
         }
         .wind-container {
             display: inline-flex;
             align-items: flex-end;
-            gap: 5px;
+            gap: 6px;
             margin: 0;
             color: var(--text-navy);
             flex-shrink: 0;
-            cursor: pointer;
         }
         .wind-speed-num {
-            font-size: clamp(3.35rem, 14vw, 4.25rem);
+            font-size: clamp(3.6rem, 15vw, 4.4rem);
             font-weight: 800;
             letter-spacing: -0.03em;
             line-height: 0.95;
             font-variant-numeric: tabular-nums;
-            cursor: pointer;
-            transition: color 0.16s ease;
-        }
-        .wind-card.has-status-pill .wind-speed-num {
-            font-size: clamp(3.05rem, 12.2vw, 3.85rem);
-        }
-        .wind-speed-num:hover {
-            color: var(--text-blue);
+            transition: color 0.16s ease, transform 0.2s ease, text-shadow 0.2s ease;
         }
         .wind-detail {
             display: flex;
@@ -241,19 +256,21 @@
             overflow: visible;
             display: block;
         }
-        .wind-container:focus-visible,
         .cpc-btn:focus-visible,
         .schedule-bell-btn:focus-visible,
-        .adjust-nav-btn:focus-visible,
-        .add-row-btn:focus-visible,
-        .header-icon-btn:focus-visible,
-        .bottom-nav-item:focus-visible {
-            outline: 2px solid rgba(22, 78, 138, 0.45);
+        .header-info-link:focus-visible,
+        .bottom-nav-item:focus-visible,
+        .chat-role-pill-btn:focus-visible,
+        .add-row-btn:focus-visible {
+            outline: 2px solid rgba(24, 119, 242, 0.5);
             outline-offset: 2px;
             border-radius: 8px;
         }
-        .header-icon-btn:focus-visible {
-            outline-color: rgba(234, 179, 8, 0.75);
+        .add-row-btn:focus-visible {
+            border-radius: 50%;
+        }
+        .header-info-link:focus-visible {
+            outline-color: rgba(255, 255, 255, 0.8);
         }
         .wind-container.is-animating .pulso-wind-1 {
             animation: pulso-slide-right 0.5s ease-in-out 0s 1;
@@ -290,131 +307,176 @@
             }
         }
         .wind-speed-unit {
-            font-size: 1.08rem;
+            font-size: 1.12rem;
             font-weight: 700;
             line-height: 1;
             color: var(--text-navy);
         }
         .time-display {
-            font-size: 0.82rem;
+            font-size: 0.86rem;
             font-weight: 600;
             color: var(--text-muted);
             margin: 8px 0 0 0;
-            padding-left: clamp(24px, 12%, 48px);
-            text-align: left;
+            text-align: center;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
-        .wind-card.has-status-pill .time-display {
-            text-align: left;
-            padding-left: 2px;
+        .wind-status-divider {
+            display: none;
+            height: 1px;
+            background: #E2EAF2;
+            margin: 12px 0 11px;
+        }
+        .wind-card.has-status-pill .wind-status-divider {
+            display: block;
         }
 
         .dynamic-box {
             display: none;
-            padding: 9px 13px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 10px 14px;
             border-radius: 12px;
             font-weight: 700;
             box-sizing: border-box;
-            flex-shrink: 1;
-            max-width: 56%;
-            min-width: 0;
             text-align: center;
         }
         .status-pill-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 1.02rem;
+            font-weight: 800;
+            line-height: 1.3;
+            min-width: 0;
+        }
+        .status-pill-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            font-size: 1.05rem;
+        }
+        .status-pill-icon svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+        .status-sep {
+            opacity: 0.4;
+            font-weight: 500;
+        }
+        .status-label {
+            font-weight: 800;
+        }
+        .status-ship {
             font-weight: 700;
-            line-height: 1.2;
-            white-space: nowrap;
-        }
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            flex-shrink: 0;
-        }
-        .status-dot-safe {
-            background-color: #86EFAC;
-        }
-        .status-dot-warning {
-            background-color: #FCA5A5;
+            color: #334155;
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
         .status-pill-sub {
-            margin-top: 3px;
+            margin-top: 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            font-size: 11.5px;
+            font-size: 12px;
             font-weight: 600;
-            line-height: 1.3;
-            color: rgba(255, 255, 255, 0.94);
+            line-height: 1.35;
+            max-width: 100%;
         }
         .status-reason-line {
-            white-space: nowrap;
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         .status-waiting {
-            background-color: var(--waiting-color);
-            color: #FFFFFF;
+            background-color: var(--waiting-bg);
+            color: var(--waiting-color);
+            border: 1px solid #CBD5E1;
         }
         .status-warning {
-            background-color: var(--warning-color);
-            color: #FFFFFF;
-            padding: 8px 11px;
+            background-color: var(--warning-bg);
+            color: var(--warning-color);
+            border: 1px solid #FECACA;
+            padding: 10px 12px;
         }
         .condition-warning {
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 4px;
-            font-size: 11.5px;
-            line-height: 1.3;
-            white-space: nowrap;
+            max-width: 100%;
+            font-size: 12px;
+            line-height: 1.35;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
         .condition-warning img {
-            width: 13px;
-            height: 13px;
+            width: 14px;
+            height: 14px;
             flex-shrink: 0;
-            filter: brightness(0) invert(1);
+            filter: brightness(0) saturate(100%) invert(16%) sepia(79%) saturate(4644%) hue-rotate(353deg) brightness(82%) contrast(94%);
         }
         .status-safe {
-            background-color: var(--safe-color);
-            color: #FFFFFF;
-        }
-        @media (max-width: 390px) {
-            .status-pill-main {
-                font-size: 0.98rem;
-            }
-            .status-pill-sub,
-            .condition-warning {
-                font-size: 11px;
-            }
+            background-color: var(--safe-bg);
+            color: var(--safe-color);
+            border: 1px solid #BBF7D0;
         }
 
         .pob-records {
-            padding: 13px 16px;
-            background-color: #DCFCE7;
-            border: 1px solid #86EFAC;
-            border-radius: 14px;
-            text-align: left;
-            font-size: 0.98rem;
-            font-weight: 700;
-            color: #166534;
-            line-height: 1.5;
+            padding: 14px 16px;
             display: none;
             box-sizing: border-box;
         }
-        .pob-records.is-no-entry-only {
-            background-color: #FEE2E2;
-            border-color: #FCA5A5;
+        .pob-card-title {
+            margin: 0 0 10px 0;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            text-align: left;
+            letter-spacing: -0.01em;
+        }
+        .pob-items-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pob-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #F8FAFC;
+            border: 1px solid #DCE6F2;
+            color: var(--text-navy);
+            font-size: 0.98rem;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .pob-item-row.is-no-entry {
+            background: #FEF2F2;
+            border-color: #FECACA;
             color: #B91C1C;
         }
-        .pob-records div:last-child {
-            margin-bottom: 0 !important;
+        .pob-item-ship {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            text-align: left;
+        }
+        .pob-item-time {
+            font-variant-numeric: tabular-nums;
+            font-weight: 800;
+            flex-shrink: 0;
+            text-align: right;
         }
 
         .input-group { margin-bottom: 14px; text-align: left; }
@@ -531,11 +593,11 @@
             background-color: #E2E8F0;
         }
         .btn-confirm {
-            background-color: var(--primary-color);
+            background-color: var(--primary-blue);
             color: #FFFFFF;
         }
         .btn-confirm:hover {
-            background-color: #163A5F;
+            background-color: #0052BD;
         }
         #resetBtn {
             background-color: var(--reset-color);
@@ -748,7 +810,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 900;
+            z-index: 950;
             background: #FFFFFF;
             border-top: 1px solid var(--border-subtle);
             padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -759,7 +821,7 @@
             margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            height: 64px;
+            height: var(--bottom-nav-h);
         }
         .bottom-nav-item {
             border: none;
@@ -773,20 +835,20 @@
             gap: 3px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.74rem;
+            font-size: 0.75rem;
             font-weight: 600;
             line-height: 1.1;
             transition: color 0.16s ease;
         }
         .bottom-nav-item.is-active {
-            color: var(--text-navy);
-            font-weight: 800;
+            color: var(--nav-active-color);
+            font-weight: 700;
         }
         .bottom-nav-icon-wrap {
             position: relative;
-            width: 52px;
-            height: 30px;
-            border-radius: 999px;
+            width: 56px;
+            height: 32px;
+            border-radius: 12px;
             border: 1px solid transparent;
             display: inline-flex;
             align-items: center;
@@ -794,73 +856,68 @@
             transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
         }
         .bottom-nav-icon-wrap svg {
-            width: 20px;
-            height: 20px;
+            width: 21px;
+            height: 21px;
             display: block;
             transition: transform 0.16s ease, stroke-width 0.16s ease;
         }
         .bottom-nav-item.is-active .bottom-nav-icon-wrap {
-            background-color: var(--accent-gold-bg);
-            border-color: var(--accent-gold-border);
-            color: var(--text-navy);
-        }
-        #navMonitorBtn.is-active .bottom-nav-icon-wrap {
-            background-color: transparent;
+            background-color: var(--nav-active-bg);
             border-color: transparent;
-            color: var(--text-navy);
+            color: var(--nav-active-color);
         }
         .bottom-nav-item.is-active .bottom-nav-icon-wrap svg {
-            stroke-width: 2.35;
-            transform: scale(1.05);
+            stroke-width: 2.25;
+            transform: scale(1.04);
         }
         .chat-unread-badge {
             display: none;
             position: absolute;
             top: 2px;
             right: 11px;
-            width: 9px;
-            height: 9px;
+            width: 10px;
+            height: 10px;
             border-radius: 999px;
-            background-color: #dc2626;
-            color: #dc2626;
-            font-size: 1px;
-            font-weight: 900;
-            line-height: 9px;
-            overflow: hidden;
+            background-color: #EF4444;
+            border: 2px solid #FFFFFF;
+            box-sizing: border-box;
+            box-shadow: 0 1px 4px rgba(239, 68, 68, 0.5);
+            pointer-events: none;
             user-select: none;
             animation: none;
         }
+        .bottom-nav-item.is-active .chat-unread-badge {
+            border-color: var(--nav-active-bg);
+        }
         #chatModal {
-            padding: 12px;
+            position: fixed;
+            top: var(--header-h);
+            bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+            left: 0;
+            right: 0;
+            z-index: 900;
+            display: none;
+            justify-content: center;
+            padding: 0;
+            background: transparent;
             box-sizing: border-box;
         }
         .chat-modal-box {
             width: 100% !important;
             max-width: 480px !important;
-            height: min(88vh, 800px) !important;
-            max-height: 88vh !important;
+            height: 100% !important;
+            max-height: 100% !important;
             padding: 0 !important;
+            border: none !important;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
-            border-radius: 20px !important;
-            background: #ffffff !important;
-            color: #111827 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            color: var(--text-navy) !important;
             text-align: left !important;
-            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28) !important;
-        }
-        @media (max-width: 600px) {
-            #chatModal {
-                padding: 0;
-            }
-            .chat-modal-box {
-                width: 100% !important;
-                max-width: 100% !important;
-                height: 100dvh !important;
-                max-height: 100dvh !important;
-                border-radius: 0 !important;
-            }
+            box-shadow: none !important;
         }
         .chat-screen {
             display: flex;
@@ -870,69 +927,76 @@
             width: 100%;
             height: 100%;
             position: relative;
-            background: #ffffff;
+            background: var(--bg-color);
         }
-        .chat-topbar {
-            background: #063b43;
-            color: #ffffff;
-            padding: 13px 16px;
+        .chat-sub-header {
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
             flex-shrink: 0;
         }
-        .chat-topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-        .chat-topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .chat-nav-btn,
-        .chat-close-btn {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 800;
-            line-height: 1;
-            cursor: pointer;
-            padding: 6px 8px;
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .chat-nav-btn:hover,
-        .chat-close-btn:hover {
-            background: rgba(255, 255, 255, 0.14);
-        }
         .chat-modal-title {
-            font-size: 18px;
+            font-size: 1.25rem;
             font-weight: 800;
-            color: #ffffff;
-            letter-spacing: 0.01em;
+            color: var(--text-navy);
+            letter-spacing: -0.01em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .chat-date-badge {
-            font-size: 15px;
-            font-weight: 800;
-            color: #ffffff;
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #1E3A5F;
+            background: #DCE8F6;
+            padding: 5px 12px;
+            border-radius: 999px;
             letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .chat-role-pill-btn {
+            border: none;
+            background: #DCE8F6;
+            color: var(--text-navy);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+        .chat-role-pill-btn:hover {
+            background: #CFE0F4;
+        }
+        .chat-role-pill-btn:active {
+            transform: scale(0.96);
+        }
+        .chat-room-header-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .chat-spectator-hint {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
             white-space: nowrap;
         }
         .chat-role-list {
             flex: 1;
             overflow-y: auto;
-            background: #ffffff;
+            background: #EBF3FC;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             min-height: 0;
         }
         .chat-role-item {
@@ -941,27 +1005,30 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 16px 18px;
-            border: none;
-            border-bottom: 1px solid #e5e7eb;
-            background: #ffffff;
-            color: #111827;
+            padding: 14px 16px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            background: #FFFFFF;
+            color: var(--text-navy);
             cursor: pointer;
             text-align: left;
             font-family: inherit;
-            transition: background 0.14s ease;
+            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.05);
+            transition: background 0.14s ease, border-color 0.14s ease;
         }
         .chat-role-item:hover:not(:disabled) {
-            background: #f8fafc;
+            background: #F8FBFF;
+            border-color: #BFDBFE;
         }
         .chat-role-item.is-active {
-            background: #f0fdfa;
-            box-shadow: inset 4px 0 0 #0d9488;
+            background: #EFF6FF;
+            border-color: #1877F2;
+            box-shadow: inset 4px 0 0 #1877F2;
         }
         .chat-role-item.is-full:not(.is-active),
         .chat-role-item:disabled:not(.is-active) {
-            background: #e5e7eb;
-            color: #6b7280;
+            background: #E2E8F0;
+            color: #64748B;
             cursor: not-allowed;
         }
         .chat-role-item-left {
@@ -1012,17 +1079,22 @@
             flex-shrink: 0;
         }
         .chat-sheet-backdrop {
-            position: absolute;
+            position: fixed;
             inset: 0;
             background: rgba(15, 23, 42, 0.45);
             display: none;
             flex-direction: column;
             justify-content: flex-end;
-            z-index: 30;
+            align-items: center;
+            z-index: 2060;
         }
         .chat-bottom-sheet {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            box-sizing: border-box;
             background: #ffffff;
-            border-radius: 18px 18px 0 0;
+            border-radius: 20px 20px 0 0;
             padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px));
             box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.18);
         }
@@ -1036,7 +1108,7 @@
         .chat-sheet-title {
             font-size: 17px;
             font-weight: 800;
-            color: #111827;
+            color: var(--text-navy);
             text-align: center;
             margin-bottom: 12px;
         }
@@ -1053,7 +1125,7 @@
         }
         .chat-sheet-input:focus {
             outline: none;
-            border-color: #063b43;
+            border-color: var(--primary-blue);
         }
         .chat-sheet-hint {
             font-size: 12.5px;
@@ -1066,7 +1138,7 @@
             padding: 13px 16px;
             border-radius: 10px;
             border: none;
-            background: #063b43;
+            background: var(--primary-blue);
             color: #ffffff;
             font-size: 15px;
             font-weight: 800;
@@ -1125,53 +1197,49 @@
             border-bottom: 1px solid #fecaca;
             flex-shrink: 0;
         }
-        .chat-spectator-divider {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px 4px;
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: 700;
-            background: #ffffff;
-            flex-shrink: 0;
-        }
-        .chat-spectator-divider::before,
-        .chat-spectator-divider::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: #e5e7eb;
-        }
-        .chat-spectator-pill {
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 999px;
-            padding: 3px 12px;
-            color: #4b5563;
-            font-weight: 700;
-        }
         .chat-messages-area {
             flex: 1;
             min-height: 0;
             overflow-y: auto;
-            padding: 14px 16px;
-            background: #ffffff;
+            padding: 14px 14px;
+            background: #EBF3FC;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+        .chat-date-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 2px 0 4px;
+        }
+        .chat-date-divider::before,
+        .chat-date-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #CBD5E1;
+        }
+        .chat-date-divider span {
+            background: #DAE6F3;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
         .chat-empty-state {
             margin: auto;
             text-align: center;
-            color: #6b7280;
+            color: #52657A;
             font-size: 13.5px;
             padding: 24px 12px;
         }
         .chat-msg-row {
             display: flex;
             flex-direction: column;
-            max-width: 82%;
+            max-width: 84%;
             gap: 3px;
         }
         .chat-msg-row.is-other {
@@ -1183,30 +1251,36 @@
             align-items: flex-end;
         }
         .chat-msg-sender {
-            font-size: 12px;
-            font-weight: 700;
-            color: #4b5563;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--text-navy);
             padding: 0 2px;
         }
         .chat-bubble {
-            padding: 9px 13px;
+            padding: 10px 14px;
             font-size: 15px;
             line-height: 1.45;
             word-break: break-word;
             white-space: pre-wrap;
-            color: #111827;
+            color: var(--text-navy);
+            box-shadow: 0 1px 4px rgba(11, 41, 72, 0.06);
         }
         .chat-msg-row.is-other .chat-bubble {
-            background: #e5e7eb;
-            border-radius: 4px 14px 14px 14px;
+            background: #FFFFFF;
+            border-radius: 4px 16px 16px 16px;
         }
         .chat-msg-row.is-self .chat-bubble {
-            background: #b2ebe0;
-            border-radius: 14px 4px 14px 14px;
+            background: #C2E1FF;
+            border-radius: 16px 4px 16px 16px;
+        }
+        .chat-bubble.is-file-only {
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
         }
         .chat-msg-status {
             font-size: 11px;
-            color: #6b7280;
+            color: #52657A;
             font-weight: 600;
             padding: 0 2px;
         }
@@ -1245,14 +1319,20 @@
         .chat-att-file-card {
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-width: 200px;
+            gap: 11px;
+            min-width: 215px;
+            background: #FFFFFF;
+            border: 1px solid #DCE6F2;
+            border-radius: 14px;
+            padding: 10px 12px;
+            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.06);
+            box-sizing: border-box;
         }
-        .chat-att-file-icon {
-            width: 30px;
-            height: 30px;
-            object-fit: contain;
+        .chat-att-file-svg {
+            width: 34px;
+            height: 36px;
             flex-shrink: 0;
+            display: block;
         }
         .chat-att-file-meta {
             flex: 1;
@@ -1261,46 +1341,48 @@
         .chat-att-file-name {
             font-size: 13.5px;
             font-weight: 800;
-            color: #111827;
+            color: var(--text-navy);
             word-break: break-all;
         }
         .chat-att-file-size {
             font-size: 11.5px;
             font-weight: 600;
-            color: #4b5563;
+            color: #52657A;
             margin-top: 2px;
         }
         .chat-att-file-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 4px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
             border: none;
             background: transparent;
+            color: var(--nav-active-color);
             cursor: pointer;
             flex-shrink: 0;
             border-radius: 8px;
         }
         .chat-att-file-btn:hover {
-            background: rgba(6, 59, 67, 0.1);
+            background: #EFF6FF;
         }
-        .chat-att-download-img {
-            width: 22px;
-            height: 22px;
-            object-fit: contain;
+        .chat-att-download-svg {
+            width: 20px;
+            height: 20px;
             display: block;
         }
         .chat-upload-progress-track {
             width: 100%;
             height: 6px;
-            background: rgba(6, 59, 67, 0.16);
+            background: rgba(24, 119, 242, 0.16);
             border-radius: 999px;
             overflow: hidden;
             margin-top: 6px;
         }
         .chat-upload-progress-fill {
             height: 100%;
-            background: #063b43;
+            background: var(--primary-blue);
             border-radius: 999px;
             transition: width 0.15s ease;
         }
@@ -1317,35 +1399,36 @@
             font-family: inherit;
         }
         .chat-composer-footer {
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-            background: #f8fafc;
-            border-top: 1px solid #e5e7eb;
+            padding: 8px 12px;
+            background: #FFFFFF;
+            border-top: 1px solid var(--border-subtle);
             flex-shrink: 0;
         }
         .chat-active-composer {
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             gap: 8px;
         }
         .chat-attach-btn {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             padding: 0;
             border-radius: 999px;
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #374151;
-            font-size: 18px;
+            border: none;
+            background: transparent;
+            color: #475569;
             cursor: pointer;
             flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
         }
-        .chat-attach-btn-icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
+        .chat-attach-btn:hover {
+            background: #F1F5F9;
+        }
+        .chat-attach-btn-svg {
+            width: 21px;
+            height: 21px;
             display: block;
         }
         .chat-attach-btn:disabled,
@@ -1360,26 +1443,35 @@
             max-height: 96px;
             padding: 9px 14px;
             border-radius: 20px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #CBD5E1;
             font-family: inherit;
             font-size: 14.5px;
             line-height: 1.4;
             color: #111827;
-            background: #ffffff;
+            background: #F8FAFC;
             box-sizing: border-box;
+        }
+        .chat-text-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: #FFFFFF;
         }
         .chat-send-btn {
             height: 40px;
-            padding: 0 16px;
-            border-radius: 20px;
+            padding: 0 18px;
+            border-radius: 12px;
             border: none;
-            background: #063b43;
-            color: #ffffff;
-            font-size: 14px;
+            background: var(--primary-blue);
+            color: #FFFFFF;
+            font-size: 14.5px;
             font-weight: 700;
             cursor: pointer;
             flex-shrink: 0;
             font-family: inherit;
+            transition: background-color 0.15s ease;
+        }
+        .chat-send-btn:hover:not(:disabled) {
+            background: #0052BD;
         }
         .chat-preview-box {
             width: 100% !important;
@@ -1403,6 +1495,26 @@
             background: rgba(9, 13, 22, 0.85);
             border-bottom: 1px solid rgba(255, 255, 255, 0.12);
             flex-shrink: 0;
+        }
+        .chat-close-btn {
+            background: transparent;
+            border: none;
+            color: #FFFFFF;
+            font-size: 22px;
+            line-height: 1;
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+            transition: background-color 0.16s ease;
+        }
+        .chat-close-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
         }
         .chat-preview-body {
             flex: 1;
@@ -1580,157 +1692,164 @@
             display: none;
         }
 
-        /* 🌟 即時風速數字點擊效果 */
-        .wind-speed-num {
-            cursor: pointer;
-            transition: transform 0.2s ease, text-shadow 0.2s ease, color 0.16s ease;
-        }
-        .wind-speed-num:hover {
-            transform: scale(1.05);
-            text-shadow: 0 0 12px rgba(22, 78, 138, 0.2);
-        }
-
-        /* 🌟 天氣預報彈窗特定樣式 */
-        .forecast-modal-content {
-            background-color: #0d1117; 
-            color: #f0f6fc;
-            border: 1px solid rgba(56, 139, 253, 0.25);
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-            padding: 24px;
-            border-radius: 24px;
-            width: 95%;
-            max-width: 600px;
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        .forecast-header {
+        /* 🌟 預報分頁與 ECharts 圖表卡樣式 */
+        .forecast-page-head {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.8);
-            padding-bottom: 12px;
-            margin-bottom: 16px;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
         }
-
-        .forecast-header h3 {
+        .forecast-page-title {
             margin: 0;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #ffffff;
+            font-size: 1.42rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            letter-spacing: -0.02em;
         }
-
-        .forecast-close {
-            font-size: 1.5rem;
-            color: #8b949e;
-            cursor: pointer;
-            user-select: none;
-            transition: color 0.2s;
-        }
-        .forecast-close:hover {
-            color: #ffffff;
-        }
-
-        .forecast-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .forecast-select-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .forecast-select-group label {
-            font-size: 0.9rem;
-            color: #8b949e;
-            font-weight: 500;
-        }
-
-        .forecast-select {
-            padding: 8px 12px;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            background-color: #161b22;
-            color: #f0f6fc;
-            outline: none;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .forecast-select:focus {
-            border-color: #58a6ff;
-        }
-
-        /* 🌟 黃色手動更新按鈕 */
         .btn-update-forecast {
-            background-color: #f1c40f !important;
-            color: #1a1a1a !important;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
+            background-color: #FDE047 !important;
+            color: #0B2948 !important;
+            border: 1px solid #FACC15;
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 0.88rem;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(241, 196, 15, 0.15);
-            display: flex;
+            box-shadow: 0 2px 8px rgba(234, 179, 8, 0.22);
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-family: inherit;
         }
-        .btn-update-forecast:hover {
-            background-color: #f39c12 !important;
-            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+        .btn-update-forecast:hover:not(:disabled) {
+            background-color: #FACC15 !important;
             transform: translateY(-1px);
         }
-        .btn-update-forecast:active {
+        .btn-update-forecast:active:not(:disabled) {
             transform: translateY(0);
         }
         .btn-update-forecast:disabled {
-            background-color: #30363d !important;
-            color: #8b949e !important;
+            background-color: #E2E8F0 !important;
+            border-color: #CBD5E1;
+            color: #64748B !important;
             box-shadow: none;
             cursor: not-allowed;
             transform: none;
         }
-
-        /* 🌟 ECharts 容器樣式 */
+        .forecast-chart-card {
+            position: relative;
+            z-index: 1;
+            isolation: isolate;
+            background-color: #0F1722;
+            color: #F0F6FC;
+            border-radius: 18px;
+            padding: 14px 12px 12px;
+            box-shadow: 0 10px 26px rgba(11, 41, 72, 0.16);
+            box-sizing: border-box;
+        }
+        .forecast-legend-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
         .chart-wrapper {
             position: relative;
+            z-index: 1;
+            isolation: isolate;
             width: 100%;
-            height: 360px;
-            background-color: rgba(22, 27, 34, 0.4);
-            border: 1px solid rgba(48, 54, 61, 0.6);
-            border-radius: 12px;
-            padding: 12px;
+            height: 320px;
+            background: transparent;
+            border: none;
+            padding: 0;
             box-sizing: border-box;
+        }
+        .forecast-status-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 4px;
+            padding-right: 4px;
+        }
+        .card.forecast-ship-card {
+            margin-top: 12px;
+            padding: 14px 16px;
+            text-align: left;
+            background-color: #0F1722;
+            color: #F0F6FC;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 18px;
+            box-shadow: 0 10px 26px rgba(11, 41, 72, 0.16);
+        }
+        .forecast-ship-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: #CBD5E1;
+            letter-spacing: 0.02em;
+        }
+        .forecast-select {
+            width: 100%;
+            padding: 11px 36px 11px 13px;
+            border: 1px solid rgba(88, 166, 255, 0.32);
+            border-radius: 12px;
+            background-color: #162234;
+            color: #F8FAFC;
+            outline: none;
+            font-size: 0.96rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            color-scheme: dark;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2393C5FD' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 13px center;
+            background-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .forecast-select:focus {
+            border-color: #4BA3FF;
+            box-shadow: 0 0 0 3px rgba(75, 163, 255, 0.2);
+        }
+        .forecast-select option {
+            background-color: #0F1722;
+            color: #F8FAFC;
+        }
+        .forecast-footnote {
+            margin-top: 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
         }
 
         /* Tooltip 覆寫樣式 */
         .custom-tooltip {
             padding: 10px 14px;
-            background: rgba(22, 27, 34, 0.35) !important;
+            background: rgba(22, 27, 34, 0.82) !important;
             backdrop-filter: blur(12px) !important;
             -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(88, 166, 255, 0.3) !important;
-            border-radius: 8px !important;
+            border: 1px solid rgba(88, 166, 255, 0.35) !important;
+            border-radius: 10px !important;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
             color: #f0f6fc !important;
             font-family: system-ui, -apple-system, sans-serif !important;
-            backdrop-filter: blur(4px);
         }
         .tooltip-time {
             font-size: 0.85rem;
             font-weight: 700;
             margin-bottom: 6px;
-            border-bottom: 1px solid rgba(240, 246, 252, 0.1);
+            border-bottom: 1px solid rgba(240, 246, 252, 0.12);
             padding-bottom: 4px;
-            color: #58a6ff;
+            color: #e2e8f0;
         }
         .tooltip-row {
             display: flex;
@@ -1752,118 +1871,63 @@
             color: #8b949e;
         }
         
-        /* 船期調整全螢幕雙行卡片清單樣式 */
-        .fullscreen-sheet-overlay {
-            padding: 0 !important;
-            background-color: var(--bg-color);
-            align-items: stretch;
-            justify-content: center;
-        }
-        .fullscreen-sheet-content {
-            width: 100%;
-            max-width: 100%;
-            height: 100dvh;
-            max-height: 100dvh;
-            padding: 0;
-            border: none;
-            border-radius: 0;
-            background: var(--bg-color);
+        /* 船期調整分頁與卡片樣式 */
+        .adjust-page-head {
             display: flex;
-            flex-direction: column;
-            box-shadow: none;
-            text-align: left;
-            overflow: hidden;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
         }
-        .adjust-topbar {
-            width: 100%;
-            background: #FFFFFF;
-            border-bottom: 1px solid var(--border-subtle);
-            flex-shrink: 0;
-        }
-        .adjust-topbar-inner {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 11px 14px;
-            box-sizing: border-box;
-            display: grid;
-            grid-template-columns: 36px 1fr 36px;
-            align-items: center;
-        }
-        .adjust-topbar-title {
+        .adjust-page-title {
             margin: 0;
-            font-size: 1.12rem;
+            font-size: 1.42rem;
             font-weight: 800;
             color: var(--text-navy);
-            text-align: center;
+            letter-spacing: -0.02em;
         }
-        .adjust-nav-btn {
-            justify-self: start;
-            width: 34px;
-            height: 34px;
-            border: none;
-            border-radius: 999px;
-            background: transparent;
-            color: var(--text-navy);
-            padding: 0;
-            cursor: pointer;
-            font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.16s ease, transform 0.16s ease;
+        .adjust-page-sub {
+            margin: 3px 0 0 0;
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--text-muted);
         }
-        .adjust-nav-btn:hover {
-            background-color: #F1F5F9;
-        }
-        .adjust-nav-btn:active {
-            transform: scale(0.94);
-        }
-        /* 右上角圓形 ＋ 按鈕 (保留舊版滑過綠色旋轉效果) */
         .add-row-btn {
-            justify-self: end;
-            width: 30px;
-            height: 30px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: var(--text-blue);
             color: #FFFFFF;
             border: none;
-            font-size: 18px;
-            font-weight: 700;
-            line-height: 1;
             padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1;
             font-family: inherit;
-            transition: all 0.25s ease;
-            box-shadow: 0 2px 6px rgba(11, 41, 72, 0.22);
+            cursor: pointer;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(11, 41, 72, 0.22);
+            transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
         }
-        .add-row-btn:hover {
+        .add-row-btn:hover,
+        .add-row-btn:active,
+        .add-row-btn.is-spin-green {
             background: #28a745;
             transform: scale(1.1) rotate(90deg);
             box-shadow: 0 4px 10px rgba(40, 167, 69, 0.32);
         }
-        .add-row-btn:active {
-            transform: scale(0.95);
-        }
-        .adjust-body-scroll {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            width: 100%;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .adjust-body-scroll::-webkit-scrollbar {
-            display: none;
+        @media (prefers-reduced-motion: reduce) {
+            .add-row-btn:hover,
+            .add-row-btn:active,
+            .add-row-btn.is-spin-green {
+                transform: none;
+            }
         }
         .adjust-card-list {
             width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 12px 14px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1872,17 +1936,48 @@
         .adjust-card {
             background: #FFFFFF;
             border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 1px 4px rgba(11, 41, 72, 0.05);
+            border-radius: 16px;
+            padding: 12px 14px;
+            box-shadow: 0 3px 12px rgba(11, 41, 72, 0.06);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             box-sizing: border-box;
+            text-align: left;
+        }
+        .adjust-card:nth-child(even) {
+            background: #EBEFF4;
+            border-color: #CBD5E1;
+        }
+        .adjust-card:nth-child(even) .adjust-card-divider {
+            background: #D8E0EA;
+        }
+        .adjust-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .adjust-card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .adjust-card-title {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            overflow-wrap: anywhere;
+        }
+        .adjust-card-divider {
+            height: 1px;
+            background: #EEF2F6;
+            margin: -2px 0 0 0;
         }
         .adjust-unfinished-tag {
             display: inline-block;
-            align-self: flex-start;
             background: #FEF3C7;
             color: #92400E;
             font-size: 11px;
@@ -1890,92 +1985,172 @@
             padding: 2px 8px;
             border-radius: 999px;
         }
-        .adjust-card-row1 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 38px;
-            gap: 8px;
-            align-items: end;
-        }
-        .adjust-card-row2 {
-            display: grid;
-            grid-template-columns: 1fr 98px;
-            gap: 8px;
-            align-items: end;
-        }
-        .adjust-field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748B;
-            margin-bottom: 3px;
-        }
-        .adjust-card input,
-        .adjust-card select {
-            margin: 0;
-            padding: 9px 10px;
-            font-size: 0.94rem;
-            border: 1px solid #CBD5E1;
-            border-radius: 10px;
-            background: #FFFFFF;
-            color: var(--text-navy);
-            box-sizing: border-box;
-        }
-        .adjust-date-wrap,
-        .adjust-terminal-wrap,
-        .adjust-ship-wrap,
-        .adjust-speed-wrap {
-            width: auto;
-            min-width: 0;
-        }
-        .adjust-date-input {
-            text-align: center;
-            font-variant-numeric: tabular-nums;
-            font-weight: 600;
-        }
-        .adjust-terminal-select {
-            font-weight: 700;
-            text-align: center;
-            text-align-last: center;
-        }
         .adjust-delete-btn {
             margin: 0;
-            width: 38px;
-            height: 38px;
+            width: 32px;
+            height: 32px;
             border: none;
-            border-radius: 10px;
-            background: #FEE2E2;
-            color: #B91C1C;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748B;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
-            transition: background-color 0.15s ease;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
         .adjust-delete-btn:hover {
-            background: #FECACA;
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+        .adjust-field-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-navy);
+            margin-bottom: 4px;
+        }
+        .adjust-date-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .adjust-card input,
+        .adjust-card select {
+            width: 100%;
+            margin: 0;
+            padding: 9px 12px;
+            font-size: 0.96rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            background-color: #FFFFFF;
+            color: var(--text-navy);
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .adjust-date-input {
+            padding-right: 36px !important;
+            text-align: left;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+        .adjust-date-icon {
+            position: absolute;
+            right: 11px;
+            width: 18px;
+            height: 18px;
+            color: #64748B;
+            pointer-events: none;
+        }
+        .adjust-card-mid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: end;
+        }
+        .adjust-terminal-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 41px;
+            border: 1px solid #CBD5E1;
+            border-radius: 10px;
+            background: #FFFFFF;
+            padding: 0 28px 0 10px;
+            box-sizing: border-box;
+        }
+        .adjust-terminal-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            pointer-events: none;
+            position: relative;
+            z-index: 1;
+        }
+        .adjust-terminal-select {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .adjust-select-chevron {
+            position: absolute;
+            right: 10px;
+            width: 13px;
+            height: 13px;
+            color: #334155;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .adjust-speed-select {
+            height: 41px;
+            font-weight: 700;
+            text-align: left;
+            padding-right: 28px !important;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230B2948' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+            cursor: pointer;
         }
         .adjust-ship-input {
             text-align: left;
-            font-weight: 600;
-        }
-        .adjust-speed-select {
             font-weight: 700;
-            text-align: center;
-            text-align-last: center;
         }
-        .adjust-footer {
-            width: 100%;
-            background: #FFFFFF;
-            border-top: 1px solid var(--border-subtle);
-            flex-shrink: 0;
+        .adjust-actions-row {
+            display: grid;
+            grid-template-columns: 1.55fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
         }
-        .adjust-footer-inner {
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px));
-            box-sizing: border-box;
+        .adjust-save-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background-color: var(--primary-blue);
+            color: #FFFFFF;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color 0.16s ease;
+        }
+        .adjust-save-btn:hover:not(:disabled) {
+            background-color: #0052BD;
+        }
+        .adjust-save-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .adjust-cancel-btn {
+            background-color: #FFFFFF;
+            color: var(--text-navy);
+            border: 1px solid #CBD5E1;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background-color 0.16s ease;
+        }
+        .adjust-cancel-btn:hover {
+            background-color: #F1F5F9;
         }
         .adjust-empty-state {
             text-align: center;
@@ -2000,26 +2175,28 @@
 <header class="app-header-bar">
     <div class="app-header">
         <div class="app-brand">
-            <span class="app-logo-wrap"><img src="logo.png" class="app-logo" alt="臺中LNG船監控"></span>
-            <h1 class="app-title">臺中LNG船監控</h1>
+            <span class="app-logo-wrap"><img src="logo.png" class="app-logo" alt="臺中 LNG 船監控"></span>
+            <span class="app-brand-divider" aria-hidden="true"></span>
+            <h1 class="app-title">臺中 LNG 船監控</h1>
         </div>
         <div class="header-actions">
-            <a id="infoLink" class="header-icon-btn" href="presentation/index.html" target="_blank" rel="noopener" aria-label="操作說明" title="操作說明">
+            <a id="infoLink" class="header-info-link" href="presentation/index.html" target="_blank" rel="noopener" aria-label="操作說明" title="操作說明">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="9.5"/>
-                    <line x1="12" y1="11" x2="12" y2="16.5"/>
-                    <circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none"/>
+                    <line x1="12" y1="8" x2="12" y2="12.5"/>
+                    <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/>
                 </svg>
+                <span>操作說明</span>
             </a>
         </div>
     </div>
 </header>
 
-<main class="app-shell">
+<main id="monitorView" class="tab-view app-shell">
     <section class="card wind-card" aria-label="北堤風速">
         <div class="wind-card-label">北堤風速</div>
         <div class="wind-main-row">
-            <div class="wind-container" tabindex="0">
+            <div class="wind-container">
                 <div class="wind-speed-num" id="windSpeed">--</div>
                 <div class="wind-detail">
                     <svg class="wind-icon pulso-icon pulso-wind" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
@@ -2030,12 +2207,13 @@
                     <div class="wind-speed-unit">m/s</div>
                 </div>
             </div>
-            <div id="dynamicBox" class="dynamic-box"></div>
         </div>
         <div class="time-display" id="dataTime">系統連線中...</div>
+        <div class="wind-status-divider" aria-hidden="true"></div>
+        <div id="dynamicBox" class="dynamic-box"></div>
     </section>
 
-    <div id="pobList" class="pob-records"></div>
+    <section id="pobList" class="card pob-records" aria-label="POB 紀錄"></section>
 
     <!-- 船期表區塊 -->
     <section class="card schedule-section" aria-label="船期表">
@@ -2052,7 +2230,7 @@
         <div class="table-wrapper">
             <table class="schedule-table">
                 <thead>
-                    <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限 m/s</th></tr>
+                    <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限</th></tr>
                 </thead>
                 <tbody id="scheduleBody">
                     <tr><td colspan="3" style="text-align:center; color:#64748B;">載入中...</td></tr>
@@ -2064,9 +2242,154 @@
     <div id="loading"></div>
 </main>
 
+<!-- 🌟 風速預報分頁 -->
+<section id="forecastModal" class="tab-view" aria-label="風速預報" style="display: none;">
+    <div class="forecast-page-head">
+        <h2 class="forecast-page-title">風速預報</h2>
+        <button id="forecastUpdateBtn" type="button" class="btn-update-forecast" onclick="triggerForecastUpdate()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                <polyline points="21 3 21 9 15 9"/>
+            </svg>
+            <span>手動更新</span>
+        </button>
+    </div>
+
+    <div class="forecast-chart-card">
+        <div class="forecast-legend-row" aria-hidden="true">
+            <div style="display: flex; align-items: center; gap: 6px; color: #F1F5F9;">
+                <svg width="22" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="22" y2="2" stroke="#F97316" stroke-width="2.6" /></svg>
+                <span>空軍預測</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; color: #F1F5F9;">
+                <svg width="22" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="22" y2="2" stroke="#22D3EE" stroke-width="2.4" stroke-dasharray="5,4" /></svg>
+                <span>ECMWF陣風</span>
+            </div>
+        </div>
+        <div class="chart-wrapper">
+            <div id="forecastChart" style="width: 100%; height: 100%;"></div>
+        </div>
+        <div class="forecast-status-bar">
+            <span id="forecastStatus" style="color: #4BA3FF; font-size: 0.78rem; font-weight: 700;">系統就緒</span>
+        </div>
+    </div>
+
+    <div class="card forecast-ship-card">
+        <label class="forecast-ship-label" for="shipForecastSelect">選擇船舶</label>
+        <select id="shipForecastSelect" class="forecast-select" onchange="onForecastShipChange()"></select>
+    </div>
+
+    <div class="forecast-footnote">
+        <span>本預報僅用於判斷 LNG 船進出港</span>
+    </div>
+</section>
+
+<!-- 船期調整分頁 -->
+<section id="scheduleAdjustModal" class="tab-view" aria-label="船期調整" style="display: none;">
+    <div class="adjust-page-head">
+        <div>
+            <h2 id="scheduleAdjustTitle" class="adjust-page-title">船期調整</h2>
+            <p class="adjust-page-sub">修改後請儲存。</p>
+        </div>
+        <button id="adjustAddBtn" type="button" class="add-row-btn" onclick="addEditItem()" aria-label="新增船期" title="新增一列">＋</button>
+    </div>
+    <div id="adjustCardList" class="adjust-card-list">
+        <!-- 動態渲染船期編輯卡片 -->
+    </div>
+    <div class="adjust-actions-row">
+        <button id="saveScheduleBtn" type="button" class="adjust-save-btn" onclick="saveScheduleAdjustments()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9.5"/>
+                <polyline points="8.5 12.5 11 15 16 9.5"/>
+            </svg>
+            <span>儲存變更</span>
+        </button>
+        <button id="cancelScheduleBtn" type="button" class="adjust-cancel-btn" onclick="closeScheduleAdjustModal()">取消</button>
+    </div>
+</section>
+
+<!-- 作業聊天室分頁 -->
+<section id="chatModal" class="tab-view" aria-label="作業聊天室" style="display: none;">
+    <div class="chat-modal-box">
+        <div id="chatStatusBanner" class="chat-status-banner" role="alert"></div>
+
+        <!-- 畫面 1: 選擇角色 -->
+        <div id="chatRoleScreen" class="chat-screen">
+            <div class="chat-sub-header">
+                <span class="chat-modal-title">選擇角色</span>
+                <span id="chatDateBadge" class="chat-date-badge">--</span>
+            </div>
+            <div id="chatRoleBar" class="chat-role-list" aria-label="選擇發言角色"></div>
+        </div>
+
+        <!-- 畫面 2: 作業聊天室 -->
+        <div id="chatRoomScreen" class="chat-screen" style="display: none;">
+            <div class="chat-sub-header">
+                <span id="chatModalTitle" class="chat-modal-title">作業聊天室</span>
+                <div class="chat-room-header-right">
+                    <span id="chatSpectatorHint" class="chat-spectator-hint" style="display: none;">僅供瀏覽</span>
+                    <button id="chatRoleSwitchBtn" type="button" class="chat-role-pill-btn" onclick="showChatRoleScreen()" aria-label="切換發言角色">觀眾</button>
+                </div>
+            </div>
+            <div id="chatMessagesContainer" class="chat-messages-area">
+                <div class="chat-empty-state">今日尚無聊天訊息，歡迎選擇角色發起對話</div>
+            </div>
+            <div id="chatComposerFooter" class="chat-composer-footer" style="display: none;">
+                <div id="chatActiveComposer" class="chat-active-composer">
+                    <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="新增附件 (上限 2.5 MB)" aria-label="新增附件">
+                        <svg class="chat-attach-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                        </svg>
+                    </button>
+                    <input id="chatCameraInput" type="file" accept="image/*" capture="environment" style="display: none;">
+                    <input id="chatGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
+                    <input id="chatFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display: none;">
+                    <textarea id="chatTextInput" class="chat-text-input" rows="1" maxlength="2000" placeholder="輸入訊息..."></textarea>
+                    <button id="chatSendBtn" type="button" class="chat-send-btn" onclick="sendChatMessage()">送出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 聊天室角色名稱 & 附件底部抽屜（獨立掛載於 body 層以覆蓋固定頁首與導覽列） -->
+<div id="chatNameSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
+    <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatNameSheetTitle">
+        <div class="chat-sheet-handle"></div>
+        <div id="chatNameSheetTitle" class="chat-sheet-title">輸入名稱</div>
+        <input id="chatNameInput" type="text" class="chat-sheet-input" maxlength="20" placeholder="顯示名稱" autocomplete="off">
+        <div class="chat-sheet-hint">留空則以觀眾身分進入</div>
+        <button id="chatEnterRoomBtn" type="button" class="chat-sheet-primary-btn" onclick="submitChatCustomName()">進入聊天室</button>
+    </div>
+</div>
+
+<div id="chatAttachSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
+    <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatAttachSheetTitle">
+        <div class="chat-sheet-handle"></div>
+        <div id="chatAttachSheetTitle" class="chat-sheet-title">新增附件</div>
+        <div class="chat-attach-sheet-list">
+            <button id="chatAttachCameraBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatCameraInput')">
+                <img class="chat-attach-option-icon" src="pic/拍照.png" alt="拍照">
+                <div><div class="chat-attach-option-title">拍照</div></div>
+            </button>
+            <button id="chatAttachGalleryBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatGalleryInput')">
+                <img class="chat-attach-option-icon" src="pic/從相簿選取.png" alt="從相簿選取">
+                <div><div class="chat-attach-option-title">從相簿選取</div></div>
+            </button>
+            <button id="chatAttachDocBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatFileInput')">
+                <img class="chat-attach-option-icon" src="pic/選擇檔案.png" alt="選擇檔案">
+                <div>
+                    <div class="chat-attach-option-title">選擇檔案</div>
+                    <div class="chat-attach-option-sub">PDF、Excel</div>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
 <nav class="bottom-nav" aria-label="主功能導覽">
     <div class="bottom-nav-inner">
-        <button id="navMonitorBtn" type="button" class="bottom-nav-item is-active" onclick="setActiveNav('monitor'); window.scrollTo({ top: 0, behavior: 'smooth' });">
+        <button id="navMonitorBtn" type="button" class="bottom-nav-item is-active" onclick="switchMainTab('monitor')">
             <span class="bottom-nav-icon-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 14l4-4"/>
@@ -2078,9 +2401,11 @@
         <button id="navForecastBtn" type="button" class="bottom-nav-item" onclick="openForecastModal()">
             <span class="bottom-nav-icon-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
-                    <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
-                    <path d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
+                    <polyline points="4 17 9 11 14 14 20 7"/>
+                    <circle cx="4" cy="17" r="1.5"/>
+                    <circle cx="9" cy="11" r="1.5"/>
+                    <circle cx="14" cy="14" r="1.5"/>
+                    <circle cx="20" cy="7" r="1.5"/>
                 </svg>
             </span>
             <span>預報</span>
@@ -2088,10 +2413,12 @@
         <button id="navScheduleBtn" type="button" class="bottom-nav-item" onclick="triggerOpenScheduleAdjustModal()">
             <span class="bottom-nav-icon-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <path d="M12 20h9"/>
+                    <path d="M8 2v4"/>
+                    <path d="M16 2v4"/>
+                    <rect x="3" y="4" width="18" height="16" rx="2"/>
+                    <path d="M3 10h18"/>
+                    <path d="M16.5 14.5l3 3-4.5 4.5H12v-3l4.5-4.5z" fill="#FFFFFF"/>
                 </svg>
             </span>
             <span>船期</span>
@@ -2099,96 +2426,15 @@
         <button id="chatOpenBtn" type="button" class="bottom-nav-item" aria-label="開啟 LNG 船聊天室" onclick="openChatModal()">
             <span class="bottom-nav-icon-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/>
+                    <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>
                 </svg>
-                <span id="chatUnreadBadge" class="chat-unread-badge" style="display: none;" aria-label="有未讀新對話">!</span>
+                <span id="chatUnreadBadge" class="chat-unread-badge" style="display: none;" aria-label="有未讀新對話"></span>
             </span>
             <span>聊天室</span>
         </button>
     </div>
 </nav>
-
-<!-- LNG 船聊天室 Modal (v2 PWA Mobile) -->
-<div id="chatModal" class="modal-overlay" style="display: none; z-index: 2050;">
-    <div class="modal-content chat-modal-box" role="dialog" aria-modal="true" aria-labelledby="chatModalTitle">
-        <div id="chatStatusBanner" class="chat-status-banner" role="alert"></div>
-
-        <!-- 畫面 1: 選擇角色 -->
-        <div id="chatRoleScreen" class="chat-screen">
-            <div class="chat-topbar">
-                <div class="chat-topbar-left">
-                    <button id="chatRoleBackBtn" type="button" class="chat-nav-btn" aria-label="返回主畫面" onclick="closeChatModal()">&larr;</button>
-                    <span class="chat-modal-title">選擇角色</span>
-                </div>
-                <div class="chat-topbar-right">
-                    <span id="chatDateBadge" class="chat-date-badge">--</span>
-                </div>
-            </div>
-            <div id="chatRoleBar" class="chat-role-list" aria-label="選擇發言角色"></div>
-            <div id="chatNameSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
-                <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatNameSheetTitle">
-                    <div class="chat-sheet-handle"></div>
-                    <div id="chatNameSheetTitle" class="chat-sheet-title">輸入名稱</div>
-                    <input id="chatNameInput" type="text" class="chat-sheet-input" maxlength="20" placeholder="顯示名稱" autocomplete="off">
-                    <div class="chat-sheet-hint">留空則以觀眾身分進入</div>
-                    <button id="chatEnterRoomBtn" type="button" class="chat-sheet-primary-btn" onclick="submitChatCustomName()">進入聊天室</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 畫面 2: LNG 船聊天室 -->
-        <div id="chatRoomScreen" class="chat-screen" style="display: none;">
-            <div class="chat-topbar">
-                <div class="chat-topbar-left">
-                    <button id="chatBackToRolesBtn" type="button" class="chat-nav-btn" aria-label="返回選擇角色" onclick="showChatRoleScreen()">&larr;</button>
-                    <span id="chatModalTitle" class="chat-modal-title">LNG 船聊天室</span>
-                </div>
-                <div class="chat-topbar-right">
-                    <button id="chatCloseBtn" type="button" class="chat-close-btn" aria-label="關閉聊天室" onclick="closeChatModal()">&times;</button>
-                </div>
-            </div>
-            <div id="chatSpectatorBar" class="chat-spectator-divider">
-                <span class="chat-spectator-pill" id="chatSpectatorPill">觀眾模式</span>
-            </div>
-            <div id="chatMessagesContainer" class="chat-messages-area">
-                <div class="chat-empty-state">今日尚無聊天訊息，歡迎選擇角色發起對話</div>
-            </div>
-            <div id="chatComposerFooter" class="chat-composer-footer" style="display: none;">
-                <div id="chatActiveComposer" class="chat-active-composer">
-                    <button id="chatAttachBtn" type="button" class="chat-attach-btn" title="新增附件 (上限 2.5 MB)" aria-label="新增附件"><img src="pic/paper-clip.png" alt="新增附件" class="chat-attach-btn-icon"></button>
-                    <input id="chatCameraInput" type="file" accept="image/*" capture="environment" style="display: none;">
-                    <input id="chatGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;">
-                    <input id="chatFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display: none;">
-                    <textarea id="chatTextInput" class="chat-text-input" rows="1" maxlength="2000" placeholder="輸入訊息"></textarea>
-                    <button id="chatSendBtn" type="button" class="chat-send-btn" onclick="sendChatMessage()">發送</button>
-                </div>
-            </div>
-            <div id="chatAttachSheetBackdrop" class="chat-sheet-backdrop" style="display: none;">
-                <div class="chat-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="chatAttachSheetTitle">
-                    <div class="chat-sheet-handle"></div>
-                    <div id="chatAttachSheetTitle" class="chat-sheet-title">新增附件</div>
-                    <div class="chat-attach-sheet-list">
-                        <button id="chatAttachCameraBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatCameraInput')">
-                            <img class="chat-attach-option-icon" src="pic/拍照.png" alt="拍照">
-                            <div><div class="chat-attach-option-title">拍照</div></div>
-                        </button>
-                        <button id="chatAttachGalleryBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatGalleryInput')">
-                            <img class="chat-attach-option-icon" src="pic/從相簿選取.png" alt="從相簿選取">
-                            <div><div class="chat-attach-option-title">從相簿選取</div></div>
-                        </button>
-                        <button id="chatAttachDocBtn" type="button" class="chat-attach-option" onclick="triggerChatFileInput('chatFileInput')">
-                            <img class="chat-attach-option-icon" src="pic/選擇檔案.png" alt="選擇檔案">
-                            <div>
-                                <div class="chat-attach-option-title">選擇檔案</div>
-                                <div class="chat-attach-option-sub">PDF、Excel</div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div id="chatPreviewModal" class="modal-overlay" style="display: none; z-index: 2100;">
     <div class="modal-content chat-preview-box" role="dialog" aria-modal="true" aria-labelledby="chatPreviewTitle">
@@ -2266,33 +2512,6 @@
     </div>
 </div>
 
-<!-- 船期調整 全螢幕雙行卡片清單 Modal -->
-<div id="scheduleAdjustModal" class="modal-overlay fullscreen-sheet-overlay">
-    <div class="modal-content fullscreen-sheet-content" role="dialog" aria-modal="true" aria-labelledby="scheduleAdjustTitle">
-        <div class="adjust-topbar">
-            <div class="adjust-topbar-inner">
-                <button id="adjustBackBtn" type="button" class="adjust-nav-btn" onclick="closeScheduleAdjustModal()" aria-label="返回監控" title="返回監控">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                </button>
-                <h3 id="scheduleAdjustTitle" class="adjust-topbar-title">船期調整</h3>
-                <button id="adjustAddBtn" type="button" class="add-row-btn" onclick="addEditItem()" aria-label="新增船期" title="新增一列">＋</button>
-            </div>
-        </div>
-        <div class="adjust-body-scroll">
-            <div id="adjustCardList" class="adjust-card-list">
-                <!-- 動態渲染雙行卡片 -->
-            </div>
-        </div>
-        <div class="adjust-footer">
-            <div class="adjust-footer-inner">
-                <button id="saveScheduleBtn" type="button" class="modal-btn btn-confirm" style="width: 100%;" onclick="saveScheduleAdjustments()">儲存調整</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div id="pwdModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 320px;">
         <span class="modal-close" onclick="closePwdModal(false)">&times;</span>
@@ -2305,48 +2524,6 @@
         <div class="modal-buttons">
             <button type="button" class="modal-btn btn-cancel" onclick="closePwdModal(false)">取消</button>
             <button type="button" class="modal-btn btn-confirm" onclick="closePwdModal(true)">確認</button>
-        </div>
-    </div>
-</div>
-
-<!-- 🌟 天氣預測儀表板 Modal -->
-<div id="forecastModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 1001;">
-    <div class="forecast-modal-content">
-        <div class="forecast-header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <h3 style="margin: 0;">天氣預測儀表板</h3>
-                <button id="forecastUpdateBtn" class="btn-update-forecast" onclick="triggerForecastUpdate()" style="margin: 0; padding: 4px 10px; font-size: 0.75rem;">
-                    <span>🔄 手動更新</span>
-                </button>
-            </div>
-            <span class="forecast-close" onclick="closeForecastModal()">&times;</span>
-        </div>
-        
-        <div class="forecast-controls">
-            <div class="forecast-select-group" style="width: 100%;">
-                <select id="shipForecastSelect" class="forecast-select" style="width: 100%;" onchange="onForecastShipChange()"></select>
-            </div>
-        </div>
-        
-        <div class="chart-wrapper" style="position: relative;">
-            <!-- 自訂無圓點圖例 -->
-            <div style="position: absolute; top: 0px; right: 4%; display: flex; gap: 15px; font-size: 11px; color: #8b949e; pointer-events: none; z-index: 10;">
-                <div style="display: flex; align-items: center; gap: 5px; color: #ff7b72;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#ff7b72" stroke-width="2.2" /></svg>
-                    <span style="font-weight: bold;">空軍預測</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 5px; color: #58a6ff;">
-                    <svg width="20" height="4" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="2" x2="20" y2="2" stroke="#58a6ff" stroke-width="2" stroke-dasharray="6,4" /></svg>
-                    <span style="font-weight: bold;">ECMWF陣風</span>
-                </div>
-            </div>
-            
-            <div id="forecastChart" style="width: 100%; height: 100%;"></div>
-            <span id="forecastStatus" style="position: absolute; right: 4%; bottom: 35px; color: #58a6ff; font-size: 0.72rem; font-weight: bold; pointer-events: none; z-index: 10;">系統就緒</span>
-        </div>
-        
-        <div style="margin-top: 15px; font-size: 0.72rem; color: #8b949e; border-top: 1px solid rgba(48,54,61,0.5); padding-top: 10px; text-align: center; width: 100%;">
-            <span>© 本預報僅用於判斷LNG船進出港 | 橫軸為台灣時間</span>
         </div>
     </div>
 </div>
@@ -2454,6 +2631,33 @@
         return String(val || '').trim().toUpperCase() === 'W12' ? 'W12' : 'W13';
     }
 
+    let currentActiveTab = 'monitor';
+    let chatNavSeq = 0;
+
+    function hasUnsavedScheduleChanges() {
+        if (!Array.isArray(editScheduleList) || !Array.isArray(originalScheduleSnapshot)) return false;
+        if (editScheduleList.length !== originalScheduleSnapshot.length) return true;
+        for (let i = 0; i < editScheduleList.length; i++) {
+            const cur = editScheduleList[i] || {};
+            const orig = originalScheduleSnapshot[i] || {};
+            if ((cur.ship_name || '').trim() !== (orig.ship_name || '').trim()) return true;
+            if (normalizeFrontendDateMD(cur.d || '') !== normalizeFrontendDateMD(orig.d || '')) return true;
+            if (normalizeScheduleTerminal(cur.terminal) !== normalizeScheduleTerminal(orig.terminal)) return true;
+            if ((Number(cur.limit_speed) || 15.0) !== (Number(orig.limit_speed) || 15.0)) return true;
+        }
+        return false;
+    }
+
+    function confirmLeaveScheduleTab() {
+        if (currentActiveTab !== 'schedule') return true;
+        if (hasUnsavedScheduleChanges()) {
+            if (!confirm('尚有未儲存的船期修改，確定要離開並捨棄變更嗎？')) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function setActiveNav(tab) {
         const map = {
             monitor: 'navMonitorBtn',
@@ -2465,6 +2669,71 @@
             const el = document.getElementById(id);
             if (el) el.classList.toggle('is-active', key === tab);
         });
+    }
+
+    function switchMainTab(tab, options = {}) {
+        const targetTab = ['monitor', 'forecast', 'schedule', 'chat'].includes(tab) ? tab : 'monitor';
+        if (targetTab === currentActiveTab) {
+            if (targetTab === 'monitor' && typeof window.scrollTo === 'function') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            return true;
+        }
+
+        if (currentActiveTab === 'schedule' && targetTab !== 'schedule') {
+            if (!options.skipScheduleGuard && !confirmLeaveScheduleTab()) {
+                return false;
+            }
+            const adj = document.getElementById('scheduleAdjustModal');
+            if (adj) adj.style.display = 'none';
+            releaseLock();
+            cachedSessionPassword = "";
+        }
+
+        if (currentActiveTab === 'forecast' && targetTab !== 'forecast') {
+            const fModal = document.getElementById('forecastModal');
+            if (fModal) fModal.style.display = 'none';
+            window.removeEventListener('resize', handleChartResize);
+        }
+
+        if (currentActiveTab === 'chat' && targetTab !== 'chat') {
+            chatNavSeq += 1;
+            if (chatUiRefreshTimer) {
+                clearInterval(chatUiRefreshTimer);
+                chatUiRefreshTimer = null;
+            }
+            closeChatPreviewModal();
+            closeChatNameSheet();
+            closeChatAttachSheet();
+            if (chatActiveScreen === 'room') {
+                markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
+            }
+            const cModal = document.getElementById('chatModal');
+            if (cModal) cModal.style.display = 'none';
+            updateChatUnreadBadge();
+        }
+
+        if (currentActiveTab === 'monitor' && targetTab !== 'monitor') {
+            const mView = document.getElementById('monitorView');
+            if (mView) mView.style.display = 'none';
+        }
+
+        const targetMap = {
+            monitor: { id: 'monitorView', display: 'flex' },
+            forecast: { id: 'forecastModal', display: 'block' },
+            schedule: { id: 'scheduleAdjustModal', display: 'block' },
+            chat: { id: 'chatModal', display: 'flex' }
+        };
+        const targetCfg = targetMap[targetTab];
+        const targetEl = document.getElementById(targetCfg.id);
+        if (targetEl) targetEl.style.display = targetCfg.display;
+
+        currentActiveTab = targetTab;
+        setActiveNav(targetTab);
+        if (targetTab !== 'chat' && typeof window.scrollTo === 'function') {
+            window.scrollTo(0, 0);
+        }
+        return true;
     }
 
     function selectLimitSpeedPreset(preset) {
@@ -2606,6 +2875,11 @@
 
         const windCard = document.querySelector('.wind-card');
 
+        const STATUS_ICON_SAFE = `<span class="status-pill-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m8.5 12.5 2.5 2.5 4.8-5.2"/></svg></span>`;
+        const STATUS_ICON_WAIT = `<span class="status-pill-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><polyline points="12 7 12 12 15.5 14"/></svg></span>`;
+        const STATUS_ICON_WARN = `<span class="status-pill-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><line x1="12" y1="8" x2="12" y2="12.5"/><circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/></svg></span>`;
+        const shipHtml = shipName.trim() ? `<span class="status-ship">${escapeHtml(shipName.trim())}</span>` : '';
+
         // 判斷是否要判定為「停止」或「已結束」狀態
         if (!data || data.app_mode !== 'start' || isShipFinished) {
             if (windCard) windCard.classList.remove('has-status-pill');
@@ -2627,24 +2901,24 @@
             if (seasonTime === "--:--" || currentTime < "04:00") {
                 currentStatusClass = 'schedule-row-waiting';
                 box.className = "dynamic-box status-waiting";
-                box.innerHTML = `<div class="status-pill-main">等待進港</div>`;
+                box.innerHTML = `<div class="status-pill-main">${STATUS_ICON_WAIT}<span class="status-sep" aria-hidden="true">|</span><span class="status-label">等待進港</span>${shipHtml}</div>`;
                 currentStatus = "waiting";
             } else if (currentSpeed > limitSpeed) {
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
-                box.innerHTML = `<div class="status-pill-main">無法進港<span class="status-dot status-dot-warning" aria-hidden="true"></span></div><div class="status-pill-sub"><span class="status-reason-line">風速超標</span></div>`;
+                box.innerHTML = `<div class="status-pill-main">${STATUS_ICON_WARN}<span class="status-sep" aria-hidden="true">|</span><span class="status-label">無法進港</span>${shipHtml}</div><div class="status-pill-sub"><span class="status-reason-line">風速超標</span></div>`;
                 currentStatus = "warning";
             } else if (waveExceeded || visibilityLow) {
                 currentStatusClass = 'schedule-row-warning';
                 box.className = "dynamic-box status-warning";
                 const waveWarning = waveExceeded ? `<span class="condition-warning"><img src="/APP_SVG/wave.svg" alt="">浪高 ${escapeHtml(String(data.current_wave))} &gt; 2.5 m</span>` : '';
                 const visibilityWarning = visibilityLow ? `<span class="condition-warning"><img src="/APP_SVG/eye.svg" alt="">能見度 ${escapeHtml(String(data.current_visibility))} &lt; 2 浬</span>` : '';
-                box.innerHTML = `<div class="status-pill-main">無法進港<span class="status-dot status-dot-warning" aria-hidden="true"></span></div><div class="status-pill-sub">${waveWarning}${visibilityWarning}</div>`;
+                box.innerHTML = `<div class="status-pill-main">${STATUS_ICON_WARN}<span class="status-sep" aria-hidden="true">|</span><span class="status-label">無法進港</span>${shipHtml}</div><div class="status-pill-sub">${waveWarning}${visibilityWarning}</div>`;
                 currentStatus = "warning";
             } else {
                 currentStatusClass = 'schedule-row-safe';
                 box.className = "dynamic-box status-safe";
-                box.innerHTML = `<div class="status-pill-main">可進港<span class="status-dot status-dot-safe" aria-hidden="true"></span></div>`;
+                box.innerHTML = `<div class="status-pill-main">${STATUS_ICON_SAFE}<span class="status-sep" aria-hidden="true">|</span><span class="status-label">可進港</span>${shipHtml}</div>`;
                 currentStatus = "safe";
             }
         }
@@ -2814,7 +3088,7 @@
     // I11: 監聽視窗關閉或重整時自動釋放編輯鎖
     window.addEventListener('beforeunload', () => {
         const adjustModal = document.getElementById('scheduleAdjustModal');
-        if (adjustModal && adjustModal.style.display === 'flex') {
+        if (adjustModal && adjustModal.style.display !== 'none') {
             releaseLock();
         }
     });
@@ -2873,6 +3147,7 @@
     }
 
     async function triggerOpenScheduleAdjustModal() {
+        if (currentActiveTab === 'schedule') return;
         const canEdit = checkLockStatusBeforeInput();
         if (!canEdit) return;
 
@@ -2886,7 +3161,10 @@
 
         // 🌟 立即設定密碼並顯示視窗
         cachedSessionPassword = password;
-        openScheduleAdjustModal();
+        if (!openScheduleAdjustModal()) {
+            cachedSessionPassword = "";
+            return;
+        }
 
         // 🌟 背景進行密碼合法性驗證與編輯鎖佔用
         verifyPasswordInBackground(password, 'schedule');
@@ -2899,27 +3177,48 @@
             const response = await fetch(url);
             const data = await response.json();
             
-            // 🌟 如果伺服器回應時，使用者已經關閉了視窗（快取被清空），代表這是個無效的佔用，我們必須立即補發解鎖請求
-            if (cachedSessionPassword === "") {
+            // 🌟 若使用者已經切換會話或離開視窗，補發解鎖且不影響當前會話
+            if (cachedSessionPassword !== password) {
                 fetch(FIXED_GAS_API_URL + "action=release_lock&pwd=" + encodeURIComponent(password), { method: 'POST', mode: 'no-cors' });
+                return;
             }
 
             if (data.status !== "success") {
+                const manualModalEl = document.getElementById('manualModal');
+                const isStillActive = modalType === 'manual'
+                    ? Boolean(manualModalEl && manualModalEl.style.display === 'flex')
+                    : currentActiveTab === 'schedule';
+                if (!isStillActive) {
+                    fetch(FIXED_GAS_API_URL + "action=release_lock&pwd=" + encodeURIComponent(password), { method: 'POST', mode: 'no-cors' });
+                    return;
+                }
                 alert("❌ 密碼錯誤，您沒有權限進行此操作！");
                 if (modalType === 'manual') {
                     closeManualModal();
                 } else {
-                    closeScheduleAdjustModal();
+                    closeScheduleAdjustModal({ skipGuard: true });
                 }
             }
         } catch(e) {
             console.error("背景驗證密碼連線失敗/重導向:", e);
+            if (cachedSessionPassword !== password) {
+                fetch(FIXED_GAS_API_URL + "action=release_lock&pwd=" + encodeURIComponent(password), { method: 'POST', mode: 'no-cors' });
+                return;
+            }
+            const manualModalEl = document.getElementById('manualModal');
+            const isStillActive = modalType === 'manual'
+                ? Boolean(manualModalEl && manualModalEl.style.display === 'flex')
+                : currentActiveTab === 'schedule';
+            if (!isStillActive) {
+                fetch(FIXED_GAS_API_URL + "action=release_lock&pwd=" + encodeURIComponent(password), { method: 'POST', mode: 'no-cors' });
+                return;
+            }
             // I8: 當 CORS 錯誤導致 fetch 失敗時，可能密碼本身是錯的或是被鎖定，保守起見關閉 Modal
             alert("❌ 密碼驗證連線失敗或無權限 (CORS)，請確認密碼。");
             if (modalType === 'manual') {
                 closeManualModal();
             } else {
-                closeScheduleAdjustModal();
+                closeScheduleAdjustModal({ skipGuard: true });
             }
         }
     }
@@ -3005,29 +3304,27 @@
                 Object.values(records).forEach(card => {
                     if (card.pob_info && card.pob_info.formatted_msg) {
                         totalEntries += 1;
-                        // 🌟 修正：若是無法進港訊息則顯示紅色，已 POB 進港則維持綠色
+                        // 🌟 修正：若是無法進港訊息則顯示紅色，已 POB 進港則維持綠色/白卡
                         const isNoEntry = Boolean(card.pob_info.no_entry_reason || card.pob_info.formatted_msg.indexOf("無法進港") !== -1);
                         if (isNoEntry) noEntryCount += 1;
-                        const textColor = isNoEntry ? "#B91C1C" : "#166534";
-                        
-                        let displayMsg = card.pob_info.formatted_msg;
-                        if (!isNoEntry) {
+                        if (isNoEntry) {
+                            html += `<div class="pob-item-row is-no-entry"><span class="pob-item-ship">${escapeHtml(card.pob_info.formatted_msg)}</span></div>`;
+                        } else {
                             const shipName = (card.config && card.config.ship_name) ? card.config.ship_name : "未知";
                             const pobTime = card.pob_info.pob_time || "";
-                            displayMsg = `${shipName} 已於 ${pobTime} 進港`;
+                            html += `<div class="pob-item-row"><span class="pob-item-ship">${escapeHtml(shipName)}</span><span class="pob-item-time">${escapeHtml(pobTime)}</span></div>`;
                         }
-                        
-                        html += `<div style="margin-bottom: 6px; color: ${textColor}; font-weight: 700;">• ${escapeHtml(displayMsg)}</div>`;
                     }
                 });
             }
 
             if (html !== "") {
                 pobList.classList.toggle('is-no-entry-only', totalEntries > 0 && noEntryCount === totalEntries);
-                pobList.innerHTML = html;
+                pobList.innerHTML = `<h2 class="pob-card-title">POB 紀錄</h2><div class="pob-items-stack">${html}</div>`;
                 pobList.style.display = "block";
             } else {
                 pobList.classList.remove('is-no-entry-only');
+                pobList.innerHTML = "";
                 pobList.style.display = "none";
             }
 
@@ -3070,6 +3367,8 @@
     let forecastUpdateStatus = {};
     let lastObservedAppMode = null;
 
+    const FORECAST_REFRESH_ICON_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>`;
+
     function refreshForecastUpdateButton() {
         const button = document.getElementById('forecastUpdateBtn');
         if (!button) return;
@@ -3081,7 +3380,7 @@
         const wasUpdating = button.disabled;
         button.disabled = running;
         button.innerHTML = running ? '<span>⏳ 更新中...</span>' :
-            forecastUpdateStatus.forecast_auto_failed === true ? '<span>❗ 請手動更新</span>' : '<span>🔄 手動更新</span>';
+            forecastUpdateStatus.forecast_auto_failed === true ? '<span>❗ 請手動更新</span>' : `${FORECAST_REFRESH_ICON_SVG}<span>手動更新</span>`;
         button.style.animation = !running && forecastUpdateStatus.forecast_auto_failed === true ? 'pulse-highlight 1.5s ease-in-out 3' : '';
         if (wasUpdating && !running) loadForecastData();
     }
@@ -3135,7 +3434,7 @@
             
             // 更新風速與時間
             document.getElementById('windSpeed').innerText = data.current_wind !== undefined ? data.current_wind : "--";
-            document.getElementById('dataTime').innerText = "最後更新 " + formatLastUpdateTime(data.last_update);
+            document.getElementById('dataTime').innerText = "更新時間 " + formatLastUpdateTime(data.last_update);
 
             const manualModal = document.getElementById('manualModal');
             const isManualOpen = Boolean(manualModal && manualModal.style.display === 'flex');
@@ -3194,6 +3493,32 @@
                 el.addEventListener(evt, () => triggerPulsoAnimation(el, duration), { passive: true });
             });
         });
+
+        const addBtn = document.getElementById('adjustAddBtn');
+        if (addBtn && !addBtn.dataset.spinBound) {
+            addBtn.dataset.spinBound = '1';
+            const triggerAddSpin = () => {
+                if (addBtn.__spinTimer) {
+                    clearTimeout(addBtn.__spinTimer);
+                    addBtn.__spinTimer = null;
+                }
+                addBtn.classList.add('is-spin-green');
+                addBtn.__spinTimer = setTimeout(() => {
+                    addBtn.classList.remove('is-spin-green');
+                    addBtn.__spinTimer = null;
+                }, 420);
+            };
+            ['pointerenter', 'pointerdown', 'touchstart', 'focusin'].forEach(evt => {
+                addBtn.addEventListener(evt, triggerAddSpin, { passive: true });
+            });
+            addBtn.addEventListener('pointerleave', () => {
+                if (addBtn.__spinTimer) {
+                    clearTimeout(addBtn.__spinTimer);
+                    addBtn.__spinTimer = null;
+                }
+                addBtn.classList.remove('is-spin-green');
+            }, { passive: true });
+        }
     }
 
     // ==================== LNG 船聊天室 (v2 PWA Mobile) ====================
@@ -3260,6 +3585,7 @@
     let chatPreviewZoom = 1;
     let lastChatActivityAt = Date.now();
     let chatHeartbeatTimer = null;
+    let chatIdleTimer = null;
     let chatUiRefreshTimer = null;
     let chatDateCheckTimer = null;
 
@@ -3276,6 +3602,10 @@
         return Boolean(modal && modal.style.display === 'flex');
     }
 
+    function isChatRoomVisible() {
+        return isChatModalOpen() && chatActiveScreen === 'room';
+    }
+
     function isChatSeatActive(seat, nowServer) {
         return Boolean(seat && seat.clientId && (nowServer - Number(seat.activeAt || 0) < CHAT_IDLE_MS));
     }
@@ -3286,6 +3616,65 @@
         if (!m) return s || '--';
         const rocYear = Number(m[1]) - 1911;
         return `${rocYear}/${m[2]}/${m[3]}`;
+    }
+
+    function formatTwMonthDay(dateStr) {
+        const m = String(dateStr || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return '';
+        return `${Number(m[2])}月${Number(m[3])}日`;
+    }
+
+    function getChatFileExtBadge(fileName) {
+        const raw = String(fileName || '').trim();
+        const dotIdx = raw.lastIndexOf('.');
+        if (dotIdx >= 0 && dotIdx < raw.length - 1) {
+            return raw.slice(dotIdx + 1).toUpperCase().slice(0, 4);
+        }
+        return 'FILE';
+    }
+
+    function createChatFileBadgeSvg(extBadge) {
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'chat-att-file-svg');
+        svg.setAttribute('viewBox', '0 0 36 38');
+        svg.setAttribute('aria-hidden', 'true');
+
+        const docPath = document.createElementNS(svgNS, 'path');
+        docPath.setAttribute('d', 'M4 5a3 3 0 0 1 3-3h14l11 11v20a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5z');
+        docPath.setAttribute('fill', '#F8FBFF');
+        docPath.setAttribute('stroke', '#1877F2');
+        docPath.setAttribute('stroke-width', '2.2');
+        svg.appendChild(docPath);
+
+        const fold = document.createElementNS(svgNS, 'path');
+        fold.setAttribute('d', 'M21 2v8a3 3 0 0 0 3 3h8');
+        fold.setAttribute('fill', 'none');
+        fold.setAttribute('stroke', '#1877F2');
+        fold.setAttribute('stroke-width', '2.2');
+        svg.appendChild(fold);
+
+        const pill = document.createElementNS(svgNS, 'rect');
+        pill.setAttribute('x', '6');
+        pill.setAttribute('y', '18');
+        pill.setAttribute('width', '24');
+        pill.setAttribute('height', '13');
+        pill.setAttribute('rx', '3');
+        pill.setAttribute('fill', '#1877F2');
+        svg.appendChild(pill);
+
+        const txt = document.createElementNS(svgNS, 'text');
+        txt.setAttribute('x', '18');
+        txt.setAttribute('y', '27.5');
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', '#FFFFFF');
+        txt.setAttribute('font-size', extBadge.length > 3 ? '7' : '8');
+        txt.setAttribute('font-weight', '800');
+        txt.setAttribute('font-family', 'system-ui, sans-serif');
+        txt.textContent = extBadge;
+        svg.appendChild(txt);
+
+        return svg;
     }
 
     function showChatStatus(msg, isError = true) {
@@ -3362,7 +3751,7 @@
         if (!badge) return;
         const maxTs = getMaxChatMessageTs();
         const lastRead = getChatLastReadTs(currentChatDateStr);
-        const shouldShow = Boolean(maxTs > 0 && maxTs > lastRead && !isChatModalOpen());
+        const shouldShow = Boolean(maxTs > 0 && maxTs > lastRead && !isChatRoomVisible());
         badge.style.display = shouldShow ? 'inline-block' : 'none';
     }
 
@@ -3498,6 +3887,7 @@
         if (roleScreen) roleScreen.style.display = 'flex';
         if (roomScreen) roomScreen.style.display = 'none';
         renderChatRoleBar();
+        updateChatUnreadBadge();
     }
 
     function showChatRoomScreen() {
@@ -3635,16 +4025,17 @@
     }
 
     function renderChatIdentityAndComposer() {
-        const specBar = document.getElementById('chatSpectatorBar');
+        const specHint = document.getElementById('chatSpectatorHint');
         const footer = document.getElementById('chatComposerFooter');
-        if (!specBar || !footer) return;
-
-        if (mySeat) {
-            specBar.style.display = 'none';
-            footer.style.display = 'block';
-        } else {
-            specBar.style.display = 'flex';
-            footer.style.display = 'none';
+        const switchBtn = document.getElementById('chatRoleSwitchBtn');
+        if (switchBtn) {
+            switchBtn.textContent = mySeat ? (mySeat.roleLabel || mySeat.roleId) : '觀眾';
+        }
+        if (specHint) {
+            specHint.style.display = mySeat ? 'none' : 'inline-flex';
+        }
+        if (footer) {
+            footer.style.display = mySeat ? 'block' : 'none';
         }
     }
 
@@ -3660,7 +4051,7 @@
 
     async function enterChatWithRole(roleId, customLabel) {
         const claimed = await selectChatRole(roleId, customLabel);
-        if (claimed) {
+        if (claimed && isChatModalOpen() && currentActiveTab === 'chat') {
             showChatRoomScreen();
         }
     }
@@ -3735,6 +4126,16 @@
         }
 
         const dateStr = currentChatDateStr;
+        const monthDayLabel = formatTwMonthDay(dateStr);
+        if (monthDayLabel) {
+            const divider = document.createElement('div');
+            divider.className = 'chat-date-divider';
+            const pill = document.createElement('span');
+            pill.textContent = monthDayLabel;
+            divider.appendChild(pill);
+            container.appendChild(divider);
+        }
+
         messages.forEach(msg => {
             const role = CHAT_ROLES[msg.roleId] || { label: msg.roleId || '角色' };
             const isSelf = Boolean(msg.clientId === chatClientId);
@@ -3748,6 +4149,10 @@
 
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble';
+            const hasFileAttachment = Boolean(msg.attachment && msg.attachment.id && !msg.attachment.isImage);
+            if (!msg.text && hasFileAttachment) {
+                bubble.classList.add('is-file-only');
+            }
 
             if (msg.text) {
                 const textEl = document.createElement('div');
@@ -3799,10 +4204,8 @@
                     const card = document.createElement('div');
                     card.className = 'chat-att-file-card';
 
-                    const fileIcon = document.createElement('img');
-                    fileIcon.className = 'chat-att-file-icon';
-                    fileIcon.src = 'pic/選擇檔案.png';
-                    fileIcon.alt = '文件';
+                    const extBadge = getChatFileExtBadge(attMeta.name);
+                    const fileIcon = createChatFileBadgeSvg(extBadge);
 
                     const metaCol = document.createElement('div');
                     metaCol.className = 'chat-att-file-meta';
@@ -3811,7 +4214,7 @@
                     nameDiv.textContent = attMeta.name || '文件';
                     const sizeDiv = document.createElement('div');
                     sizeDiv.className = 'chat-att-file-size';
-                    sizeDiv.textContent = formatChatBytes(attMeta.size);
+                    sizeDiv.textContent = `${extBadge} · ${formatChatBytes(attMeta.size)}`;
                     metaCol.appendChild(nameDiv);
                     metaCol.appendChild(sizeDiv);
 
@@ -3821,12 +4224,7 @@
                     dlBtn.title = `下載 ${attMeta.name || '檔案'}`;
                     dlBtn.setAttribute('aria-label', `下載 ${attMeta.name || '檔案'}`);
                     dlBtn.onclick = () => downloadChatFileAttachment(dateStr, attMeta);
-
-                    const dlIcon = document.createElement('img');
-                    dlIcon.className = 'chat-att-download-img';
-                    dlIcon.src = 'pic/下載.png';
-                    dlIcon.alt = '下載';
-                    dlBtn.appendChild(dlIcon);
+                    dlBtn.innerHTML = `<svg class="chat-att-download-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
                     card.appendChild(fileIcon);
                     card.appendChild(metaCol);
@@ -3857,14 +4255,11 @@
             senderEl.textContent = (mySeat && mySeat.roleLabel) || '上傳中';
 
             const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble';
+            bubble.className = 'chat-bubble is-file-only';
 
             const card = document.createElement('div');
             card.className = 'chat-att-file-card';
-            const icon = document.createElement('img');
-            icon.className = 'chat-att-file-icon';
-            icon.src = 'pic/選擇檔案.png';
-            icon.alt = '上傳中';
+            const icon = createChatFileBadgeSvg(getChatFileExtBadge(chatUploadingItem.fileName));
             const metaCol = document.createElement('div');
             metaCol.className = 'chat-att-file-meta';
             const nameDiv = document.createElement('div');
@@ -3960,6 +4355,10 @@
         if (chatHeartbeatTimer) {
             clearInterval(chatHeartbeatTimer);
             chatHeartbeatTimer = null;
+        }
+        if (chatIdleTimer) {
+            clearInterval(chatIdleTimer);
+            chatIdleTimer = null;
         }
     }
 
@@ -4075,6 +4474,9 @@
                 renewChatSeatActiveAt();
             }
         }, CHAT_HEARTBEAT_MS);
+        chatIdleTimer = setInterval(() => {
+            checkChatIdleAndRefreshUi();
+        }, CHAT_UI_REFRESH_MS);
     }
 
     async function selectChatRole(roleId, customLabel) {
@@ -4094,6 +4496,7 @@
 
         listenToChatRoom();
         const dateStr = currentChatDateStr;
+        const navToken = chatNavSeq;
         const oldSeat = mySeat ? { ...mySeat } : null;
         isSelectingChatRole = true;
         renderChatRoleBar();
@@ -4116,8 +4519,10 @@
                         lastIntendedSeat = { ...mySeat };
                         recordChatActivity();
                         startChatSeatTimers();
-                        renderChatIdentityAndComposer();
-                        renderChatMessages();
+                        if (chatNavSeq === navToken && isChatModalOpen()) {
+                            renderChatIdentityAndComposer();
+                            renderChatMessages();
+                        }
                         return true;
                     }
                 }
@@ -4164,7 +4569,7 @@
                 }
                 return false;
             }
-            if (!isChatModalOpen() || currentChatDateStr !== dateStr) {
+            if (chatNavSeq !== navToken || !isChatModalOpen() || currentChatDateStr !== dateStr) {
                 await releaseChatSeatByTarget(wonSeat, { keepOnDisconnect: false });
                 return false;
             }
@@ -4184,7 +4589,7 @@
             if (oldSeat && (oldSeat.seatKey !== mySeat.seatKey || oldSeat.dateStr !== mySeat.dateStr)) {
                 await releaseChatSeatByTarget(oldSeat, { keepOnDisconnect: false });
             }
-            if (!isChatModalOpen() || currentChatDateStr !== dateStr) {
+            if (chatNavSeq !== navToken || !isChatModalOpen() || currentChatDateStr !== dateStr) {
                 await leaveChatRole({ keepOnDisconnect: false });
                 return false;
             }
@@ -4614,7 +5019,7 @@
         chatMessagesRef = db.ref(`formal/chat_rooms/${nextDate}/messages`);
         chatMessagesHandler = (snapshot) => {
             chatMessagesData = (snapshot && typeof snapshot.val === 'function' ? snapshot.val() : null) || {};
-            if (isChatModalOpen()) {
+            if (isChatRoomVisible()) {
                 markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
             }
             renderChatMessages();
@@ -4629,45 +5034,43 @@
     }
 
     function openChatModal() {
-        setActiveNav('chat');
+        if (!switchMainTab('chat')) return;
         clearChatStatus();
         listenToChatRoom();
         recordChatActivity();
-        const modal = document.getElementById('chatModal');
-        if (!modal) return;
-        modal.style.display = 'flex';
-        markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
-        showChatRoleScreen();
+        if (mySeat && mySeat.dateStr === currentChatDateStr) {
+            renewChatSeatActiveAt();
+            showChatRoomScreen();
+        } else {
+            showChatRoleScreen();
+        }
+        updateChatUnreadBadge();
 
         if (chatUiRefreshTimer) clearInterval(chatUiRefreshTimer);
         chatUiRefreshTimer = setInterval(() => {
-            checkChatIdleAndRefreshUi();
+            if (isChatModalOpen()) checkChatIdleAndRefreshUi();
         }, CHAT_UI_REFRESH_MS);
     }
 
     function checkChatIdleAndRefreshUi() {
-        if (!isChatModalOpen()) return;
         if (mySeat && Date.now() - lastChatActivityAt >= CHAT_IDLE_MS) {
             leaveChatRole({ reason: '已超過 15 分鐘無操作，系統自動釋放發言席位並切回觀眾模式' });
             return;
         }
-        renderChatRoleBar();
+        if (isChatModalOpen()) {
+            renderChatRoleBar();
+        }
     }
 
-    function closeChatModal() {
-        setActiveNav('monitor');
-        markChatAsRead(currentChatDateStr, getMaxChatMessageTs());
-        closeChatPreviewModal();
-        closeChatNameSheet();
-        closeChatAttachSheet();
+    function closeChatModal(options = {}) {
         if (chatUiRefreshTimer) {
             clearInterval(chatUiRefreshTimer);
             chatUiRefreshTimer = null;
         }
-        const modal = document.getElementById('chatModal');
-        if (modal) modal.style.display = 'none';
-        if (mySeat) leaveChatRole({ keepOnDisconnect: false });
-        updateChatUnreadBadge();
+        if (options && options.releaseSeat && mySeat) {
+            leaveChatRole({ keepOnDisconnect: false });
+        }
+        switchMainTab('monitor');
     }
 
     function initShipChat() {
@@ -4687,9 +5090,6 @@
             chatModal.dataset.chatBound = '1';
             ['input', 'keydown', 'click'].forEach(evt => {
                 chatModal.addEventListener(evt, () => recordChatActivity());
-            });
-            chatModal.addEventListener('click', (e) => {
-                if (e.target === chatModal) closeChatModal();
             });
         }
 
@@ -4801,9 +5201,6 @@
                 if (e.target === manualModalEl) closeManualModal();
             });
         }
-        
-        // 🌟 點擊即時風速數字，開啟天氣預報視窗
-        document.getElementById('windSpeed').addEventListener('click', openForecastModal);
         
         // 🌟 UX 優化：增加鍵盤事件，讓使用者在密碼視窗輸入完畢後可按 Enter 鍵直接確認
         document.getElementById('modalPwdInput').addEventListener('keydown', (e) => {
@@ -4994,8 +5391,7 @@
     }
 
     function openForecastModal() {
-        setActiveNav('forecast');
-        document.getElementById('forecastModal').style.display = 'flex';
+        if (!switchMainTab('forecast')) return;
         populateShipForecastSelect();
         initForecastChart();
         
@@ -5009,11 +5405,7 @@
     }
 
     function closeForecastModal() {
-        setActiveNav('monitor');
-        document.getElementById('forecastModal').style.display = 'none';
-        
-        // 解除 resize 監聽，節省手機 CPU 消耗
-        window.removeEventListener('resize', handleChartResize);
+        switchMainTab('monitor');
     }
 
     // 船期下拉選單填充
@@ -5183,26 +5575,33 @@
                 show: false
             },
             grid: {
-                left: '4%',
+                left: '3%',
                 right: '4%',
-                bottom: '18%',
-                top: '12%',
+                bottom: '22%',
+                top: '14%',
                 containLabel: true
             },
             xAxis: {
                 type: 'category',
                 boundaryGap: false,
                 data: timeData,
-                axisLine: { lineStyle: { color: '#30363d' } },
-                axisLabel: { color: '#8b949e', fontSize: 10 },
-                splitLine: { show: true, lineStyle: { color: '#161b22', type: 'dashed' } }
+                axisLine: { lineStyle: { color: '#334155' } },
+                axisLabel: {
+                    color: '#94A3B8',
+                    fontSize: 10,
+                    lineHeight: 14,
+                    formatter: function (value) {
+                        return String(value || '').replace(' ', '\n');
+                    }
+                },
+                splitLine: { show: true, lineStyle: { color: '#1E293B', type: 'dashed' } }
             },
             yAxis: {
                 type: 'value',
-                name: '',
-                nameTextStyle: { color: '#8b949e', fontSize: 10 },
-                axisLabel: { color: '#8b949e', fontSize: 10 },
-                splitLine: { show: true, lineStyle: { color: '#21262d' } }
+                name: 'm/s',
+                nameTextStyle: { color: '#94A3B8', fontSize: 11, padding: [0, 24, 4, 0] },
+                axisLabel: { color: '#94A3B8', fontSize: 11 },
+                splitLine: { show: true, lineStyle: { color: '#1E293B' } }
             },
             dataZoom: [
                 {
@@ -5213,14 +5612,14 @@
                     dataBackground: { lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 } },
                     selectedDataBackground: { lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 } },
                     orient: 'horizontal',
-                    bottom: '0%',
-                    height: 16,
+                    bottom: '1%',
+                    height: 14,
                     start: 0,
                     end: 35,
-                    textStyle: { color: '#8b949e', fontSize: 9 },
-                    borderColor: 'transparent', // 隱藏外框
-                    backgroundColor: 'transparent', // 隱藏底色
-                    fillerColor: 'rgba(56, 139, 253, 0.15)',
+                    textStyle: { color: '#94A3B8', fontSize: 9 },
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+                    fillerColor: '#4BA3FF',
                     handleSize: 0,
                     handleIcon: 'none',
                     handleStyle: {
@@ -5382,29 +5781,26 @@
             console.error("手動更新呼叫失敗:", error);
             alert("❌ 連線錯誤，請檢查網路狀態");
             updateBtn.disabled = false;
-            updateBtn.innerHTML = `<span>🔄 手動更新</span>`;
+            updateBtn.innerHTML = `${FORECAST_REFRESH_ICON_SVG}<span>手動更新</span>`;
             statusEl.innerText = "連線失敗";
             statusEl.style.color = "#ff7b72";
         }
     }
     
-    // --- 船期手動調整視窗邏輯 ---
+    // --- 船期手動調整分頁邏輯 ---
     let editScheduleList = [];
     let originalScheduleSnapshot = [];
     
     function openScheduleAdjustModal() {
-        setActiveNav('schedule');
         editScheduleList = JSON.parse(JSON.stringify(scheduleDataList));
         originalScheduleSnapshot = JSON.parse(JSON.stringify(scheduleDataList));
-        document.getElementById('scheduleAdjustModal').style.display = 'flex';
+        if (!switchMainTab('schedule')) return false;
         renderAdjustCards();
+        return true;
     }
     
-    function closeScheduleAdjustModal() {
-        setActiveNav('monitor');
-        document.getElementById('scheduleAdjustModal').style.display = 'none';
-        releaseLock();
-        cachedSessionPassword = ""; // 🌟 關閉船期調整時清空快取密碼
+    function closeScheduleAdjustModal(options = {}) {
+        switchMainTab('monitor', { skipScheduleGuard: Boolean(options && options.skipGuard) });
     }
     
     function isValidScheduleDate(val) {
@@ -5465,17 +5861,40 @@
         }
     }
 
+    function onAdjustTerminalChange(selectEl, index) {
+        const term = normalizeScheduleTerminal(selectEl && selectEl.value);
+        updateEditItem(index, 'terminal', term);
+        const field = selectEl && selectEl.closest('.adjust-terminal-field');
+        const pill = field ? field.querySelector('.adjust-terminal-pill') : null;
+        if (pill) {
+            pill.textContent = term;
+            pill.classList.remove('badge-w12', 'badge-w13');
+            pill.classList.add(`badge-${term.toLowerCase()}`);
+        }
+    }
+
+    function onAdjustShipNameInput(inputEl, index) {
+        const val = inputEl ? inputEl.value : '';
+        updateEditItem(index, 'ship_name', val);
+        const card = inputEl && inputEl.closest('.adjust-card');
+        const titleEl = card ? card.querySelector('.adjust-card-title') : null;
+        if (titleEl) {
+            titleEl.textContent = val.trim() || '未命名船期';
+        }
+    }
+
     function renderAdjustCards() {
         const container = document.getElementById('adjustCardList');
         if (!container) return;
         if (!editScheduleList || editScheduleList.length === 0) {
-            container.innerHTML = '<div class="adjust-empty-state">目前編輯清單為空，請點擊右上角「＋」建立船期</div>';
+            container.innerHTML = '<div class="adjust-empty-state">目前編輯清單為空，請點擊右上角「＋ 新增」建立船期</div>';
             return;
         }
         let html = '';
         editScheduleList.forEach((item, index) => {
             const safeDate = escapeHtml(item.d || '');
             const safeName = escapeHtml(item.ship_name || '');
+            const cardTitle = escapeHtml((item.ship_name || '').trim() || '未命名船期');
             const term = normalizeScheduleTerminal(item.terminal);
             const speedNum = Number(item.limit_speed);
             const hasCustomSpeed = Number.isFinite(speedNum) && speedNum > 0 && speedNum !== 12 && speedNum !== 15;
@@ -5487,43 +5906,61 @@
                 : '';
             html += `
             <div class="adjust-card" data-adjust-index="${index}">
-                ${unfinishedTag}
-                <div class="adjust-card-row1">
-                    <div class="adjust-date-wrap">
-                        <label class="adjust-field-label">日期</label>
-                        <input type="text" class="adjust-date-input" value="${safeDate}" placeholder="MM/DD" inputmode="numeric"
-                               onchange="updateEditItem(${index}, 'd', this.value)"
-                               onblur="validateDateInput(this, ${index})">
-                    </div>
-                    <div class="adjust-terminal-wrap">
-                        <label class="adjust-field-label">碼頭</label>
-                        <select class="adjust-terminal-select" onchange="updateEditItem(${index}, 'terminal', this.value)">
-                            <option value="W12" ${term === 'W12' ? 'selected' : ''}>W12</option>
-                            <option value="W13" ${term === 'W13' ? 'selected' : ''}>W13</option>
-                        </select>
+                <div class="adjust-card-head">
+                    <div class="adjust-card-title-group">
+                        <span class="adjust-card-title">${cardTitle}</span>
+                        ${unfinishedTag}
                     </div>
                     <button type="button" class="adjust-delete-btn" onclick="deleteEditItem(${index})" aria-label="刪除此船期" title="刪除此船期">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </button>
                 </div>
-                <div class="date-error" style="color: #DC2626; font-size: 11px; margin-top: -6px; display: none;">格式須為 MM/DD 且月份 1~12、日期 1~31</div>
-                <div class="adjust-card-row2">
-                    <div class="adjust-ship-wrap">
-                        <label class="adjust-field-label">船名</label>
-                        <input type="text" class="adjust-ship-input" value="${safeName}" placeholder="船名"
-                               onchange="updateEditItem(${index}, 'ship_name', this.value)">
+                <div class="adjust-card-divider" aria-hidden="true"></div>
+                <div>
+                    <label class="adjust-field-label">日期</label>
+                    <div class="adjust-date-field">
+                        <input type="text" class="adjust-date-input" value="${safeDate}" placeholder="MM/DD" inputmode="numeric"
+                               oninput="updateEditItem(${index}, 'd', this.value)"
+                               onblur="validateDateInput(this, ${index})">
+                        <svg class="adjust-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
                     </div>
-                    <div class="adjust-speed-wrap">
-                        <label class="adjust-field-label">速限 m/s</label>
-                        <select class="adjust-speed-select" onchange="updateEditItem(${index}, 'limit_speed', this.value)">
+                </div>
+                <div class="date-error" style="color: #DC2626; font-size: 11px; margin-top: -6px; display: none;">格式須為 MM/DD 且月份 1~12、日期 1~31</div>
+                <div class="adjust-card-mid">
+                    <div>
+                        <label class="adjust-field-label">碼頭</label>
+                        <div class="adjust-terminal-field">
+                            <span class="adjust-terminal-pill badge-${term.toLowerCase()}">${term}</span>
+                            <select class="adjust-terminal-select" aria-label="碼頭" onchange="onAdjustTerminalChange(this, ${index})">
+                                <option value="W12" ${term === 'W12' ? 'selected' : ''}>W12</option>
+                                <option value="W13" ${term === 'W13' ? 'selected' : ''}>W13</option>
+                            </select>
+                            <svg class="adjust-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="adjust-field-label">速限</label>
+                        <select class="adjust-speed-select" aria-label="速限" onchange="updateEditItem(${index}, 'limit_speed', this.value)">
                             <option value="15" ${speedNum === 15.0 ? 'selected' : ''}>15</option>
                             <option value="12" ${speedNum === 12.0 ? 'selected' : ''}>12</option>
                             ${customSpeedOpt}
                         </select>
                     </div>
+                </div>
+                <div>
+                    <label class="adjust-field-label">船名</label>
+                    <input type="text" class="adjust-ship-input" value="${safeName}" placeholder="船名"
+                           oninput="onAdjustShipNameInput(this, ${index})">
                 </div>
             </div>
             `;
@@ -5561,8 +5998,7 @@
         renderAdjustCards();
         
         // 滾動到最上方
-        const scroller = document.querySelector('.adjust-body-scroll') || document.getElementById('adjustCardList');
-        if (scroller) scroller.scrollTop = 0;
+        if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
     }
     
     async function saveScheduleAdjustments() {
@@ -5653,7 +6089,7 @@
         
         if (diffList.length === 0) {
             alert("ℹ️ 未偵測到任何修改！");
-            closeScheduleAdjustModal();
+            closeScheduleAdjustModal({ skipGuard: true });
             return;
         }
         
@@ -5680,7 +6116,7 @@
             });
             
             alert("✅ 船期調整儲存成功！\n(採用背景發送，請稍候重整網頁確認結果)");
-            closeScheduleAdjustModal();
+            closeScheduleAdjustModal({ skipGuard: true });
         } catch(e) {
             console.error("Save schedule error:", e);
             alert("❌ 執行儲存失敗：" + e.message);

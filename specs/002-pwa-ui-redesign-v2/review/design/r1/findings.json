@@ -1,0 +1,32 @@
+{
+  "review_id": "design-r1",
+  "gate_id": "design",
+  "reviewed_revision": "413047d4fd8b61561b0ade08928a3b25cb237294",
+  "sufficient_inputs": true,
+  "instruction_conflict": false,
+  "verdict": "pass",
+  "previous_findings_verification": {
+    "DES-001": "resolved — #chatNameSheetBackdrop and #chatAttachSheetBackdrop hoisted as direct children of <body> with position: fixed; inset: 0; z-index: 2060; and .chat-bottom-sheet constrained to max-width: 480px; margin: 0 auto across spec.md, plan.md, and tasks.md.",
+    "DES-002": "resolved — saveScheduleAdjustments() uses { skipGuard: true } for both no-op and save completion; verifyPasswordInBackground() verifies cachedSessionPassword ownership and active modal/tab before alerting/closing with { skipGuard: true }; hasUnsavedScheduleChanges() mirrors save normalization; date/ship inputs bind oninput.",
+    "DES-003": "resolved — desktop #chatModal margin click-close listener removed in initShipChat(); closeChatModal(options) seat release is strictly opt-in via options.releaseSeat.",
+    "DES-004": "resolved — calibrated #B91C1C CSS filter on .condition-warning img for black /APP_SVG/wave.svg and /APP_SVG/eye.svg; full-width #dynamicBox and wrapping rules for .status-ship and .condition-warning at 375x812.",
+    "DES-005": "resolved — #chatRoleSwitchBtn populated with role label or '觀眾'; .bottom-nav-inner aligned to 66px; redundant safe-area-inset-bottom removed on #chatComposerFooter; .chat-date-divider ('M月D日') and standalone .chat-bubble.is-file-only white card ('EXT · SIZE' + blue download SVG) specified.",
+    "DES-006": "resolved — chatNavSeq !== navToken guards cover both the Other rename branch and post-claim awaits in selectChatRole(), renewChatSeatActiveAt() refreshes RTDB activeAt on resume in openChatModal(), and switchMainTab() is idempotent when tab === currentActiveTab."
+  },
+  "compatibility_checks": {
+    "frontend_index_html": "compatible — preserves GAS/RTDB/lease contracts, ECharts data/DOM hooks, schedule diffList semantics, manual segmented controls, and hoisting sheet IDs without breaking DOM queries.",
+    "tests_frontend_echarts_js": "compatible — keeps #forecastModal openForecastModal()/closeForecastModal(), #shipForecastSelect option values/texts, xAxis.data unpadded M/D HH:00 strings, .custom-tooltip DOM/text, and 14px slider geometry inside 320px .chart-wrapper within 1280x720 viewport.",
+    "deploy_build_hosting_py": "compatible — all referenced local assets (logo.png, manifest.json, presentation/index.html, APP_SVG/wave.svg, APP_SVG/eye.svg, pic/*.png, notification_option_C.mp3) verified present in frontend/."
+  },
+  "findings": [
+    {
+      "id": "DES-R1-001",
+      "severity": "minor",
+      "location": "specs/002-pwa-ui-redesign-v2/spec.md (line 67) vs specs/002-pwa-ui-redesign-v2/plan.md (line 56)",
+      "evidence": "spec.md line 67 specifies `ice-blue #chatMessagesContainer (#EBF3FC)`, whereas plan.md line 56 specifies `#chatMessagesContainer { ... background: transparent; }` over the page `--bg-gradient` (`#E8F1FA` -> `#EEF5FC` -> `#E3EEF9`).",
+      "impact": "Visually both produce an ice-blue background inside the 480px chat shell, but `background: transparent` makes `getComputedStyle(container).backgroundColor` evaluate to `rgba(0, 0, 0, 0)` instead of `rgb(235, 243, 252)` (`#EBF3FC`) if AC-007 tests check computed background color, and exposes gradient shift behind scrolled messages.",
+      "recommendation": "Align plan.md (and the implementation in frontend/index.html) to `background: #EBF3FC;` on `#chatMessagesContainer` to match spec.md REQ-007 and the desktop mockup (`聊天室.png`).",
+      "verification_condition": "In frontend/index.html and plan.md, `#chatMessagesContainer` resolves `getComputedStyle(document.getElementById('chatMessagesContainer')).backgroundColor` to `'rgb(235, 243, 252)'` (`#EBF3FC`) while `#chatModal` outer desktop margins remain transparent over the page gradient."
+    }
+  ]
+}

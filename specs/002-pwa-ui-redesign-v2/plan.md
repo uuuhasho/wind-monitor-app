@@ -1,0 +1,108 @@
+# Technical Plan · 002-pwa-ui-redesign-v2
+
+- **Canonical Spec**: `specs/002-pwa-ui-redesign-v2/spec.md` (`REQ-001`–`REQ-008`, `AC-001`–`AC-010`)
+- **Decisions**: `specs/002-pwa-ui-redesign-v2/decisions.md` (`D1`–`D7`)
+
+## Architecture & File Changes
+
+### 1. `frontend/index.html` — CSS Design Tokens & Unified 4-Tab Shell
+- **Theme Tokens (`:root`)**:
+  - `--bg-gradient: linear-gradient(180deg, #E8F1FA 0%, #EEF5FC 55%, #E3EEF9 100%)`
+  - `--header-navy: #0B2948`, `--header-h: 56px`, `--bottom-nav-h: 66px`
+  - `--card-bg: #FFFFFF`, `--border-subtle: #DCE6F2`, `--text-navy: #0B2948`, `--text-main: #1E293B`, `--text-muted: #52657A`
+  - `--nav-active-bg: #D9ECFF`, `--nav-active-color: #1877F2`, `--primary-blue: #0066E6`
+  - `--table-head-bg: #E2EEFA`, `--table-head-text: #1E3A5F`
+  - `--w12-color: #D97706`, `--w13-color: #0B2948`
+  - `--safe-bg: #DCFCE7`, `--safe-color: #15803D`, `--warning-bg: #FEE2E2`, `--warning-color: #B91C1C`, `--waiting-bg: #E2E8F0`, `--waiting-color: #475569`
+- **Unified Fixed Chrome**:
+  - `.app-header-bar`: `position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); z-index: 950; background: var(--header-navy);` (remove `border-bottom: 3px solid var(--accent-gold)`).
+  - `.app-header`: `max-width: 480px; height: 100%; margin: 0 auto; padding: 0 14px; display: flex; align-items: center; justify-content: space-between;`
+    - `.app-brand`: `.app-logo-wrap` (`34px` white circle `logo.png`), `.app-brand-divider` (`1px`, `height: 20px`, `background: rgba(255,255,255,0.35)`), `.app-title` (`臺中 LNG 船監控`).
+    - `#infoLink`: inline-flex pill/link with circular `i`/`!` icon SVG + `<span>操作說明</span>`.
+  - `.bottom-nav`: `position: fixed; left: 0; right: 0; bottom: 0; z-index: 950; background: #FFFFFF; border-top: 1px solid var(--border-subtle); padding-bottom: env(safe-area-inset-bottom, 0px);` and `.bottom-nav-inner { height: var(--bottom-nav-h); }` (`66px`, matching `#chatModal` bottom offset).
+    - All 4 tabs (`#navMonitorBtn`, `#navForecastBtn`, `#navScheduleBtn`, `#chatOpenBtn`) share uniform `.bottom-nav-item.is-active .bottom-nav-icon-wrap { background-color: #D9ECFF; color: #1877F2; border-color: transparent; }` and `.bottom-nav-item.is-active { color: #1877F2; font-weight: 700; }` (remove `#navMonitorBtn.is-active` transparent override).
+    - `#chatUnreadBadge` renders as a clean circular red dot (`width: 10px; height: 10px; border-radius: 999px; background-color: #EF4444; border: 2px solid #FFFFFF; animation: none;`, empty text), clearing only via `isChatRoomVisible()` (`#chatRoomScreen` active).
+- **Wind Card Full-Width Status Bar & Icon Tinting (`REQ-002`)**:
+  - `.wind-card` centers `.wind-card-label`, `.wind-main-row`, and `#dataTime`.
+  - `.dynamic-box`: `width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 14px; border-radius: 12px; display: none; text-align: center;`
+  - `.status-pill-main`: `display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; font-size: 1rem; font-weight: 700; line-height: 1.3; min-width: 0;` with `.status-ship { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }` so long ship names wrap cleanly without overflow at `375x812`.
+  - `.status-pill-sub`: `margin-top: 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 600; line-height: 1.35; max-width: 100%;`
+  - `.status-reason-line`, `.condition-warning`: `max-width: 100%; white-space: normal; overflow-wrap: anywhere; display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px;`
+  - `.condition-warning img`: replace `filter: brightness(0) invert(1);` with `filter: brightness(0) saturate(100%) invert(16%) sepia(79%) saturate(4644%) hue-rotate(353deg) brightness(82%) contrast(94%);` so black `/APP_SVG/wave.svg` and `/APP_SVG/eye.svg` render in crisp `#B91C1C` dark red against `#FEE2E2`.
+- **4 Embedded Tab Views**:
+  - `#monitorView.tab-view`: `max-width: 480px; margin: 0 auto; padding: calc(var(--header-h) + 14px) 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px;`
+  - `#forecastModal.tab-view`: `display: none; max-width: 480px; margin: 0 auto; padding: calc(var(--header-h) + 14px) 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;`
+    - `.forecast-page-head`: left `<h2>風速預報</h2>`, right `#forecastUpdateBtn` yellow capsule (`#FDE047` / `#EAB308`, dark navy text, crisp refresh SVG + status text).
+    - `.forecast-chart-card`: `#0F1722` dark rounded card (`position: relative; z-index: 1; isolation: isolate; border-radius: 18px; padding: 14px 12px 10px;`), top centered inline legend (`空軍預測`, `ECMWF陣風`), `.chart-wrapper` (`position: relative; z-index: 1; isolation: isolate; height: 320px; border: none; background: transparent; padding: 0;`), and `.forecast-status-bar` below `.chart-wrapper` (`display: flex; justify-content: flex-end; margin-top: 4px;`) containing `#forecastStatus`.
+    - `.card.forecast-ship-card`: dark slate card (`margin-top: 12px; padding: 14px 16px; background-color: #0F1722; color: #F0F6FC; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 18px;`) with label `選擇船舶` (`#CBD5E1`) + dark `#shipForecastSelect` (`background-color: #162234; color: #F8FAFC; border: 1px solid rgba(88, 166, 255, 0.32);`, `#93C5FD` chevron SVG, `color-scheme: dark`).
+    - `.forecast-footnote`: `margin-top: 12px; text-align: center; font-size: 0.78rem; color: #52657A;` (`本預報僅用於判斷 LNG 船進出港`).
+  - `#scheduleAdjustModal.tab-view`: `display: none; max-width: 480px; margin: 0 auto; padding: calc(var(--header-h) + 14px) 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;`
+    - `.adjust-page-head`: left `<h2>船期調整</h2>` + `<p>修改後請儲存。</p>`; right circular `#adjustAddBtn.add-row-btn` (`＋`, `36x36`, navy `#164E8A`, turns green `#28a745` + `rotate(90deg)` on `:hover`, `:active`, and JS `.is-spin-green`).
+    - `#adjustCardList`: vertical stack of `.adjust-card` alternating `#FFFFFF` (odd) and `#EBEFF4` (even via `:nth-child(even)`, border `#CBD5E1`, border-radius `16px`, padding `12px 14px`):
+      - `.adjust-card-head`: left `.adjust-card-title` (shows `item.ship_name` or `未命名船期`) + optional `.adjust-unfinished-tag` (`未進港待排期`); right `.adjust-delete-btn` (trash SVG). Followed by thin `1px solid #EEF2F6` divider.
+      - Date row: label `日期` + `.adjust-date-field` relative wrapper containing `<input type="text" class="adjust-date-input">` (`oninput` updates `editScheduleList[index].d` live, `onblur` runs `validateDateInput`) and non-interactive right calendar SVG ornament (`pointer-events: none`) + `.date-error`.
+      - 2-column `.adjust-card-mid` (`grid-template-columns: 1fr 1fr; gap: 10px;`):
+        - Left `碼頭`: `.adjust-terminal-field` containing colored pill visual badge (`.adjust-terminal-pill.badge-w12` or `.badge-w13`) + `<select class="adjust-terminal-select">` overlaid/styled cleanly with right chevron so native `<select>` remains 100% accessible and programmatic `.value` / `change` updates sync `.adjust-terminal-pill` immediately.
+        - Right `速限`: `<select class="adjust-speed-select">` (`15`, `12`, and dynamic custom numeric fallback).
+      - Bottom row: label `船名` + `<input type="text" class="adjust-ship-input">` (`oninput` updates `editScheduleList[index].ship_name` and `.adjust-card-title` live).
+    - `.adjust-actions-row`: `display: grid; grid-template-columns: 1.55fr 1fr; gap: 10px; margin-top: 14px;` with `#saveScheduleBtn` (`#0066E6` blue, circle-check SVG + `儲存變更`) and `#cancelScheduleBtn` (white `#FFFFFF`, border `#CBD5E1`, `取消`).
+  - `#chatModal.tab-view`: `display: none; position: fixed; top: var(--header-h); bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; z-index: 900; justify-content: center; background: transparent;`
+    - `.chat-modal-box`: `width: 100%; max-width: 480px; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: transparent;`
+    - `#chatRoleScreen` & `#chatRoomScreen`:
+      - `.chat-sub-header`: `background: #FFFFFF; border-bottom: 1px solid #DCE6F2; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;`
+        - In `#chatRoleScreen`: left `選擇角色` (`font-size: 1.25rem; font-weight: 800; color: #0B2948`), right `#chatDateBadge` light pill.
+        - In `#chatRoomScreen`: left `#chatModalTitle` (`作業聊天室`, `1.25rem`, `800`, `#0B2948`), right `.chat-room-header-right` (`#chatSpectatorHint` `僅供瀏覽` left of `<button id="chatRoleSwitchBtn">`, no `#chatSpectatorBar` divider). `renderChatIdentityAndComposer()` hides `#chatSpectatorHint` when `mySeat` is active.
+      - `.chat-role-list`: `flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;` with crisp rounded white `.chat-role-item` cards (`is-active` sky-blue outline, `is-full` muted gray with `pic/lock.png`).
+      - `#chatMessagesContainer`: `flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px; background: #EBF3FC;` with `.chat-date-divider` centered pill (`M月D日`, e.g. `11月20日`), white `.chat-msg-row.is-other .chat-bubble` (`#FFFFFF`, `box-shadow: 0 1px 3px rgba(11,41,72,0.06)`), soft sky-blue `.chat-msg-row.is-self .chat-bubble` (`#C2E1FF`), `.chat-bubble.is-file-only { background: transparent !important; padding: 0 !important; box-shadow: none !important; }` for standalone file-only cards, `.chat-att-file-card` white rounded card (`#FFFFFF`, `border: 1px solid #DCE6F2`, blue file SVG badge + bold filename + `${extUpper} · ${formatChatBytes(size)}` + blue download SVG icon button `.chat-att-file-btn`).
+      - `#chatComposerFooter`: `background: #FFFFFF; border-top: 1px solid #DCE6F2; padding: 8px 12px; flex-shrink: 0;` (no extra `safe-area-inset-bottom` since it sits directly above `.bottom-nav`) containing `#chatAttachBtn` (paper-clip SVG), `#chatTextInput` (`border-radius: 20px; background: #F8FAFC;`, placeholder `輸入訊息...`), `#chatSendBtn` (`#0066E6` blue pill, `送出`).
+    - Hoist `#chatNameSheetBackdrop` and `#chatAttachSheetBackdrop` out of `#chatModal` to become direct children of `<body>` (sibling to `#chatPreviewModal` and `#manualModal`) with `position: fixed; inset: 0; z-index: 2060;` so they escape `#chatModal`'s stacking context and cover `.app-header-bar` and `.bottom-nav`, while constraining `.chat-bottom-sheet { width: 100%; max-width: 480px; margin: 0 auto; box-sizing: border-box; }`.
+    - `#chatPreviewModal`: stays direct child of `<body>`, `position: fixed; inset: 0; z-index: 2100;`.
+
+### 2. `frontend/index.html` — Component Updates & JS State Machine
+- **Unified Tab Router (`switchMainTab(tab, options = {})`)**:
+  - Maintain `let currentActiveTab = 'monitor'` and `let chatNavSeq = 0`.
+  - Idempotency: if `tab === currentActiveTab`, return `true` (and if `tab === 'monitor'`, smoothly scroll window to top).
+  - When leaving `'schedule'` (`currentActiveTab === 'schedule' && tab !== 'schedule'`):
+    - Unless `options.skipScheduleGuard`, call `confirmLeaveScheduleTab()`:
+      - Computes `hasUnsavedScheduleChanges()` using identical normalization as `saveScheduleAdjustments()` (`Number(x.limit_speed) || 15.0`, `normalizeFrontendDateMD`, `normalizeScheduleTerminal`, `.trim()`): returns `true` if array lengths differ or any row differs on normalized `d`, trimmed `ship_name`, `limit_speed`, or `terminal`.
+      - If dirty and `!confirm('尚有未儲存的船期修改，確定要離開並捨棄變更嗎？')`, return `false` (abort `switchMainTab`, keep `schedule` active and lock held!).
+    - Hide `#scheduleAdjustModal`, call `releaseLock()`, clear `cachedSessionPassword = ""`.
+  - When leaving `'forecast'`: hide `#forecastModal` and `window.removeEventListener('resize', handleChartResize)`.
+  - When leaving `'chat'`: hide `#chatModal`, `closeChatPreviewModal()`, `closeChatNameSheet()`, `closeChatAttachSheet()`, call `markChatAsRead(currentChatDateStr, getMaxChatMessageTs())` only if `chatActiveScreen === 'room'`, `updateChatUnreadBadge()`, `chatNavSeq += 1` (do **NOT** call `leaveChatRole()`, preserving `mySeat` per D2!).
+  - When leaving `'monitor'`: hide `#monitorView`.
+  - Show target view (`monitor` -> `flex`, `forecast` -> `block`, `schedule` -> `block`, `chat` -> `flex`), update `currentActiveTab = tab`, call `setActiveNav(tab)`, and scroll window to `(0, 0)` for non-chat tabs.
+- **Tab Wrapper Functions & Auth/Save Cleanup Guards**:
+  - `openForecastModal()`: if `!switchMainTab('forecast')` return; populate select, init chart, resize/render, `loadForecastData()`.
+  - `closeForecastModal()`: `switchMainTab('monitor')`.
+  - `triggerOpenScheduleAdjustModal()`: if `currentActiveTab === 'schedule'` return; check lock + password modal -> `openScheduleAdjustModal()` -> `verifyPasswordInBackground(password, 'schedule')`.
+  - `openScheduleAdjustModal()`: snapshot `scheduleDataList` into `editScheduleList` & `originalScheduleSnapshot`, `if (!switchMainTab('schedule')) return;`, `renderAdjustCards()`.
+  - `closeScheduleAdjustModal(options = {})`: `switchMainTab('monitor', { skipScheduleGuard: Boolean(options.skipGuard) })` (ensure `releaseLock()` and `cachedSessionPassword = ""` always run cleanly).
+  - `saveScheduleAdjustments()`: call `closeScheduleAdjustModal({ skipGuard: true })` both when `diffList.length === 0` and on successful save (zero false dirty-leave prompts!).
+  - `verifyPasswordInBackground(password, modalType)`: verify ownership (`if (cachedSessionPassword !== password) return;`) AND whether the target modal/tab is still open (`modalType === 'manual'` -> `manualModal.style.display === 'flex'`, `modalType === 'schedule'` -> `currentActiveTab === 'schedule'`). Only when still open and matching session does an auth failure alert and close via `closeManualModal()` or `closeScheduleAdjustModal({ skipGuard: true })` (preventing cross-tab yank or wiping another session's lock/password).
+  - `openChatModal()`: `if (!switchMainTab('chat')) return;`, `clearChatStatus()`, `listenToChatRoom()`, `recordChatActivity()`; if `mySeat && mySeat.dateStr === currentChatDateStr`, call `renewChatSeatActiveAt()` (refreshing RTDB `activeAt` immediately on resume) and `showChatRoomScreen()` (which marks read), else `showChatRoleScreen()`, then `updateChatUnreadBadge()`.
+  - `closeChatModal(options = {})`: replace existing unconditional `leaveChatRole()` (line 4669) with `if (options && options.releaseSeat && mySeat) leaveChatRole({ keepOnDisconnect: false });`, and call `switchMainTab('monitor')`.
+- **Off-Tab Chat Seat Lifecycle (D2)**:
+  - In `initShipChat()`, remove the old `chatModal.addEventListener('click', (e) => { if (e.target === chatModal) closeChatModal(); });` listener so clicking transparent side margins on desktop (`1280x800`) does not exit the chat tab.
+  - `startChatSeatTimers()` runs both `chatHeartbeatTimer` and a persistent `chatIdleTimer` (every `CHAT_UI_REFRESH_MS`) as long as `mySeat` is active (stopped only in `stopChatSeatTimers()` when `mySeat` becomes null).
+  - `checkChatIdleAndRefreshUi()` enforces `if (mySeat && Date.now() - lastChatActivityAt >= CHAT_IDLE_MS)` regardless of whether `isChatModalOpen()` is true, releasing `mySeat` even while on another tab, and only calls `renderChatRoleBar()` when `isChatModalOpen()`.
+  - `selectChatRole()`: captures `const navToken = chatNavSeq;` at entry. Guard BOTH the `Other` custom-name rename early-return branch (`if (chatNavSeq === navToken && isChatModalOpen()) { renderChatIdentityAndComposer(); renderChatMessages(); }` without releasing `oldSeat`) AND both post-claim awaits (`if (chatNavSeq !== navToken || !isChatModalOpen() || currentChatDateStr !== dateStr)` at line 4167 and after `oldSeat` release at line 4187) to release `wonSeat` immediately if the user navigated away mid-claim.
+  - `enterChatWithRole()`: checks `if (claimed && isChatModalOpen() && currentActiveTab === 'chat') showChatRoomScreen();`.
+- **Chat Messages & File Cards (`renderChatMessages`)**:
+  - When `messages.length > 0 || chatUploadingItem`, prepend `<div class="chat-date-divider"><span>${formatTwMonthDay(currentChatDateStr)}</span></div>` (`M月D日`, e.g. `11月20日`).
+  - When a message has a non-image file attachment and no `msg.text`, add `.is-file-only` to `.chat-bubble` (`background: transparent !important; padding: 0 !important; box-shadow: none !important;`) so `.chat-att-file-card` renders as a standalone crisp white card (`#FFFFFF`, `border: 1px solid #DCE6F2`, `border-radius: 14px`) with blue file SVG badge (`extUpper`), bold filename, `${extUpper} · ${formatChatBytes(attMeta.size)}`, and blue download SVG icon button `.chat-att-file-btn`.
+- **Monitor & Schedule Updates**:
+  - `updateDynamicBox(data)`: renders `.wind-status-divider` + full-width `#dynamicBox` inside `.wind-card` showing SVG status icon + vertical bar + status label + `escapeHtml(shipName)` + compact reason sub-line(s) (`風速超標`, `浪高 X > 2.5 m`, `能見度 Y < 2 浬`).
+  - `listenToDailyRecords()`: renders `.pob-card-title` (`POB 紀錄`) + `.pob-item-row` rows inside `#pobList` (left ship name, right bold `pob_time`; or red `.is-no-entry` row for `no_entry_reason`).
+  - `formatLastUpdateTime()` & `#dataTime`: `"更新時間 " + formatLastUpdateTime(data.last_update)`.
+  - `renderScheduleTable()`: `badge-w12` (`#D97706`) / `badge-w13` (`#0B2948`), numeric speed limit.
+- **Forecast ECharts Updates**:
+  - `renderForecastChart()`: keep `xAxis.data` format `${mm}/${dd} ${hh}:00` (required by `tests/frontend-echarts.js`), add `xAxis.axisLabel.formatter: val => String(val).replace(' ', '\n')`, set `yAxis.name: 'm/s'`, `grid: { left: '3%', right: '4%', top: '14%', bottom: '22%', containLabel: true }`, `dataZoom` slider `bottom: '1%'`, `height: 14`, bright blue filler `#4BA3FF`, rounded track `rgba(255,255,255,0.16)`, `borderColor: 'transparent'`.
+
+### 3. Build & Verification (`tests/frontend-isolated.js`, `tests/frontend-echarts.js`)
+- Update `tests/frontend-isolated.js` to validate `AC-001`–`AC-007` including:
+  - Unified header (`#0B2948`, no gold border, `操作說明` text), `.bottom-nav-inner` height (`66px`), and 4-tab `#D9ECFF`/`#1877F2` active capsules.
+  - Centered `.wind-card` + PulsoIcon `.wind-icon` + animation + full-width `#dynamicBox` at `375x812` (`scrollWidth <= clientWidth`, `boxRect.right <= cardRect.right + 1`, long ship name wrapping, calibrated `#B91C1C` filter on `.condition-warning img`), `POB 紀錄` card + dual-ship coexistence, `船期表` header controls & `W13` `#0B2948`.
+  - Embedded `風速預報` tab with shared header/bottom nav + lease/offset tests.
+  - Embedded `船期調整` tab with `＋ 新增`, `MM/DD` auto-slash, `99/99` error, `W12`/`W13` pill sync, `12`/`15`/custom speed, delete + tombstone save (`confirm` spy verifies 0 dirty-leave prompts on save), dirty-leave confirm cancel/accept lock cleanup, and delayed auth failure ownership/cross-tab guard.
+  - Embedded `作業聊天室` tab with `#chatRoleScreen` first, hoisted `#chatNameSheetBackdrop`/`#chatAttachSheetBackdrop` (`elementFromPoint` over header/bottom-nav coordinates at `390x844` and `1280x800`), desktop margin click does NOT exit chat tab, seat retention across tab switches, `#chatRoleSwitchBtn` label & role switch / `觀眾` release, off-tab 15-min idle expiry, in-flight claim ghost-seat guard, unread `!` badge, `.chat-date-divider` (`M月D日`), white/`#C2E1FF` bubbles, `已送出`, standalone white file card (`EXT · SIZE` + blue download SVG), XSS immunity, attachments, zoom, and mobile picker reclaim.
+- Run `python deploy/build_hosting.py`, `node --test`, `pytest`, Playwright `frontend-isolated.js` & `frontend-echarts.js`, and inspect screenshots at `390x844`, `375x812`, `1280x800`.

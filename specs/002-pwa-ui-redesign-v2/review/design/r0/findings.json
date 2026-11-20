@@ -1,0 +1,64 @@
+{
+  "review_id": "design-r0",
+  "gate_id": "design",
+  "reviewed_revision": "413047d4fd8b61561b0ade08928a3b25cb237294",
+  "sufficient_inputs": true,
+  "instruction_conflicts": [],
+  "verdict": "needs_changes",
+  "findings": [
+    {
+      "id": "DES-001",
+      "severity": "blocking",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 42-51), specs/002-pwa-ui-redesign-v2/spec.md (REQ-007, lines 66 & 73), frontend/index.html (lines 2128 & 2166)",
+      "evidence": "plan.md positions #chatModal.tab-view as `position: fixed; ... z-index: 900;` while .app-header-bar and .bottom-nav are `position: fixed; z-index: 950;`. In frontend/index.html lines 2128 & 2166, #chatNameSheetBackdrop and #chatAttachSheetBackdrop are DOM descendants inside #chatRoleScreen / #chatRoomScreen inside #chatModal, and plan.md relies solely on giving them `position: fixed; inset: 0; z-index: 2060;`.",
+      "impact": "An element with `position: fixed` and `z-index: 900` creates a CSS stacking context. Descendants cannot escape a parent stacking context regardless of `z-index: 2060`, so #chatNameSheetBackdrop and #chatAttachSheetBackdrop will render behind .app-header-bar and .bottom-nav (leaving header/nav un-dimmed and clickable while the sheet is open). Additionally, moving .chat-bottom-sheet out of .chat-modal-box (`max-width: 480px`) without adding `max-width: 480px; margin: 0 auto` will stretch the bottom sheet across the full 1280px width on desktop.",
+      "recommendation": "Specify in plan.md (and spec.md) moving #chatNameSheetBackdrop and #chatAttachSheetBackdrop out of #chatModal to become direct children of <body> (sibling to #chatPreviewModal and #manualModal) with `position: fixed; inset: 0; z-index: 2060;`, and constrain `.chat-bottom-sheet` with `width: 100%; max-width: 480px; margin: 0 auto; box-sizing: border-box;`.",
+      "resolution_condition": "plan.md specifies hoisting #chatNameSheetBackdrop and #chatAttachSheetBackdrop to top-level <body> children with `max-width: 480px` on `.chat-bottom-sheet`, and Playwright verifies at 390x844 and 1280x800 that when either sheet is open its bounding box covers the full viewport and `document.elementFromPoint` over header/bottom-nav coordinates hits the sheet backdrop instead of header/nav controls."
+    },
+    {
+      "id": "DES-002",
+      "severity": "blocking",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 57-71), frontend/index.html (lines 2896-2925, 5682-5683)",
+      "evidence": "plan.md defines `closeScheduleAdjustModal(options = {}): switchMainTab('monitor', { skipScheduleGuard: Boolean(options.skipGuard) })` (defaulting `skipGuard` to `false`), but never updates `saveScheduleAdjustments()` (frontend/index.html line 5683) or `verifyPasswordInBackground(password, modalType)` (lines 2896-2925) to pass `{ skipGuard: true }` or verify active tab/session ownership.",
+      "impact": "1) After clicking `儲存變更`, `saveScheduleAdjustments()` calls `closeScheduleAdjustModal()` while `editScheduleList` still differs from `originalScheduleSnapshot`, which falsely triggers `confirm('尚有未儲存的船期修改，確定要離開並捨棄變更嗎？')` right after a successful save. 2) If `verifyPasswordInBackground(..., 'schedule')` fails after the user already started editing, `closeScheduleAdjustModal()` prompts the dirty-discard confirm to an unauthenticated user (and clicking Cancel leaves them inside the edit tab). 3) If `verifyPasswordInBackground` fails after the user already switched to another tab or opened `#manualModal` (or vice versa), unconditional `closeScheduleAdjustModal()` / `closeManualModal()` yanks the user back to `monitor`, clears the active session's `cachedSessionPassword`, and calls `releaseLock()` on the other modal's lock.",
+      "recommendation": "Update plan.md to require: (a) `saveScheduleAdjustments()` calls `closeScheduleAdjustModal({ skipGuard: true })` on success and when `diffList.length === 0`; (b) `verifyPasswordInBackground(password, modalType)` only displays the failure alert and closes (`closeScheduleAdjustModal({ skipGuard: true })` or `closeManualModal()`) if the corresponding tab/modal is still open and `cachedSessionPassword === password`; (c) `hasUnsavedScheduleChanges()` uses identical normalization to `saveScheduleAdjustments()` (`Number(x.limit_speed) || 15.0`, `normalizeFrontendDateMD`, `normalizeScheduleTerminal`, `.trim()`) and `.adjust-date-input` / `.adjust-ship-input` sync `editScheduleList` on `oninput`.",
+      "resolution_condition": "plan.md specifies `{ skipGuard: true }` in `saveScheduleAdjustments()` and ownership/tab-guarded `{ skipGuard: true }` cleanup in `verifyPasswordInBackground()`, and `tests/frontend-isolated.js` verifies (with a `confirm` spy) 0 confirm prompts on save, clean close on dirty auth failure, and no cross-tab yank or lock/password wipe when a delayed auth check fails after switching tabs or opening `#manualModal`."
+    },
+    {
+      "id": "DES-003",
+      "severity": "blocking",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 42-43, 63, 72-73), frontend/index.html (lines 4691-4693)",
+      "evidence": "plan.md makes `#chatModal.tab-view` span `left: 0; right: 0; justify-content: center;` around `.chat-modal-box` (`max-width: 480px`), creating transparent side margins on desktop (`1280x800`). However, frontend/index.html lines 4691-4693 bind `chatModal.addEventListener('click', (e) => { if (e.target === chatModal) closeChatModal(); });`, and plan.md omits removing this backdrop-click handler (and also has a minor ambiguity where `closeChatModal()` line 73 makes seat release opt-in via `{ releaseSeat: true }` whereas existing line 4669 unconditionally calls `leaveChatRole()`).",
+      "impact": "On desktop (`1280x800`), clicking in the 400px left or right margin outside `.chat-modal-box` hits `e.target === chatModal`, calls `closeChatModal()`, and unexpectedly exits the `聊天室` tab back to `監控` (and would release `mySeat` if existing line 4669 is left intact).",
+      "recommendation": "Explicitly specify in plan.md removing the `if (e.target === chatModal) closeChatModal();` backdrop-click listener from `initShipChat()`, and explicitly note replacing line 4669 in `closeChatModal()` with `if (options && options.releaseSeat && mySeat) leaveChatRole(...)`.",
+      "resolution_condition": "plan.md documents removal of the `#chatModal` margin click listener and opt-in `options.releaseSeat` in `closeChatModal()`, and `tests/frontend-isolated.js` verifies at `1280x800` that clicking in the horizontal margin of `#chatModal` keeps `#chatModal` active and retains `mySeat`."
+    },
+    {
+      "id": "DES-004",
+      "severity": "major",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 16, 26, 80), specs/002-pwa-ui-redesign-v2/spec.md (REQ-002, AC-002), frontend/index.html (lines 313-396)",
+      "evidence": "1) `frontend/APP_SVG/wave.svg` and `frontend/APP_SVG/eye.svg` are `fill=\"#000\"` assets, and current frontend/index.html line 382 applies `filter: brightness(0) invert(1);` (white) for the old dark-red warning pill. spec.md changes `#dynamicBox.status-warning` to `#FEE2E2` light red with `#B91C1C`-tinted icons, yet plan.md omits updating `.condition-warning img`'s CSS filter. 2) Current CSS (`max-width: 56%` on `.dynamic-box`, `white-space: nowrap` on `.status-pill-main`, `.status-reason-line`, `.condition-warning`) is not updated in plan.md to define how full-width `#dynamicBox` wraps/stacks at `375x812` when both wave and visibility warnings or long ship names are active.",
+      "impact": "Leaving `brightness(0) invert(1)` renders white icons against `#FEE2E2` pale pink (nearly invisible). Leaving `max-width: 56%` or single-row `nowrap` with `無法進港` + ship name + both `浪高 2.51 > 2.5 m` and `能見度 1.99 < 2 浬` causes horizontal overflow/clipping at `375x812` (`AC-002` failure).",
+      "recommendation": "Add explicit CSS rules in plan.md for `#dynamicBox` (`width: 100%; max-width: 100%; min-width: 0;`), allow ship name wrapping/truncation (`min-width: 0; overflow-wrap: anywhere;`) and vertical stacking of `.status-pill-sub` lines below the main status line (or wrapping cleanly inside the bar), and specify the calibrated `#B91C1C` CSS filter on `.condition-warning img`.",
+      "resolution_condition": "plan.md defines full-width `#dynamicBox` flex/wrap rules and the `#B91C1C` CSS filter on `.condition-warning img`, and Playwright verifies at `375x812` with long ship names and dual wave+visibility warnings that `document.documentElement.scrollWidth <= document.documentElement.clientWidth`, `boxRect.right <= cardRect.right + 1`, and `.condition-warning img` computed `filter` does not remain `brightness(0) invert(1)`."
+    },
+    {
+      "id": "DES-005",
+      "severity": "major",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 11, 22, 47, 49, 50), frontend/index.html (lines 762, 1245, 1320, 3637, 3722)",
+      "evidence": "1) plan.md line 47 adds `<button id=\"chatRoleSwitchBtn\">` without specifying how `renderChatIdentityAndComposer()` populates its text (`mySeat.roleLabel` or `'觀眾'`) per REQ-007. 2) plan.md sets `--bottom-nav-h: 66px`, while frontend/index.html line 762 hardcodes `.bottom-nav-inner { height: 64px; }` and plan.md never updates it to `var(--bottom-nav-h)`. 3) plan.md line 49 introduces `.chat-date-divider` (`11月20日`) and white `.chat-att-file-card` (`EXT · SIZE`) while frontend/index.html line 1320 still has `calc(10px + env(safe-area-inset-bottom, 0px))` on `#chatComposerFooter` (which now sits above `.bottom-nav`, not at the screen bottom), and `renderChatMessages()` currently renders file cards inside colored `.chat-bubble` padding without `.chat-date-divider` or `EXT` text.",
+      "impact": "Implementing plan.md as written risks leaving `#chatRoleSwitchBtn` empty, creating a 2px gap between `#chatModal` (`bottom: 66px`) and `.bottom-nav` (`height: 64px`), double-applying `safe-area-inset-bottom` below the chat composer, and framing white file cards inside `#C2E1FF` self bubbles contrary to the chat mockup.",
+      "recommendation": "Update plan.md to specify: (1) `renderChatIdentityAndComposer()` sets `#chatRoleSwitchBtn.textContent = mySeat ? (mySeat.roleLabel || mySeat.roleId) : '觀眾'`; (2) `.bottom-nav-inner { height: var(--bottom-nav-h); }`; (3) `#chatComposerFooter` uses `padding: 8px 12px;` without `safe-area-inset-bottom`; (4) `renderChatMessages()` prepends `.chat-date-divider` (`M月D日` from `currentChatDateStr`), formats file metadata as `${extUpper} · ${formatChatBytes(size)}`, and removes colored outer `.chat-bubble` padding/background when a bubble contains only a file card.",
+      "resolution_condition": "plan.md documents all four UI implementation details and `tests/frontend-isolated.js` asserts `#chatRoleSwitchBtn` label in both speaking and spectator modes, `.bottom-nav-inner` height (`66px`), `.chat-date-divider` rendering, and file card `EXT · SIZE` formatting."
+    },
+    {
+      "id": "DES-006",
+      "severity": "minor",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md (lines 55-78), frontend/index.html (lines 4105-4124, 4187)",
+      "evidence": "1) In `selectChatRole()`, line 4187 only checks `if (!isChatModalOpen() || currentChatDateStr !== dateStr)` without checking `chatNavSeq !== navToken` after `oldSeat` release, and the `Other` custom-name rename early-return branch (lines 4105-4124) does not check `chatNavSeq !== navToken` before calling `renderChatIdentityAndComposer()`. 2) In `openChatModal()`, when resuming an existing `mySeat` from another tab, `recordChatActivity()` refreshes local `lastChatActivityAt` but does not trigger `renewChatSeatActiveAt()`, leaving up to a 60s window before `chatHeartbeatTimer` refreshes `activeAt` in RTDB. 3) `switchMainTab(tab)` does not clarify idempotent behavior when `tab === currentActiveTab` (e.g., clicking `聊天室` while viewing `#chatRoleScreen` with an active `mySeat`).",
+      "impact": "Minor race window on rapid off-tab/on-tab switching during `Other` rename or near the 15-minute `activeAt` boundary, plus minor UX jump if tapping the already-active `聊天室` tab while picking a new role.",
+      "recommendation": "Add `chatNavSeq !== navToken` to line 4187 (and guard UI/screen sync on `chatNavSeq === navToken` in the `Other` rename branch without releasing `oldSeat`), call `renewChatSeatActiveAt()` in `openChatModal()` when resuming with a valid `mySeat`, and document `if (tab === currentActiveTab) return true;` (with optional scroll-to-top for `'monitor'`) in `switchMainTab()`.",
+      "resolution_condition": "plan.md updates `switchMainTab()`, `openChatModal()`, and `selectChatRole()` lines 4105-4124 / 4187 with these guards."
+    }
+  ]
+}

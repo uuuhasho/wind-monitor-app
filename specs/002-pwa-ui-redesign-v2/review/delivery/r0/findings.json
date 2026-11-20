@@ -1,0 +1,47 @@
+{
+  "review_id": "delivery-r0",
+  "gate_id": "delivery",
+  "reviewed_revision": "413047d4fd8b61561b0ade08928a3b25cb237294 (feat/pwa-ui-redesign; working-tree modified frontend/index.html, tests/frontend-isolated.js; rebuilt public/; untracked specs/002-pwa-ui-redesign-v2/)",
+  "sufficient_inputs": true,
+  "instruction_conflict": false,
+  "verdict": "needs_changes",
+  "summary": "All input SHA256 hashes match the manifest, non-goal files (gas/monitor.js, backend/, frontend/presentation/index.html) are untouched, and the unified 4-tab App Shell, monitor/POB/schedule/forecast/chat behavior, off-tab seat retention, and dirty-leave guard align closely with spec.md, decisions.md, plan.md, and the 4 mockups. However, inspection of the CSS diff and screenshot 05-schedule-tab-390.png identified two real CSS/UI regressions that should be fixed and rebuilt into public/ before user acceptance.",
+  "findings": [
+    {
+      "id": "DEL-001",
+      "severity": "major",
+      "location": "frontend/index.html:1987-1999 (.adjust-card select) and frontend/index.html:2062-2074 (.adjust-speed-select); visible in specs/002-pwa-ui-redesign-v2/evidence/screenshots/05-schedule-tab-390.png",
+      "evidence": "In frontend/index.html, `.adjust-card select` (specificity 0,1,1) sets shorthand `background: #FFFFFF;`, which overrides `.adjust-speed-select` (specificity 0,1,0) where `appearance: none; -webkit-appearance: none; background-image: url(...chevron...); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px;` are declared. In 05-schedule-tab-390.png, the 速限 select boxes (`12`, `15`) render with no dropdown chevron arrow at all, unlike the adjacent 碼頭 dropdown and the reference mockup C:\\Users\\hilla\\Desktop\\2026-11-20 APP示意圖\\船期調整頁.png.",
+      "impact": "Because `appearance: none` hides the native browser dropdown indicator and `background: #FFFFFF` wipes out the custom SVG chevron, the 速限 dropdown looks visually indistinguishable from a static/plain text box, violating visual parity under REQ-006/AC-010.",
+      "recommendation": "Use `background-color: #FFFFFF;` instead of shorthand `background: #FFFFFF;` in `.adjust-card input, .adjust-card select` (or raise selector specificity to `.adjust-card .adjust-speed-select`) so the custom chevron SVG renders cleanly on 速限, then rebuild `public/` via `python deploy/build_hosting.py` and re-capture `05-schedule-tab-390.png`.",
+      "verification": "After rebuilding `public/`, `getComputedStyle(document.querySelector('.adjust-speed-select')).backgroundImage` contains the SVG chevron data URI (`!== 'none'`), and a newly captured `05-schedule-tab-390.png` visibly displays the downward chevron inside 速限 while preserving `fitsWithoutScroll: true` at 390x844."
+    },
+    {
+      "id": "DEL-002",
+      "severity": "major",
+      "location": "frontend/index.html:2407-2412 (#chatPreviewModal / #chatPreviewCloseBtn.chat-close-btn) and <style>",
+      "evidence": "`<button id=\"chatPreviewCloseBtn\" type=\"button\" class=\"chat-close-btn\" aria-label=\"關閉全螢幕預覽\" onclick=\"closeChatPreviewModal()\">&times;</button>` at line 2411 is the only remaining element using `.chat-close-btn`. When `.chat-topbar` and `.chat-nav-btn` rules were deleted from `<style>` during the v2 chat refactor, the `.chat-close-btn` rule (`background: transparent; border: none; color: #ffffff; font-size: 20px; ...`) was deleted with them. Neither `tests/frontend-isolated.js` nor the 9 screenshots inspect `#chatPreviewCloseBtn` computed styling or the `#chatPreviewModal` lightbox visually.",
+      "impact": "When a user opens the full-screen photo lightbox (`#chatPreviewModal`), the top-right `×` close button inside the dark `.chat-preview-header` (`rgba(9, 13, 22, 0.85)`) falls back to unstyled browser-default `<button>` appearance (opaque light-gray ButtonFace box, outset border, black text), degrading REQ-007's requirement to keep `#chatPreviewModal` intact.",
+      "recommendation": "Restore `.chat-close-btn` (and `.chat-close-btn:hover`) styling in `frontend/index.html` `<style>` for `#chatPreviewCloseBtn`, rebuild `public/` via `python deploy/build_hosting.py`, and add a computed-style check (plus optional screenshot) in `tests/frontend-isolated.js`.",
+      "verification": "In `frontend/index.html` and `public/index.html`, `.chat-close-btn` is defined in `<style>`, and in Playwright `#chatPreviewCloseBtn` reports `backgroundColor === 'rgba(0, 0, 0, 0)'`, `color === 'rgb(255, 255, 255)'`, and `borderTopStyle === 'none'` when `#chatPreviewModal` is open."
+    },
+    {
+      "id": "DEL-003",
+      "severity": "minor",
+      "location": "tests/frontend-isolated.js:717-729, 785-814, 1273-1297; specs/002-pwa-ui-redesign-v2/evidence/verification.md:24-25",
+      "evidence": "Code inspection confirms `frontend/index.html` implements `status-waiting` (`等待進港`, lines 2867-2871) and `.pob-item-row.is-no-entry` (lines 471-475, 3274-3277). However, `tests/frontend-isolated.js` lines 717-729 only exercise `safe` and `warning` cases (no `waiting` case such as `season_time: '--:--'` or before `04:00`), and lines 785-814 do not test a `no_entry_reason` `.pob-item-row.is-no-entry` record.",
+      "impact": "No functional defect observed in `frontend/index.html`, but `waiting` and `is-no-entry` rendering are covered only by static inspection rather than automated Playwright assertions.",
+      "recommendation": "Add a `waiting` case (`等待進港`) to the condition matrix and a `no_entry_reason` case (`.pob-item-row.is-no-entry`) to the POB assertions in `tests/frontend-isolated.js`.",
+      "verification": "`tests/frontend-isolated.js` passes with explicit assertions verifying `#dynamicBox.status-waiting` (`等待進港`) and `.pob-item-row.is-no-entry` (`rgb(254, 242, 242)` background / `rgb(185, 28, 28)` text)."
+    },
+    {
+      "id": "DEL-004",
+      "severity": "minor",
+      "location": "specs/002-pwa-ui-redesign-v2/plan.md:73 vs frontend/index.html:2690 & 269",
+      "evidence": "`plan.md` line 73 specifies `schedule -> flex with flex-direction: column`, whereas `frontend/index.html` line 2690 sets `schedule: { id: 'scheduleAdjustModal', display: 'block' }` (and `tests/frontend-isolated.js:427` asserts `schedDisplay === 'block'`). Separately, `.add-row-btn:focus-visible` at line 269 remains in CSS after `.add-row-btn` was replaced by `.adjust-add-pill-btn`.",
+      "impact": "No visual or behavioral defect (`05-schedule-tab-390.png` stacks cleanly in block layout with `fitsWithoutScroll: true`); strictly minor plan/CSS hygiene drift.",
+      "recommendation": "Optionally align `plan.md` line 73 to `display: block` (or remove dead `.add-row-btn:focus-visible`) during cleanup.",
+      "verification": "`plan.md` and `frontend/index.html` match on `#scheduleAdjustModal` display mode."
+    }
+  ]
+}

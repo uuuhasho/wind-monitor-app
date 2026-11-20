@@ -1,0 +1,45 @@
+{
+  "review_id": "delivery-r2",
+  "gate_id": "delivery",
+  "reviewed_revision": "413047d4fd8b61561b0ade08928a3b25cb237294 (feat/pwa-ui-redesign; working-tree frontend/index.html, tests/frontend-isolated.js, rebuilt public/, docs/2026-11-20/, specs/002-pwa-ui-redesign-v2/)",
+  "sufficient_inputs": true,
+  "instruction_conflict": false,
+  "verdict": "pass",
+  "findings": [
+    {
+      "ID": "DEL-R2-001",
+      "severity": "minor",
+      "位置": "specs/002-pwa-ui-redesign-v2/decisions.md (第 40 行) 與 specs/002-pwa-ui-redesign-v2/plan.md (第 4 行)",
+      "證據": "decisions.md 的 D5 條目仍寫著 `(hover/press runs pulso-slide-right; clicking switches to the 預報 tab)` 且未標註已被 D6 Item 6 取代；plan.md 第 4 行亦仍寫 `- **Decisions**: specs/002-pwa-ui-redesign-v2/decisions.md (D1–D5)`，儘管 plan.md 內文（第 24、36、37、54 行）已完整更新為 D6 規格。",
+      "影響": "不影響實際程式碼、測試與驗收判定（spec.md 與 frontend/index.html 均已正確移除點擊風速切換預報），僅在未來回查決策歷史時可能造成閱讀 D5 時的小幅困惑。",
+      "建議": "在 decisions.md D5 註明「點擊切換預報已由 D6 Item 6 取代」，並將 plan.md 第 4 行更新為 `(D1–D6)`。",
+      "可驗證的解決條件": "decisions.md D5 明確交叉引用 D6 Item 6 變更，且 plan.md 第 4 行引用範圍為 `(D1–D6)`。"
+    },
+    {
+      "ID": "DEL-R2-002",
+      "severity": "minor",
+      "位置": "docs/2026-11-20/2026-11-20-風速預報切船期密碼框與圖表重疊原因分析.md (第 16、25 行)",
+      "證據": "該修復分析文件的代碼 diff 區塊標示 `.forecast-chart-card` 位於 `@@ -1758,6 +1758,9 @@` 與 `.chart-wrapper` 位於 `@@ -1775,6 +1778,8 @@`，但於最終交付版 `frontend/index.html` 中 `.forecast-chart-card` 實際起始於第 1738 行、`.chart-wrapper` 實際起始於第 1758 行（因後續 D6 CSS 調整產生 20 行位移）。",
+      "影響": "不影響根因說明與實際程式碼修復效力（`position: relative; z-index: 1; isolation: isolate;` 內容完全一致且已通過實機截圖與元素疊層實測），僅為 diff 行號註記的輕微偏移。",
+      "建議": "於後續文件整理時同步更新該 diff 區塊之行號註記為最終版本之行號（第 1738 / 1758 行）。",
+      "可驗證的解決條件": "Bug 原因分析文件 diff 區塊中的 hunk 行號與最終版 `frontend/index.html` 的 `.forecast-chart-card` 與 `.chart-wrapper` 行號相符。"
+    }
+  ],
+  "verification_checks": {
+    "manifest_sha256_verified": true,
+    "public_index_matches_frontend": true,
+    "missing_local_resources": [],
+    "non_goal_paths_untouched": ["gas/monitor.js", "backend/", "frontend/presentation/", "firebase.json", "database.rules.json"],
+    "node_test_result": "3/3 suites passed (45 scenarios: 8 conditions + 5 triggers + 32 archive)",
+    "pytest_result": "52 passed in 7.09s (python -B -m pytest -p no:cacheprovider)",
+    "screenshots_inspected": 17,
+    "d6_delta_verified": {
+      "item_1_unread_dot": "10px #EF4444 static red circle with border cutout, cleared only on isChatRoomVisible()",
+      "item_2_dark_forecast_ship_card": ".card.forecast-ship-card (#0F1722) and #shipForecastSelect (#162234, #F8FAFC, #93C5FD chevron, color-scheme: dark)",
+      "item_3_mobile_focus": "390x844 and 375x812 screenshots verified with zero overflow or clipping",
+      "item_4_spectator_hint": "#chatSpectatorBar removed; #chatSpectatorHint (僅供瀏覽) inline left of #chatRoleSwitchBtn when unseated, hidden when seated",
+      "item_5_pwd_modal_stacking": ".forecast-chart-card & .chart-wrapper isolated via position: relative; z-index: 1; isolation: isolate; verified in 10-forecast-pwd-modal-390.png",
+      "item_6_non_clickable_wind_speed": "No click handler or pointer cursor on #windSpeed / .wind-container while preserving PulsoIcon .wind-icon"
+    }
+  }
+}

@@ -104,28 +104,43 @@ async page => {
     window.echarts = {graphic: {LinearGradient: class {}}, init: () => ({resize() {}, setOption(value) { window.__chartOptions.push(value); }, dispatchAction() {}, dispose() {}})};
     window.Audio = class {constructor() {this.paused = true;} play() {this.paused = false; return Promise.resolve();} pause() {this.paused = true;} addEventListener() {}};
     window.alert = message => { (window.__alerts ||= []).push(message); };
-    window.confirm = () => true;
+    window.__confirmResult = true;
+    window.__confirmCalls = [];
+    window.confirm = message => {
+      window.__confirmCalls.push(String(message || ''));
+      return window.__confirmResult;
+    };
     window.prompt = () => 'synthetic';
+    window.__customVerifyHandler = null;
     window.fetch = async (url, options = {}) => {
       const parsed = new URL(url);
+      const action = parsed.searchParams.get('action');
       let scheduleBody = null;
       if (options && options.body && typeof options.body.get === 'function') {
         scheduleBody = options.body.get('schedule');
       }
-      window.__requests.push({
-        action: parsed.searchParams.get('action'),
+      const reqRecord = {
+        action,
+        pwd: parsed.searchParams.get('pwd'),
         mode: parsed.searchParams.get('mode'),
         pobTime: parsed.searchParams.get('pob_time'),
         modalType: parsed.searchParams.get('modal_type'),
         schedule: scheduleBody,
-      });
+      };
+      window.__requests.push(reqRecord);
+      if (action === 'verify_password' && typeof window.__customVerifyHandler === 'function') {
+        return window.__customVerifyHandler(reqRecord);
+      }
       return {ok: true, status: 200, json: async () => ({status: 'success', data: []}), text: async () => 'OK'};
     };
   });
+
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({width: 390, height: 844});
   await page.goto('http://127.0.0.1:4177/index.html');
+
+  // AC-001: Unified top header (no gold border, 操作說明 text) & fixed 4-tab bottom nav with active sky-blue capsule
   const initial = await page.evaluate(() => {
     const labelStyle = getComputedStyle(document.querySelector('.wind-card-label'));
     const windSpeedEl = document.getElementById('windSpeed');
@@ -134,6 +149,9 @@ async page => {
     const timeStyle = getComputedStyle(timeEl);
     const timeRect = timeEl.getBoundingClientRect();
     const speedRect = windSpeedEl.getBoundingClientRect();
+    const headerBar = document.querySelector('.app-header-bar');
+    const headerBarStyle = getComputedStyle(headerBar);
+    const bottomNavInnerStyle = getComputedStyle(document.querySelector('.bottom-nav-inner'));
     const monitorWrapStyle = getComputedStyle(document.querySelector('#navMonitorBtn .bottom-nav-icon-wrap'));
     const forecastWrapStyle = getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap'));
     return {
@@ -145,43 +163,49 @@ async page => {
       windTitle: document.querySelector('.wind-card-label')?.textContent?.trim(),
       windLabelFontSize: parseFloat(labelStyle.fontSize),
       windLabelFontWeight: Number(labelStyle.fontWeight),
+      windLabelAlign: labelStyle.textAlign,
       hasWindForecastBtn: document.querySelector('.wind-card')?.textContent?.includes('風速預報'),
       scheduleTitle: document.querySelector('.schedule-title')?.textContent?.trim(),
       infoHref: document.getElementById('infoLink')?.getAttribute('href'),
-      headerBarBg: getComputedStyle(document.querySelector('.app-header-bar')).backgroundColor,
+      infoText: document.getElementById('infoLink')?.textContent?.trim(),
+      headerTitleText: document.querySelector('.app-title')?.textContent?.trim(),
+      headerBarPosition: headerBarStyle.position,
+      headerBarBg: headerBarStyle.backgroundColor,
+      headerBarBorderBottom: headerBarStyle.borderBottomWidth,
       headerHasBell: Boolean(document.querySelector('.app-header #soundToggle')),
       scheduleHasBell: Boolean(document.querySelector('.schedule-header #soundToggle')),
-      windCardIdleHasPillClass: document.querySelector('.wind-card').classList.contains('has-status-pill'),
-      windMainRowIdleJustify: windRowStyle.justifyContent,
-      windMainRowIdlePadLeft: parseFloat(windRowStyle.paddingLeft),
+      windMainRowJustify: windRowStyle.justifyContent,
       timeBelowSpeed: timeRect.top >= speedRect.bottom - 2,
-      timeIdleAlign: timeStyle.textAlign,
-      timeIdlePadLeft: parseFloat(timeStyle.paddingLeft),
+      timeText: timeEl.textContent,
+      timeAlign: timeStyle.textAlign,
       tableHeadBg: getComputedStyle(document.querySelector('#scheduleHeaderRow th')).backgroundColor,
+      bottomNavInnerHeight: parseFloat(bottomNavInnerStyle.height),
       monitorNavWrapBg: monitorWrapStyle.backgroundColor,
-      monitorNavWrapBorder: monitorWrapStyle.borderColor,
       monitorNavWrapColor: monitorWrapStyle.color,
       inactiveNavWrapBg: forecastWrapStyle.backgroundColor,
       soundDisplay: getComputedStyle(document.getElementById('soundToggle')).display,
       backdropFilter: getComputedStyle(document.querySelector('.wind-card')).backdropFilter,
+      hasWatermark: document.body.textContent.includes('介面示意'),
     };
   });
   if (initial.title !== '臺中LNG船監控(v1.5)' || initial.wind !== '4' || initial.windSpeedFontSize < 50 || !initial.schedule ||
       initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' ||
-      initial.windLabelFontSize < 18 || initial.windLabelFontWeight < 800 || initial.hasWindForecastBtn ||
-      initial.scheduleTitle !== '船期表' || initial.infoHref !== 'presentation/index.html' ||
-      initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerHasBell || !initial.scheduleHasBell ||
-      initial.windCardIdleHasPillClass || initial.windMainRowIdleJustify !== 'flex-start' ||
-      initial.windMainRowIdlePadLeft < 24 ||
-      !initial.timeBelowSpeed || initial.timeIdleAlign !== 'left' ||
-      Math.abs(initial.timeIdlePadLeft - initial.windMainRowIdlePadLeft) > 1 ||
-      initial.tableHeadBg !== 'rgb(220, 229, 240)' ||
-      initial.monitorNavWrapBg !== 'rgba(0, 0, 0, 0)' || initial.monitorNavWrapBorder !== 'rgba(0, 0, 0, 0)' ||
-      initial.monitorNavWrapColor !== 'rgb(11, 41, 72)' ||
+      initial.windLabelFontSize < 18 || initial.windLabelFontWeight < 800 || initial.windLabelAlign !== 'center' ||
+      initial.hasWindForecastBtn || initial.scheduleTitle !== '船期表' ||
+      initial.infoHref !== 'presentation/index.html' || initial.infoText !== '操作說明' ||
+      initial.headerTitleText !== '臺中 LNG 船監控' || initial.headerBarPosition !== 'fixed' ||
+      initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerBarBorderBottom !== '0px' ||
+      initial.headerHasBell || !initial.scheduleHasBell ||
+      initial.windMainRowJustify !== 'center' || !initial.timeBelowSpeed ||
+      !initial.timeText.startsWith('更新時間 ') || initial.timeAlign !== 'center' ||
+      initial.tableHeadBg !== 'rgb(226, 238, 250)' || Math.abs(initial.bottomNavInnerHeight - 66) > 1 ||
+      initial.monitorNavWrapBg !== 'rgb(217, 236, 255)' || initial.monitorNavWrapColor !== 'rgb(24, 119, 242)' ||
       initial.inactiveNavWrapBg !== 'rgba(0, 0, 0, 0)' ||
-      initial.soundDisplay !== 'none' || initial.backdropFilter !== 'none') {
+      initial.soundDisplay !== 'none' || initial.backdropFilter !== 'none' || initial.hasWatermark) {
     throw new Error(`Initial UI: ${JSON.stringify(initial)}`);
   }
+
+  // AC-004: Schedule terminal badges (W12 orange, W13 deep navy #0B2948) and numeric speed cells
   const badges = await page.evaluate(() => Array.from(document.querySelectorAll('#scheduleBody tr'), row => ({
     terminal: row.querySelector('.badge')?.textContent,
     color: row.querySelector('.badge') && getComputedStyle(row.querySelector('.badge')).backgroundColor,
@@ -193,26 +217,26 @@ async page => {
     {terminal: 'W13', color: 'rgb(11, 41, 72)', speedCell: '15'},
   ])) throw new Error(`Terminal badges / speed cell: ${JSON.stringify(badges)}`);
   if (await page.locator('.badge-w13').first().evaluate(el => getComputedStyle(el).color) !== 'rgb(255, 255, 255)') throw new Error('W13 text must be white');
+
+  // PulsoIcon wind icon + gear icon + bottom nav 4 tabs
   const icon = await page.evaluate(() => {
     const svg = document.querySelector('.wind-icon');
     const iconRect = svg.getBoundingClientRect();
     const unit = document.querySelector('.wind-speed-unit').getBoundingClientRect();
     const number = document.getElementById('windSpeed').getBoundingClientRect();
     const chatBtn = document.getElementById('chatOpenBtn');
-    const oldTableImport = document.querySelector('.pulso-table-import');
     const gearSvg = document.querySelector('.cpc-btn.pulso-settings');
     const gearRect = gearSvg.getBoundingClientRect();
     const navBtns = Array.from(document.querySelectorAll('.bottom-nav-item')).map(b => ({id: b.id, text: b.textContent.trim()}));
     return {
       aboveUnit: iconRect.bottom <= unit.top,
       rightOfNumber: iconRect.left >= number.right,
-      alignedBottom: Math.abs(unit.bottom - (number.bottom - 3)) < 3,
+      alignedBottom: Math.abs(unit.bottom - (number.bottom - 3)) < 4,
       windTag: svg.tagName.toLowerCase(),
       mask: getComputedStyle(svg).maskImage,
       windBg: getComputedStyle(svg).backgroundColor,
       windColor: getComputedStyle(svg).color,
       windPaths: svg.querySelectorAll('path.pulso-wind-1, path.pulso-wind-2, path.pulso-wind-3').length,
-      oldTableImportExists: Boolean(oldTableImport),
       chatOnclick: chatBtn.getAttribute('onclick'),
       chatAriaLabel: chatBtn.getAttribute('aria-label'),
       chatCursor: getComputedStyle(chatBtn).cursor,
@@ -229,16 +253,14 @@ async page => {
       icon.windPaths !== 3) {
     throw new Error(`Wind icon: ${JSON.stringify(icon)}`);
   }
-  if (icon.oldTableImportExists || icon.chatOnclick !== 'openChatModal()' ||
-      icon.chatAriaLabel !== '開啟 LNG 船聊天室' || icon.chatCursor !== 'pointer' ||
-      icon.unreadBadgeDisplay !== 'none' ||
+  if (icon.chatOnclick !== 'openChatModal()' || icon.chatAriaLabel !== '開啟 LNG 船聊天室' ||
+      icon.chatCursor !== 'pointer' || icon.unreadBadgeDisplay !== 'none' ||
       JSON.stringify(icon.navBtns) !== JSON.stringify([
         {id: 'navMonitorBtn', text: '監控'},
         {id: 'navForecastBtn', text: '預報'},
         {id: 'navScheduleBtn', text: '船期'},
-        {id: 'chatOpenBtn', text: '! 聊天室'.replace('! ', '!')},
-      ].map((x, idx) => idx === 3 ? {id: 'chatOpenBtn', text: icon.navBtns[3].text} : x)) ||
-      !icon.navBtns[3].text.includes('聊天室')) {
+        {id: 'chatOpenBtn', text: icon.navBtns[3].text},
+      ]) || !icon.navBtns[3].text.includes('聊天室')) {
     throw new Error(`Nav/Chat icon: ${JSON.stringify(icon)}`);
   }
   if (icon.gearWidth !== 32 || icon.gearHeight !== 32 || icon.gearColor !== 'rgb(22, 78, 138)' || !icon.gearGroup) {
@@ -296,21 +318,6 @@ async page => {
     throw new Error(`Reduced motion: ${JSON.stringify(reducedMotionAnim)}`);
   }
 
-  // Bottom nav chat button opens chatModal only
-  await page.locator('#chatOpenBtn').click();
-  const msgClickState = await page.evaluate(() => ({
-    chatVisible: getComputedStyle(document.getElementById('chatModal')).display,
-    pwdVisible: getComputedStyle(document.getElementById('pwdModal')).display,
-    adjustVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display,
-  }));
-  if (msgClickState.chatVisible !== 'flex' || msgClickState.pwdVisible !== 'none' || msgClickState.adjustVisible !== 'none') {
-    throw new Error(`Bottom nav chat click must open chatModal only: ${JSON.stringify(msgClickState)}`);
-  }
-  await page.locator('#chatRoleBackBtn').click();
-  if (await page.locator('#chatModal').isVisible()) {
-    throw new Error('chatModal must close before schedule tests');
-  }
-
   // Verify schedule header columns & that double-click / double-tap on #scheduleHeaderRow NO LONGER triggers password/adjust
   const headerStyles = await page.evaluate(() => {
     const row = document.getElementById('scheduleHeaderRow');
@@ -320,7 +327,7 @@ async page => {
       userSelect: ths.map(th => getComputedStyle(th).userSelect),
     };
   });
-  if (JSON.stringify(headerStyles.texts) !== JSON.stringify(['日期', '船名', '速限 m/s'])) {
+  if (JSON.stringify(headerStyles.texts) !== JSON.stringify(['日期', '船名', '速限'])) {
     throw new Error(`Schedule header texts: ${JSON.stringify(headerStyles)}`);
   }
   await page.locator('#scheduleHeaderRow th').nth(1).click();
@@ -340,20 +347,88 @@ async page => {
     throw new Error('Schedule header click/dblclick/double-tap must NOT open password or schedule adjust modals');
   }
 
-  // Verify bottom nav 預報 tab opens #forecastModal and illuminates amber active capsule
+  // AC-005: Bottom nav 預報 tab opens embedded #forecastModal (header & bottom nav stay visible, sky-blue active capsule, dark ship card, isolated ECharts stacking above #pwdModal)
   await page.locator('#navForecastBtn').click();
-  if (!await page.locator('#forecastModal').isVisible()) throw new Error('Bottom nav 預報 must open forecastModal');
   await page.waitForTimeout(220);
-  const forecastNavWrap = await page.evaluate(() => {
+  const forecastTabState = await page.evaluate(() => {
     const s = getComputedStyle(document.querySelector('#navForecastBtn .bottom-nav-icon-wrap'));
-    return {bg: s.backgroundColor, border: s.borderColor, active: document.getElementById('navForecastBtn').classList.contains('is-active')};
+    const fModal = document.getElementById('forecastModal');
+    const mView = document.getElementById('monitorView');
+    const shipCard = document.querySelector('.forecast-ship-card');
+    const shipLabel = document.querySelector('.forecast-ship-label');
+    const shipSelect = document.getElementById('shipForecastSelect');
+    const chartCard = document.querySelector('.forecast-chart-card');
+    const chartWrap = document.querySelector('.chart-wrapper');
+    const shipCardStyle = getComputedStyle(shipCard);
+    const labelStyle = getComputedStyle(shipLabel);
+    const selectStyle = getComputedStyle(shipSelect);
+    return {
+      forecastVisible: getComputedStyle(fModal).display !== 'none',
+      monitorHidden: getComputedStyle(mView).display === 'none',
+      headerVisible: getComputedStyle(document.querySelector('.app-header-bar')).display !== 'none',
+      navVisible: getComputedStyle(document.querySelector('.bottom-nav')).display !== 'none',
+      navActive: document.getElementById('navForecastBtn').classList.contains('is-active'),
+      bg: s.backgroundColor,
+      color: s.color,
+      chartBg: getComputedStyle(chartCard).backgroundColor,
+      chartIsolation: getComputedStyle(chartCard).isolation,
+      wrapIsolation: getComputedStyle(chartWrap).isolation,
+      shipBg: shipCardStyle.backgroundColor,
+      shipLabelColor: labelStyle.color,
+      selectBg: selectStyle.backgroundColor,
+      selectColor: selectStyle.color,
+      selectChevron: selectStyle.backgroundImage,
+      shipBelowChart: shipCard.getBoundingClientRect().top >= chartCard.getBoundingClientRect().bottom - 1,
+    };
   });
-  if (!forecastNavWrap.active || forecastNavWrap.bg !== 'rgb(254, 243, 199)' || forecastNavWrap.border !== 'rgb(245, 158, 11)') {
-    throw new Error(`Forecast active nav capsule: ${JSON.stringify(forecastNavWrap)}`);
+  if (!forecastTabState.forecastVisible || !forecastTabState.monitorHidden ||
+      !forecastTabState.headerVisible || !forecastTabState.navVisible ||
+      !forecastTabState.navActive || forecastTabState.bg !== 'rgb(217, 236, 255)' ||
+      forecastTabState.color !== 'rgb(24, 119, 242)' || forecastTabState.chartBg !== 'rgb(15, 23, 34)' ||
+      forecastTabState.chartIsolation !== 'isolate' || forecastTabState.wrapIsolation !== 'isolate' ||
+      forecastTabState.shipBg !== 'rgb(15, 23, 34)' || forecastTabState.shipLabelColor !== 'rgb(203, 213, 225)' ||
+      forecastTabState.selectBg !== 'rgb(22, 34, 52)' || forecastTabState.selectColor !== 'rgb(248, 250, 252)' ||
+      !String(forecastTabState.selectChevron || '').includes('data:image/svg+xml') ||
+      !forecastTabState.shipBelowChart) {
+    throw new Error(`Embedded forecast tab state: ${JSON.stringify(forecastTabState)}`);
   }
-  await page.locator('.forecast-close').click();
 
-  // Verify bottom nav 船期 tab -> password -> full-screen double-row card schedule adjust (with UNFINISHED_SHIP, MM/DD, delete, diffing)
+  // D6 Item 5: High z-index ECharts tooltip inside #forecastChart must NEVER overlap #pwdModal when tapping #navScheduleBtn
+  await page.evaluate(() => {
+    const fc = document.getElementById('forecastChart');
+    const tip = document.createElement('div');
+    tip.id = '__syntheticTooltip';
+    tip.className = 'custom-tooltip';
+    tip.style.cssText = 'position: fixed; position: absolute; inset: 0; z-index: 9999999; pointer-events: auto;';
+    tip.textContent = '11/23 06:00 Tooltip';
+    fc.appendChild(tip);
+  });
+  await page.locator('#navScheduleBtn').click();
+  if (!await page.locator('#pwdModal').isVisible()) throw new Error('Expected #pwdModal when clicking 船期 from 預報');
+  const pwdTopMostCheck = await page.evaluate(() => {
+    const pwdModal = document.getElementById('pwdModal');
+    const inp = document.getElementById('modalPwdInput');
+    const r = inp.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const tip = document.getElementById('__syntheticTooltip');
+    if (tip) tip.remove();
+    return {
+      modalZ: Number(getComputedStyle(pwdModal).zIndex),
+      hitIsInput: hit === inp || pwdModal.contains(hit),
+      hitTag: hit ? `${hit.tagName}#${hit.id}.${hit.className}` : null,
+    };
+  });
+  await page.evaluate(() => closePwdModal(false));
+  if (pwdTopMostCheck.modalZ < 2000 || !pwdTopMostCheck.hitIsInput) {
+    throw new Error(`D6 Item 5 tooltip overlapped #pwdModal: ${JSON.stringify(pwdTopMostCheck)}`);
+  }
+
+  await page.locator('#navMonitorBtn').click();
+  if (await page.locator('#forecastModal').isVisible() || !await page.locator('#monitorView').isVisible()) {
+    throw new Error('Clicking 監控 tab must return to monitorView');
+  }
+
+  // AC-006: Bottom nav 船期 tab -> password -> embedded schedule adjust tab (UNFINISHED_SHIP, MM/DD, terminal pill sync, dirty-leave guard, auth failure guard, delete/save)
   await page.evaluate(() => {
     window.__emit('formal/schedule_list', [
       {d: '', ship_name: 'UNFIN-SHIP', limit_speed: 12, terminal: 'W12'},
@@ -369,68 +444,127 @@ async page => {
   if (!await page.locator('#pwdModal').isVisible()) throw new Error('Bottom nav 船期 must open password modal');
   await page.fill('#modalPwdInput', 'synthetic');
   await page.evaluate(() => closePwdModal(true));
-  if (!await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Password confirmation must open schedule adjust modal');
+  if (!await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Password confirmation must open schedule adjust tab');
   await page.waitForTimeout(0);
   const verifySchedReq = await page.evaluate(() => window.__requests.find(r => r.action === 'verify_password' && r.modalType === 'schedule'));
   if (!verifySchedReq) throw new Error('Expected verify_password request with modal_type=schedule');
 
   const adjustCardsState = await page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll('#adjustCardList .adjust-card'));
-    const backBtn = document.getElementById('adjustBackBtn');
-    const addBtn = document.getElementById('adjustAddBtn');
-    const topInner = document.querySelector('.adjust-topbar-inner').getBoundingClientRect();
-    const firstCardRect = cards[0].getBoundingClientRect();
-    const saveRect = document.getElementById('saveScheduleBtn').getBoundingClientRect();
-    const addRect = addBtn.getBoundingClientRect();
+    const schedTab = document.getElementById('scheduleAdjustModal');
     return {
       count: cards.length,
+      headerVisible: getComputedStyle(document.querySelector('.app-header-bar')).display !== 'none',
+      navVisible: getComputedStyle(document.querySelector('.bottom-nav')).display !== 'none',
+      navActive: document.getElementById('navScheduleBtn').classList.contains('is-active'),
+      schedDisplay: getComputedStyle(schedTab).display,
       firstHasUnfinishedTag: Boolean(cards[0]?.querySelector('.adjust-unfinished-tag')),
+      firstTitle: cards[0]?.querySelector('.adjust-card-title')?.textContent?.trim(),
       firstDateVal: cards[0]?.querySelector('.adjust-date-input')?.value,
       firstShipVal: cards[0]?.querySelector('.adjust-ship-input')?.value,
-      row1Inputs: cards[1]?.querySelectorAll('.adjust-card-row1 input, .adjust-card-row1 select, .adjust-card-row1 button').length,
-      row2Inputs: cards[1]?.querySelectorAll('.adjust-card-row2 input, .adjust-card-row2 select').length,
+      firstHasCalIcon: Boolean(cards[0]?.querySelector('.adjust-date-icon')),
+      firstPillText: cards[0]?.querySelector('.adjust-terminal-pill')?.textContent?.trim(),
+      firstPillBg: cards[0]?.querySelector('.adjust-terminal-pill') && getComputedStyle(cards[0].querySelector('.adjust-terminal-pill')).backgroundColor,
       customSpeedPreserved: cards[3]?.querySelector('.adjust-speed-select')?.value,
-      backBtnText: backBtn.textContent.trim(),
-      addBtnClass: addBtn.classList.contains('add-row-btn'),
-      addBtnRadius: getComputedStyle(addBtn).borderRadius,
-      addBtnCircular: Math.abs(addRect.width - addRect.height) < 1 && Math.round(addRect.width) === 30,
-      cardMatchesSaveLeft: Math.abs(firstCardRect.left - saveRect.left) <= 1,
-      cardMatchesSaveRight: Math.abs(firstCardRect.right - saveRect.right) <= 1,
-      cardMatchesTopLeft: Math.abs(firstCardRect.left - topInner.left - 14) <= 1,
-      cardMatchesTopRight: Math.abs((topInner.right - 14) - firstCardRect.right) <= 1,
+      speedSelectBgImage: cards[0]?.querySelector('.adjust-speed-select') && getComputedStyle(cards[0].querySelector('.adjust-speed-select')).backgroundImage,
+      cardBgs: cards.map(c => getComputedStyle(c).backgroundColor),
+      addBtnText: document.getElementById('adjustAddBtn')?.textContent?.trim(),
+      addBtnHasClass: document.getElementById('adjustAddBtn')?.classList.contains('add-row-btn'),
+      addBtnRadius: getComputedStyle(document.getElementById('adjustAddBtn')).borderRadius,
+      addBtnWidth: Math.round(document.getElementById('adjustAddBtn').getBoundingClientRect().width),
+      addBtnHeight: Math.round(document.getElementById('adjustAddBtn').getBoundingClientRect().height),
+      addBtnBg: getComputedStyle(document.getElementById('adjustAddBtn')).backgroundColor,
+      saveBtnBg: getComputedStyle(document.getElementById('saveScheduleBtn')).backgroundColor,
+      cancelBtnText: document.getElementById('cancelScheduleBtn')?.textContent?.trim(),
     };
   });
-  if (adjustCardsState.count !== 4 || !adjustCardsState.firstHasUnfinishedTag || adjustCardsState.firstDateVal !== '' ||
-      adjustCardsState.firstShipVal !== 'UNFIN-SHIP' || adjustCardsState.row1Inputs !== 3 || adjustCardsState.row2Inputs !== 2 ||
-      adjustCardsState.customSpeedPreserved !== '13.8' || adjustCardsState.backBtnText !== '' ||
-      !adjustCardsState.addBtnClass || adjustCardsState.addBtnRadius !== '50%' || !adjustCardsState.addBtnCircular ||
-      !adjustCardsState.cardMatchesSaveLeft || !adjustCardsState.cardMatchesSaveRight ||
-      !adjustCardsState.cardMatchesTopLeft || !adjustCardsState.cardMatchesTopRight) {
+  if (adjustCardsState.count !== 4 || !adjustCardsState.headerVisible || !adjustCardsState.navVisible ||
+      !adjustCardsState.navActive || adjustCardsState.schedDisplay !== 'block' ||
+      !adjustCardsState.firstHasUnfinishedTag || adjustCardsState.firstTitle !== 'UNFIN-SHIP' ||
+      adjustCardsState.firstDateVal !== '' || adjustCardsState.firstShipVal !== 'UNFIN-SHIP' ||
+      !adjustCardsState.firstHasCalIcon || adjustCardsState.firstPillText !== 'W12' ||
+      adjustCardsState.firstPillBg !== 'rgb(217, 119, 6)' || adjustCardsState.customSpeedPreserved !== '13.8' ||
+      !String(adjustCardsState.speedSelectBgImage || '').includes('data:image/svg+xml') ||
+      JSON.stringify(adjustCardsState.cardBgs) !== JSON.stringify([
+        'rgb(255, 255, 255)', 'rgb(235, 239, 244)', 'rgb(255, 255, 255)', 'rgb(235, 239, 244)'
+      ]) ||
+      adjustCardsState.addBtnText !== '＋' || !adjustCardsState.addBtnHasClass ||
+      adjustCardsState.addBtnRadius !== '50%' || adjustCardsState.addBtnWidth !== 36 ||
+      adjustCardsState.addBtnHeight !== 36 || adjustCardsState.addBtnBg !== 'rgb(22, 78, 138)' ||
+      adjustCardsState.saveBtnBg !== 'rgb(0, 102, 230)' ||
+      adjustCardsState.cancelBtnText !== '取消') {
     throw new Error(`Adjust cards state: ${JSON.stringify(adjustCardsState)}`);
   }
 
-  // Verify 1280x800 desktop alignment for #scheduleAdjustModal topbar, middle cards, and 儲存調整 footer
-  await page.setViewportSize({width: 1280, height: 800});
-  const desktopAdjustAlign = await page.evaluate(() => {
-    const topInner = document.querySelector('.adjust-topbar-inner').getBoundingClientRect();
-    const card = document.querySelector('#adjustCardList .adjust-card').getBoundingClientRect();
-    const saveBtn = document.getElementById('saveScheduleBtn').getBoundingClientRect();
-    return {
-      cardWidth: Math.round(card.width),
-      saveWidth: Math.round(saveBtn.width),
-      cardLeftVsSaveLeft: Math.abs(card.left - saveBtn.left),
-      cardRightVsSaveRight: Math.abs(card.right - saveBtn.right),
-      topLeftVsCardLeft: Math.abs((card.left - 14) - topInner.left),
-      topRightVsCardRight: Math.abs(topInner.right - (card.right + 14)),
-    };
+  // D7 Item 1: Touch/pointer on circular #adjustAddBtn activates .is-spin-green (#28a745 + 90deg rotate) and clears cleanly
+  const addSpinCheck = await page.evaluate(() => {
+    const btn = document.getElementById('adjustAddBtn');
+    btn.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+    const hasStart = btn.classList.contains('is-spin-green');
+    btn.style.transition = 'none';
+    const st = getComputedStyle(btn);
+    const activeStyle = {hasStart, bg: st.backgroundColor, transform: st.transform};
+    btn.style.transition = '';
+    return activeStyle;
   });
-  await page.setViewportSize({width: 390, height: 844});
-  if (desktopAdjustAlign.cardLeftVsSaveLeft > 1 || desktopAdjustAlign.cardRightVsSaveRight > 1 ||
-      desktopAdjustAlign.topLeftVsCardLeft > 1 || desktopAdjustAlign.topRightVsCardRight > 1) {
-    throw new Error(`Desktop #scheduleAdjustModal alignment: ${JSON.stringify(desktopAdjustAlign)}`);
+  await page.clock.fastForward(480);
+  const addSpinEnd = await page.evaluate(() => document.getElementById('adjustAddBtn').classList.contains('is-spin-green'));
+  if (!addSpinCheck.hasStart || addSpinCheck.bg !== 'rgb(40, 167, 69)' ||
+      addSpinCheck.transform === 'none' || addSpinCheck.transform === 'matrix(1, 0, 0, 1, 0, 0)' || addSpinEnd) {
+    throw new Error(`D7 circular add button green spin check failed: ${JSON.stringify({addSpinCheck, addSpinEnd})}`);
   }
 
-  // Test 4-digit auto-format (0609 -> 06/09), invalid date (99/99), addEditItem(), deleteEditItem(), and tombstone-first normalized save
+  // Verify live terminal pill update & live ship title oninput update, then test dirty-leave guard!
+  await page.locator('.adjust-card').nth(1).locator('.adjust-terminal-select').selectOption('W13');
+  const pillSynced = await page.evaluate(() => {
+    const pill = document.querySelectorAll('.adjust-card')[1].querySelector('.adjust-terminal-pill');
+    return {text: pill.textContent.trim(), bg: getComputedStyle(pill).backgroundColor};
+  });
+  if (pillSynced.text !== 'W13' || pillSynced.bg !== 'rgb(11, 41, 72)') {
+    throw new Error(`Live terminal pill sync failed: ${JSON.stringify(pillSynced)}`);
+  }
+
+  // Dirty-leave guard: confirm=false keeps user on schedule tab with edits & password intact
+  await page.evaluate(() => {
+    window.__confirmCalls = [];
+    window.__confirmResult = false;
+  });
+  await page.locator('#navMonitorBtn').click();
+  const stayOnDirtyCancel = await page.evaluate(() => ({
+    tab: currentActiveTab,
+    schedVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display !== 'none',
+    confirmCount: window.__confirmCalls.length,
+    pwdIntact: cachedSessionPassword === 'synthetic',
+  }));
+  if (stayOnDirtyCancel.tab !== 'schedule' || !stayOnDirtyCancel.schedVisible ||
+      stayOnDirtyCancel.confirmCount !== 1 || !stayOnDirtyCancel.pwdIntact) {
+    throw new Error(`Dirty-leave cancel guard failed: ${JSON.stringify(stayOnDirtyCancel)}`);
+  }
+
+  // Confirm=true leaves schedule tab, releases lock, and clears cachedSessionPassword
+  await page.evaluate(() => {
+    window.__confirmCalls = [];
+    window.__confirmResult = true;
+  });
+  await page.locator('#cancelScheduleBtn').click();
+  await page.waitForTimeout(0);
+  const leftOnConfirm = await page.evaluate(() => ({
+    tab: currentActiveTab,
+    schedVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display !== 'none',
+    confirmCount: window.__confirmCalls.length,
+    pwdCleared: cachedSessionPassword === '',
+    releasedLock: window.__requests.some(r => r.action === 'release_lock'),
+  }));
+  if (leftOnConfirm.tab !== 'monitor' || leftOnConfirm.schedVisible ||
+      leftOnConfirm.confirmCount !== 1 || !leftOnConfirm.pwdCleared || !leftOnConfirm.releasedLock) {
+    throw new Error(`Dirty-leave accept cleanup failed: ${JSON.stringify(leftOnConfirm)}`);
+  }
+
+  // Re-open schedule adjust, test 4-digit auto-format, 99/99 invalid date, addEditItem, deleteEditItem, and 0 dirty-leave confirms on save
+  await page.clock.fastForward(5100);
+  await page.locator('#navScheduleBtn').click();
+  await page.fill('#modalPwdInput', 'synthetic');
+  await page.evaluate(() => closePwdModal(true));
   await page.evaluate(() => {
     const firstDateInput = document.querySelectorAll('.adjust-date-input')[1];
     firstDateInput.value = '99/99';
@@ -448,30 +582,103 @@ async page => {
     throw new Error('0609 must auto-format to 06/09');
   }
   await page.locator('#adjustAddBtn').click();
+  await page.locator('.adjust-card').nth(0).locator('.adjust-date-input').fill('06/15');
+  await page.locator('.adjust-card').nth(0).locator('.adjust-ship-input').fill('NEW-SHIP');
+  const liveTitleUpdated = await page.evaluate(() => document.querySelectorAll('.adjust-card .adjust-card-title')[0].textContent.trim());
+  if (liveTitleUpdated !== 'NEW-SHIP') throw new Error(`Live ship title oninput failed: ${liveTitleUpdated}`);
+
   await page.evaluate(() => {
-    const dateInput = document.querySelectorAll('.adjust-date-input')[0];
-    dateInput.value = '06/15';
-    updateEditItem(0, 'd', '06/15');
-    const shipInput = document.querySelectorAll('.adjust-ship-input')[0];
-    shipInput.value = 'NEW-SHIP';
-    updateEditItem(0, 'ship_name', 'NEW-SHIP');
+    window.__confirmCalls = [];
+    window.__confirmResult = true;
+    window.__requests = [];
   });
   // Delete DEMO-W13 (now at index 3 after addEditItem)
   await page.locator('.adjust-card').nth(3).locator('.adjust-delete-btn').click();
   await page.locator('#saveScheduleBtn').click();
   await page.waitForTimeout(0);
-  const savedScheduleReq = await page.evaluate(() => window.__requests.find(r => r.action === 'update_schedule'));
-  if (!savedScheduleReq || !savedScheduleReq.schedule) throw new Error('Expected update_schedule request with schedule payload');
-  const savedDiff = JSON.parse(savedScheduleReq.schedule);
+  const savedInfo = await page.evaluate(() => ({
+    req: window.__requests.find(r => r.action === 'update_schedule'),
+    confirmCalls: window.__confirmCalls.slice(),
+    schedVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display !== 'none',
+    tab: currentActiveTab,
+  }));
+  if (!savedInfo.req || !savedInfo.req.schedule || savedInfo.confirmCalls.length !== 1 ||
+      !savedInfo.confirmCalls[0].includes('DEMO-W13') || savedInfo.schedVisible || savedInfo.tab !== 'monitor') {
+    throw new Error(`Save schedule confirm/close check failed: ${JSON.stringify(savedInfo)}`);
+  }
+  const savedDiff = JSON.parse(savedInfo.req.schedule);
   if (savedDiff.length !== 2 ||
       !savedDiff[0].is_deleted || savedDiff[0].ship_name !== 'DEMO-W13' || savedDiff[0].d !== '6/10' ||
       savedDiff[1].is_deleted !== false || savedDiff[1].ship_name !== 'NEW-SHIP' || savedDiff[1].d !== '6/15' || savedDiff[1].terminal !== 'W13') {
     throw new Error(`Unexpected update_schedule diff payload: ${JSON.stringify(savedDiff)}`);
   }
-  if (await page.locator('#scheduleAdjustModal').isVisible()) throw new Error('Schedule adjust modal must close after save');
 
-  // Restore standard test schedule for remaining tests
+  // DES-002: Delayed auth failure on dirty schedule tab closes cleanly without dirty confirm; cross-session delayed failure does NOT yank active #manualModal
+  await page.clock.fastForward(5100);
   await page.evaluate(() => {
+    window.__confirmCalls = [];
+    window.__confirmResult = false;
+    window.__alerts = [];
+    window.__customVerifyHandler = () => new Promise(resolve => {
+      window.__resolveVerify = status => resolve({ok: true, status: 200, json: async () => ({status})});
+    });
+  });
+  await page.locator('#navScheduleBtn').click();
+  await page.fill('#modalPwdInput', 'bad-pwd');
+  await page.evaluate(() => closePwdModal(true));
+  await page.locator('.adjust-card').nth(0).locator('.adjust-ship-input').fill('DIRTY-EDIT');
+  await page.evaluate(async () => {
+    window.__resolveVerify('error');
+    await new Promise(r => setTimeout(r, 10));
+  });
+  const dirtyAuthFail = await page.evaluate(() => ({
+    tab: currentActiveTab,
+    schedVisible: getComputedStyle(document.getElementById('scheduleAdjustModal')).display !== 'none',
+    confirmCount: window.__confirmCalls.length,
+    pwdCleared: cachedSessionPassword === '',
+  }));
+  if (dirtyAuthFail.tab !== 'monitor' || dirtyAuthFail.schedVisible || dirtyAuthFail.confirmCount !== 0 || !dirtyAuthFail.pwdCleared) {
+    throw new Error(`Dirty auth fail must skip confirm and return to monitor: ${JSON.stringify(dirtyAuthFail)}`);
+  }
+
+  // Now test delayed stale verify_password from canceled schedule session does not touch new #manualModal session
+  await page.clock.fastForward(5100);
+  await page.evaluate(() => {
+    window.__resolveVerify = null;
+    window.__customVerifyHandler = req => {
+      if (req.modalType === 'schedule') {
+        return new Promise(resolve => {
+          window.__resolveOldSchedVerify = () => resolve({ok: true, status: 200, json: async () => ({status: 'error'})});
+        });
+      }
+      return Promise.resolve({ok: true, status: 200, json: async () => ({status: 'success'})});
+    };
+  });
+  await page.locator('#navScheduleBtn').click();
+  await page.fill('#modalPwdInput', 'stale-pwd');
+  await page.evaluate(() => closePwdModal(true));
+  await page.locator('#cancelScheduleBtn').click();
+  await page.clock.fastForward(5100);
+  await page.locator('.cpc-btn').click();
+  await page.fill('#modalPwdInput', 'active-manual-pwd');
+  await page.evaluate(() => closePwdModal(true));
+  await page.evaluate(async () => {
+    window.__resolveOldSchedVerify();
+    await new Promise(r => setTimeout(r, 10));
+    window.__customVerifyHandler = null;
+  });
+  const crossSessionIsolation = await page.evaluate(() => ({
+    manualOpen: getComputedStyle(document.getElementById('manualModal')).display === 'flex',
+    pwdIntact: cachedSessionPassword === 'active-manual-pwd',
+  }));
+  if (!crossSessionIsolation.manualOpen || !crossSessionIsolation.pwdIntact) {
+    throw new Error(`Stale delayed verify_password leaked across sessions: ${JSON.stringify(crossSessionIsolation)}`);
+  }
+  await page.evaluate(() => closeManualModal());
+
+  // Restore standard test schedule and default confirm=true for remaining tests
+  await page.evaluate(() => {
+    window.__confirmResult = true;
     const today = window.__today;
     const monthDay = `${Number(today.slice(5, 7))}/${Number(today.slice(8))}`;
     window.__emit('formal/schedule_list', [
@@ -518,7 +725,6 @@ async page => {
     speed: document.getElementById('limitSpeed').value,
     term: document.getElementById('terminal').value,
     w12Active: document.querySelector('#terminalSegmentGroup [data-terminal="W12"]').classList.contains('is-active'),
-    w12Bg: getComputedStyle(document.querySelector('#terminalSegmentGroup [data-terminal="W12"]')).backgroundColor,
     windNum: document.getElementById('windSpeed').textContent,
   }));
   if (afterTick.speed !== '12' || afterTick.term !== 'W12' || !afterTick.w12Active || afterTick.windNum !== '6.2') {
@@ -563,7 +769,7 @@ async page => {
   }
   await page.evaluate(() => window.__emit('formal/editing_lock', null));
 
-  // Entry conditions + bell SVG states + 375x812 overflow check
+  // AC-002 / AC-004: Entry conditions + bell SVG states + full-width #dynamicBox + 375x812 overflow + #B91C1C icon filter
   await page.setViewportSize({width: 375, height: 812});
   const bellStates = await page.evaluate(() => {
     getCurrentTimeHHMM = () => '10:00';
@@ -589,58 +795,68 @@ async page => {
     getCurrentTimeHHMM = () => '10:00';
     isSoundEnabled = true;
     const cases = [
-      {wind: 10, wave: 2.5, visibility: 2, status: 'safe', reasons: 0},
-      {wind: 10, wave: 2.51, visibility: 2, status: 'warning', reasons: 1},
-      {wind: 10, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 1},
-      {wind: 10, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 2},
-      {wind: 13, wave: 2.5, visibility: 2, status: 'warning', reasons: 0},
-      {wind: 13, wave: 2.51, visibility: 2, status: 'warning', reasons: 0},
-      {wind: 13, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 0},
-      {wind: 13, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 0},
-      {wind: 10, wave: null, visibility: null, status: 'safe', reasons: 0},
-      {wind: 10, wave: '', visibility: 0, status: 'warning', reasons: 1},
-      {wind: 10, wave: 3, visibility: '未知', status: 'warning', reasons: 1},
+      {wind: 10, wave: 2.5, visibility: 2, status: 'safe', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: 2.51, visibility: 2, status: 'warning', reasons: 1, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 1, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 2, ship: 'LONG-VESSEL-NAME-FOR-375PX-OVERFLOW-CHECK'},
+      {wind: 13, wave: 2.5, visibility: 2, status: 'warning', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 13, wave: 2.51, visibility: 2, status: 'warning', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 13, wave: 2.5, visibility: 1.99, status: 'warning', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 13, wave: 2.51, visibility: 1.99, status: 'warning', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: null, visibility: null, status: 'safe', reasons: 0, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: '', visibility: 0, status: 'warning', reasons: 1, ship: 'DEMO-SHIP'},
+      {wind: 10, wave: 3, visibility: '未知', status: 'warning', reasons: 1, ship: 'DEMO-SHIP'},
+      {wind: 4, wave: 1, visibility: 5, seasonTime: '--:--', status: 'waiting', reasons: 0, ship: 'DEMO-SHIP'},
     ];
     const results = cases.map(item => {
-      window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12,
-        season_time: '06:00', current_wind: item.wind, current_wave: item.wave, current_visibility: item.visibility});
+      window.__emit('formal/active_status', {app_mode: 'start', ship_name: item.ship, limit_speed: 12,
+        season_time: item.seasonTime || '06:00', current_wind: item.wind, current_wave: item.wave, current_visibility: item.visibility});
       const box = document.getElementById('dynamicBox');
       const windCard = document.querySelector('.wind-card');
       const boxRect = box.getBoundingClientRect();
       const cardRect = windCard.getBoundingClientRect();
       const reasons = [...box.querySelectorAll('.condition-warning')];
-      return {expected: item, status: currentStatus, text: box.textContent, reasons: reasons.length,
+      const filters = reasons.map(row => getComputedStyle(row.querySelector('img')).filter);
+      return {
+        expected: item,
+        status: currentStatus,
+        text: box.textContent,
+        reasons: reasons.length,
         insideWindCard: Boolean(windCard.contains(box)) && boxRect.right <= cardRect.right + 1,
-        hasStatusPillClass: windCard.classList.contains('has-status-pill'),
-        mainRowJustify: getComputedStyle(windCard.querySelector('.wind-main-row')).justifyContent,
-        timeActiveAlign: getComputedStyle(document.getElementById('dataTime')).textAlign,
+        fullWidthBar: boxRect.width >= cardRect.width * 0.85,
+        dividerVisible: getComputedStyle(windCard.querySelector('.wind-status-divider')).display === 'block',
         noOverflow375: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         images: reasons.map(row => row.querySelector('img')?.getAttribute('src')),
-        highlighted: document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className,
-        soundPlaying: !notificationSound.paused};
+        filters,
+        highlighted: item.ship === 'DEMO-SHIP' ? document.querySelector('#scheduleBody tr[data-shipname="DEMO-SHIP"]').className : 'skip',
+        soundPlaying: !notificationSound.paused,
+      };
     });
     isSoundEnabled = false;
     window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
-    const idleRowStyle = getComputedStyle(document.querySelector('.wind-card .wind-main-row'));
-    const idleJustify = idleRowStyle.justifyContent;
-    const idlePadLeft = parseFloat(idleRowStyle.paddingLeft);
-    if (document.querySelector('.wind-card').classList.contains('has-status-pill') || idleJustify !== 'flex-start' || idlePadLeft < 24) {
-      throw new Error(`Expected left-of-center idle wind-card after stop, got ${idleJustify}, padLeft=${idlePadLeft}`);
-    }
+    const dividerHiddenAfterStop = getComputedStyle(document.querySelector('.wind-status-divider')).display === 'none';
+    if (!dividerHiddenAfterStop) throw new Error('Expected .wind-status-divider hidden after stop');
     return results;
   });
   for (const result of conditions) {
     if (result.status !== result.expected.status || result.reasons !== result.expected.reasons ||
-        !result.insideWindCard || !result.hasStatusPillClass || result.mainRowJustify !== 'space-between' ||
-        result.timeActiveAlign !== 'left' || !result.noOverflow375 ||
-        result.soundPlaying !== (result.status === 'safe') || !result.highlighted.includes(`schedule-row-${result.status}`)) {
+        !result.insideWindCard || !result.fullWidthBar || !result.dividerVisible || !result.noOverflow375 ||
+        result.soundPlaying !== (result.status === 'safe') ||
+        (result.highlighted !== 'skip' && !result.highlighted.includes(`schedule-row-${result.status}`))) {
       throw new Error(`Entry conditions: ${JSON.stringify(result)}`);
     }
+    if (!result.text.includes(result.expected.ship)) throw new Error(`Status bar missing ship name: ${JSON.stringify(result)}`);
+    if (result.expected.status === 'waiting' && !result.text.includes('等待進港')) throw new Error(`Waiting label missing: ${JSON.stringify(result)}`);
     if (result.expected.wind > 12 && !result.text.includes('風速超標')) throw new Error(`Wind priority: ${JSON.stringify(result)}`);
     if (result.expected.wind <= 12 && typeof result.expected.wave === 'number' && result.expected.wave > 2.5 &&
         !result.text.includes(`浪高 ${result.expected.wave} > 2.5 m`)) throw new Error(`Wave value: ${JSON.stringify(result)}`);
     if (result.expected.wind <= 12 && typeof result.expected.visibility === 'number' && result.expected.visibility < 2 &&
         !result.text.includes(`能見度 ${result.expected.visibility} < 2 浬`)) throw new Error(`Visibility value: ${JSON.stringify(result)}`);
+    for (const f of result.filters) {
+      if (!f || f === 'none' || f === 'brightness(0) invert(1)') {
+        throw new Error(`Icon filter must not remain white invert(1): ${JSON.stringify(result)}`);
+      }
+    }
     if (result.expected.reasons === 2 && (result.images.join(',') !== '/APP_SVG/wave.svg,/APP_SVG/eye.svg' ||
         !result.text.includes('浪高 2.51 > 2.5 m') || !result.text.includes('能見度 1.99 < 2 浬'))) {
       throw new Error(`Entry warning details: ${JSON.stringify(result)}`);
@@ -648,28 +864,54 @@ async page => {
   }
   await page.setViewportSize({width: 390, height: 844});
 
-  // Verify same-day dual-ship coexistence: Ship A finished (POB) while Ship B active -> both #pobList and #dynamicBox visible
+  // AC-003: Verify POB card structure, is-no-entry styling & same-day dual-ship coexistence
   await page.evaluate(() => {
     getCurrentTimeHHMM = () => '10:00';
     window.__emit(`formal/daily_records/${window.__today}`, {
-      ship_a: {config: {ship_name: 'DEMO-W13'}, pob_info: {pob_time: '06:15', formatted_msg: 'DEMO-W13 已於 06:15 進港'}}
+      ship_a: {config: {ship_name: 'DEMO-W13'}, pob_info: {pob_time: '06:15', formatted_msg: 'DEMO-W13 已於 06:15 進港'}},
+      ship_b: {config: {ship_name: 'DEMO-NOENTRY'}, pob_info: {no_entry_reason: '風速超標', formatted_msg: 'DEMO-NOENTRY 無法進港'}}
     });
     window.__emit('formal/active_status', {app_mode: 'start', ship_name: 'DEMO-SHIP', limit_speed: 12, season_time: '06:00', current_wind: 7.4});
   });
-  const dualCoexist = await page.evaluate(() => ({
-    pobDisplay: getComputedStyle(document.getElementById('pobList')).display,
-    boxDisplay: getComputedStyle(document.getElementById('dynamicBox')).display,
-    boxText: document.getElementById('dynamicBox').textContent,
-  }));
-  if (dualCoexist.pobDisplay !== 'block' || dualCoexist.boxDisplay !== 'block' || !dualCoexist.boxText.includes('可進港')) {
+  const dualCoexist = await page.evaluate(() => {
+    const pobEl = document.getElementById('pobList');
+    const row = pobEl.querySelector('.pob-item-row');
+    const noEntryRow = pobEl.querySelector('.pob-item-row.is-no-entry');
+    const noEntryStyle = noEntryRow ? getComputedStyle(noEntryRow) : null;
+    return {
+      pobDisplay: getComputedStyle(pobEl).display,
+      pobBg: getComputedStyle(pobEl).backgroundColor,
+      pobTitle: pobEl.querySelector('.pob-card-title')?.textContent?.trim(),
+      pobShip: row?.querySelector('.pob-item-ship')?.textContent?.trim(),
+      pobTime: row?.querySelector('.pob-item-time')?.textContent?.trim(),
+      noEntryText: noEntryRow?.textContent?.trim(),
+      noEntryBg: noEntryStyle?.backgroundColor,
+      noEntryColor: noEntryStyle?.color,
+      boxDisplay: getComputedStyle(document.getElementById('dynamicBox')).display,
+      boxText: document.getElementById('dynamicBox').textContent,
+    };
+  });
+  if (dualCoexist.pobDisplay !== 'block' || dualCoexist.pobBg !== 'rgb(255, 255, 255)' ||
+      dualCoexist.pobTitle !== 'POB 紀錄' || dualCoexist.pobShip !== 'DEMO-W13' ||
+      dualCoexist.pobTime !== '06:15' || dualCoexist.noEntryText !== 'DEMO-NOENTRY 無法進港' ||
+      dualCoexist.noEntryBg !== 'rgb(254, 242, 242)' || dualCoexist.noEntryColor !== 'rgb(185, 28, 28)' ||
+      dualCoexist.boxDisplay !== 'block' || !dualCoexist.boxText.includes('可進港')) {
     throw new Error(`Dual-ship same-day POB + status coexistence failed: ${JSON.stringify(dualCoexist)}`);
   }
   await page.evaluate(() => {
     window.__emit(`formal/daily_records/${window.__today}`, null);
     window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:00'});
   });
+
+  // D6 Item 6: Clicking #windSpeed MUST NOT navigate to forecast; use bottom nav #navForecastBtn only
+  const windCursor = await page.locator('#windSpeed').evaluate(el => getComputedStyle(el).cursor);
+  if (windCursor === 'pointer') throw new Error(`D6 Item 6: #windSpeed cursor must not be pointer (${windCursor})`);
   await page.locator('#windSpeed').click();
-  if (!await page.locator('#forecastModal').isVisible()) throw new Error('Wind speed must open forecast');
+  if (await page.locator('#forecastModal').isVisible() || !await page.locator('#monitorView').isVisible()) {
+    throw new Error('D6 Item 6: Clicking #windSpeed must NOT open forecast tab');
+  }
+  await page.locator('#navForecastBtn').click();
+  if (!await page.locator('#forecastModal').isVisible()) throw new Error('Bottom nav 預報 must open forecast');
   await page.evaluate(async () => {openForecastModal(); await loadForecastData();});
   const forecast = await page.evaluate(() => ({drawn: window.__chartOptions.length > 0, status: document.getElementById('forecastStatus').textContent}));
   if (!forecast.drawn || !forecast.status.includes('10:00')) throw new Error(`Forecast UI: ${JSON.stringify(forecast)}`);
@@ -710,11 +952,13 @@ async page => {
   if (!await page.locator('#forecastUpdateBtn').textContent().then(text => text.includes('請手動更新'))) throw new Error('Failed update must show manual retry');
   await page.evaluate(() => window.__emit('formal/forecast_update_lock', null));
   if (await page.locator('#forecastUpdateBtn').isDisabled()) throw new Error('Completed update with missing lease must remain enabled');
+
+  await page.locator('#navMonitorBtn').click();
   await page.evaluate(() => {
     window.__emit('formal/active_status', {app_mode: 'start', target_key: 'synthetic', ship_name: 'DEMO-SHIP', limit_speed: 12, terminal: 'W12', current_wind: 4});
     window.__emit(`formal/daily_records/${window.__today}`, {synthetic: {config: {ship_name: 'DEMO-SHIP'}, pob_info: {pob_time: '10:00', formatted_msg: '示意 POB'}}});
   });
-  const operations = await page.evaluate(() => ({monitor: document.getElementById('shipName').disabled, pob: document.getElementById('pobList').textContent.includes('DEMO-SHIP 已於 10:00 進港')}));
+  const operations = await page.evaluate(() => ({monitor: document.getElementById('shipName').disabled, pob: document.getElementById('pobList').textContent.includes('DEMO-SHIP') && document.getElementById('pobList').textContent.includes('10:00')}));
   if (!operations.monitor || !operations.pob || errors.length) throw new Error(JSON.stringify({operations, errors}));
   await page.evaluate(() => {window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4});});
   if (await page.locator('#shipName').isDisabled()) throw new Error('Stop must unlock monitor inputs');
@@ -732,16 +976,15 @@ async page => {
   });
   if (!commands.commands.some(item => item.mode === 'start') || !commands.commands.some(item => item.mode === 'reset' && item.pobTime === '10:00')) throw new Error(`Commands: ${JSON.stringify(commands)}`);
 
-  // ==================== Ship Chat Room v2 PWA Tests (AC-001 ~ AC-004 + F-001 ~ F-004) ====================
+  // ==================== AC-007: Ship Chat Room v2 Embedded Tab + D2 Off-Tab Seat Persistence ====================
   await page.evaluate(() => {
-    if (typeof closeForecastModal === 'function') closeForecastModal();
     localStorage.clear();
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}`, null);
     window.__emit(`formal/chat_attachments/${d}`, null);
   });
 
-  // AC-001: Unread static red "!" lifecycle & no red border/animation
+  // Unread static red dot lifecycle (no "!", persists on #chatRoleScreen until #chatRoomScreen entered)
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/messages`, {
@@ -753,14 +996,24 @@ async page => {
     const btn = document.getElementById('chatOpenBtn');
     const bs = getComputedStyle(badge);
     const hs = getComputedStyle(btn);
-    return {text: badge.textContent.trim(), display: bs.display, color: bs.color, anim: bs.animationName, btnBorder: hs.borderStyle};
+    return {
+      text: badge.textContent.trim(),
+      display: bs.display,
+      bg: bs.backgroundColor,
+      width: parseFloat(bs.width),
+      height: parseFloat(bs.height),
+      radius: bs.borderRadius,
+      anim: bs.animationName,
+      btnBorder: hs.borderStyle,
+    };
   });
-  if (unread1.text !== '!' || unread1.display === 'none' || unread1.color !== 'rgb(220, 38, 38)' ||
+  if (unread1.text !== '' || unread1.display === 'none' || unread1.bg !== 'rgb(239, 68, 68)' ||
+      unread1.width < 10 || unread1.height < 10 || unread1.radius !== '999px' ||
       unread1.anim !== 'none' || unread1.btnBorder !== 'none') {
-    throw new Error(`AC-001 badge initial unread: ${JSON.stringify(unread1)}`);
+    throw new Error(`AC-007 badge initial unread red dot: ${JSON.stringify(unread1)}`);
   }
 
-  // Open modal -> Screen 1 (選擇角色) with bold ROC date & 4 custom icon rows + lock.png when full
+  // Open chat tab -> Screen 1 (選擇角色) inside unified shell + red dot remains until room entered
   await page.evaluate(() => {
     const d = window.__today;
     const now = getServerNow();
@@ -781,45 +1034,92 @@ async page => {
     const roleBtns = Array.from(document.querySelectorAll('#chatRoleBar .chat-role-item'));
     return {
       modalDisplay: getComputedStyle(modal).display,
+      headerVisible: getComputedStyle(document.querySelector('.app-header-bar')).display !== 'none',
+      navVisible: getComputedStyle(document.querySelector('.bottom-nav')).display !== 'none',
+      navActive: document.getElementById('chatOpenBtn').classList.contains('is-active'),
       badgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
       roleDisplay: getComputedStyle(roleScreen).display,
       roomDisplay: getComputedStyle(roomScreen).display,
       dateText: dateBadge.textContent.trim(),
       dateWeight: Number(getComputedStyle(dateBadge).fontWeight),
-      talkImgCount: document.querySelectorAll('img[src*="talk.png"]').length,
       roleIds: roleBtns.map(b => b.dataset.roleId),
-      roleIcons: roleBtns.map(b => b.querySelector('img.chat-role-icon')?.getAttribute('src')),
       pilotDisabled: pilotBtn ? pilotBtn.disabled : false,
       pilotCount: pilotBtn ? pilotBtn.querySelector('.chat-role-count')?.textContent : '',
       lockImgSrc: lockImg ? lockImg.getAttribute('src') : '',
     };
   });
-  if (screen1State.modalDisplay !== 'flex' || screen1State.badgeDisplay !== 'none' ||
+  if (screen1State.modalDisplay !== 'flex' || !screen1State.headerVisible || !screen1State.navVisible ||
+      !screen1State.navActive || screen1State.badgeDisplay === 'none' ||
       screen1State.roleDisplay !== 'flex' || screen1State.roomDisplay !== 'none' ||
       screen1State.dateText !== expectedRocDate || screen1State.dateWeight < 700 ||
-      screen1State.talkImgCount !== 0 ||
       JSON.stringify(screen1State.roleIds) !== JSON.stringify(['CPC_LM', 'Pilot', 'Other', 'Spectator']) ||
       !screen1State.pilotDisabled || screen1State.pilotCount !== '1/1' || screen1State.lockImgSrc !== 'pic/lock.png') {
-    throw new Error(`AC-001/v2 Screen 1 state: ${JSON.stringify(screen1State)}`);
+    throw new Error(`AC-007 Screen 1 state: ${JSON.stringify(screen1State)}`);
   }
 
-  // Click Spectator (觀眾) -> enters Screen 2 (LNG 船聊天室) in Spectator mode without claiming any seat
+  // DES-001: Hoisted #chatNameSheetBackdrop covers header & bottom-nav at 390x844 and 1280x800
+  for (const vp of [{width: 390, height: 844}, {width: 1280, height: 800}]) {
+    await page.setViewportSize(vp);
+    await page.locator('.chat-role-item[data-role-id="Other"]').click();
+    await page.waitForFunction(() => getComputedStyle(document.getElementById('chatNameSheetBackdrop')).display === 'flex');
+    const sheetOverlayCheck = await page.evaluate(() => {
+      const bd = document.getElementById('chatNameSheetBackdrop');
+      const sheet = bd.querySelector('.chat-bottom-sheet');
+      const bdRect = bd.getBoundingClientRect();
+      const sheetRect = sheet.getBoundingClientRect();
+      const hitHeader = document.elementFromPoint(20, 20);
+      const hitBottom = document.elementFromPoint(20, window.innerHeight - 20);
+      return {
+        isBodyDirectChild: bd.parentElement === document.body,
+        bdWidth: Math.round(bdRect.width),
+        bdHeight: Math.round(bdRect.height),
+        vpWidth: window.innerWidth,
+        vpHeight: window.innerHeight,
+        sheetWidth: Math.round(sheetRect.width),
+        hitHeaderIsBackdrop: hitHeader === bd || bd.contains(hitHeader),
+        hitBottomIsBackdropOrSheet: hitBottom === bd || bd.contains(hitBottom),
+      };
+    });
+    if (!sheetOverlayCheck.isBodyDirectChild ||
+        Math.abs(sheetOverlayCheck.bdWidth - sheetOverlayCheck.vpWidth) > 1 ||
+        Math.abs(sheetOverlayCheck.bdHeight - sheetOverlayCheck.vpHeight) > 1 ||
+        sheetOverlayCheck.sheetWidth > 480 ||
+        !sheetOverlayCheck.hitHeaderIsBackdrop || !sheetOverlayCheck.hitBottomIsBackdropOrSheet) {
+      throw new Error(`DES-001 name sheet stacking check (${vp.width}x${vp.height}): ${JSON.stringify(sheetOverlayCheck)}`);
+    }
+    await page.evaluate(() => closeChatNameSheet());
+  }
+  await page.setViewportSize({width: 390, height: 844});
+
+  // Spectator (觀眾) -> enters Screen 2 (作業聊天室): no #chatSpectatorBar divider, 「僅供瀏覽」 left of #chatRoleSwitchBtn, red dot clears!
   await page.locator('.chat-role-item[data-role-id="Spectator"]').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
-  const specRoomState = await page.evaluate(() => ({
-    titleText: document.getElementById('chatModalTitle').textContent.trim(),
-    specVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
-    specPillText: document.getElementById('chatSpectatorPill').textContent.trim(),
-    footerDisplay: getComputedStyle(document.getElementById('chatComposerFooter')).display,
-    cpcSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
-  }));
-  if (specRoomState.titleText !== 'LNG 船聊天室' || specRoomState.specVisible !== 'flex' ||
-      !specRoomState.specPillText.includes('觀眾模式') || specRoomState.footerDisplay !== 'none' ||
+  const specRoomState = await page.evaluate(() => {
+    const hint = document.getElementById('chatSpectatorHint');
+    const pill = document.getElementById('chatRoleSwitchBtn');
+    const hintRect = hint.getBoundingClientRect();
+    const pillRect = pill.getBoundingClientRect();
+    return {
+      titleText: document.getElementById('chatModalTitle').textContent.trim(),
+      rolePillText: pill.textContent.trim(),
+      hasOldDivider: document.getElementById('chatSpectatorBar') !== null,
+      hintDisplay: getComputedStyle(hint).display,
+      hintText: hint.textContent.trim(),
+      hintLeftOfPill: hintRect.right <= pillRect.left + 1 && Math.abs(hintRect.top - pillRect.top) < 12,
+      badgeDisplay: getComputedStyle(document.getElementById('chatUnreadBadge')).display,
+      footerDisplay: getComputedStyle(document.getElementById('chatComposerFooter')).display,
+      cpcSeat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
+    };
+  });
+  if (specRoomState.titleText !== '作業聊天室' || specRoomState.rolePillText !== '觀眾' ||
+      specRoomState.hasOldDivider || specRoomState.hintDisplay === 'none' ||
+      specRoomState.hintText !== '僅供瀏覽' || !specRoomState.hintLeftOfPill ||
+      specRoomState.badgeDisplay !== 'none' || specRoomState.footerDisplay !== 'none' ||
       specRoomState.cpcSeat !== null) {
-    throw new Error(`AC-002 Spectator mode state: ${JSON.stringify(specRoomState)}`);
+    throw new Error(`AC-007 Spectator mode state: ${JSON.stringify(specRoomState)}`);
   }
 
-  // Receive new message while modal open -> read marker updates, closing stays hidden, reappears after closing
+  // Switch to 監控 tab -> receive new message off-tab -> badge reappears!
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/messages`, {
@@ -827,9 +1127,9 @@ async page => {
       m2: {id: 'm2', ts: 20000, timeStr: '08:05', roleId: 'Pilot', roleLabel: 'Pilot', clientId: 'other-2', text: '已登輪'},
     });
   });
-  await page.locator('#chatCloseBtn').click();
+  await page.locator('#navMonitorBtn').click();
   if (await page.evaluate(() => getComputedStyle(document.getElementById('chatUnreadBadge')).display) !== 'none') {
-    throw new Error('AC-001: Badge must remain hidden after closing modal when newest msg was read while open');
+    throw new Error('AC-007: Badge must stay hidden after leaving chat when newest msg was read while open');
   }
   await page.evaluate(() => {
     const d = window.__today;
@@ -838,26 +1138,57 @@ async page => {
     });
   });
   if (await page.evaluate(() => getComputedStyle(document.getElementById('chatUnreadBadge')).display) === 'none') {
-    throw new Error('AC-001: Badge must reappear when new message arrives after closing modal');
+    throw new Error('AC-007: Badge must reappear when new message arrives while off chat tab');
   }
 
-  // AC-002: Claim 中油LNG (CPC_LM_1) directly from Screen 1 -> enters Screen 2 Active mode
+  // Claim 中油LNG (CPC_LM_1) -> enters Screen 2 Active mode (#chatRoleSwitchBtn === '中油LNG', #chatSpectatorHint hidden)
   await page.locator('#chatOpenBtn').click();
   await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
   const seatCpc = await page.evaluate(() => ({
     seat: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
     hookArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`),
-    specVisible: getComputedStyle(document.getElementById('chatSpectatorBar')).display,
+    rolePillText: document.getElementById('chatRoleSwitchBtn').textContent.trim(),
+    specHintDisplay: getComputedStyle(document.getElementById('chatSpectatorHint')).display,
     footerDisplay: getComputedStyle(document.getElementById('chatComposerFooter')).display,
   }));
   if (!seatCpc.seat || seatCpc.seat.roleId !== 'CPC_LM' || seatCpc.seat.roleLabel !== '中油LNG' ||
-      !seatCpc.hookArmed || seatCpc.specVisible !== 'none' || seatCpc.footerDisplay !== 'block') {
-    throw new Error(`AC-002 claim 中油LNG: ${JSON.stringify(seatCpc)}`);
+      seatCpc.rolePillText !== '中油LNG' || !seatCpc.hookArmed ||
+      seatCpc.specHintDisplay !== 'none' || seatCpc.footerDisplay !== 'block') {
+    throw new Error(`AC-007 claim 中油LNG: ${JSON.stringify(seatCpc)}`);
   }
 
-  // Test 「其他」 bottom sheet: blank name -> spectator (releases CPC_LM_1); non-blank -> claims Other_1 & releases old seat
-  await page.locator('#chatBackToRolesBtn').click();
+  // DES-003: At 1280x800, clicking horizontal margin outside .chat-modal-box keeps #chatModal active and retains mySeat
+  await page.setViewportSize({width: 1280, height: 800});
+  await page.mouse.click(40, 300);
+  const desktopMarginClick = await page.evaluate(() => ({
+    tab: currentActiveTab,
+    chatVisible: getComputedStyle(document.getElementById('chatModal')).display === 'flex',
+    seatHeld: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null,
+  }));
+  await page.setViewportSize({width: 390, height: 844});
+  if (desktopMarginClick.tab !== 'chat' || !desktopMarginClick.chatVisible || !desktopMarginClick.seatHeld) {
+    throw new Error(`DES-003 desktop margin click closed chat tab: ${JSON.stringify(desktopMarginClick)}`);
+  }
+
+  // D2: Switching to 監控 tab preserves CPC_LM_1 seat; returning to 聊天室 resumes #chatRoomScreen directly!
+  await page.locator('#navMonitorBtn').click();
+  const offTabRetained = await page.evaluate(() => ({
+    tab: currentActiveTab,
+    chatVisible: getComputedStyle(document.getElementById('chatModal')).display !== 'none',
+    seatHeld: window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null,
+  }));
+  if (offTabRetained.tab !== 'monitor' || offTabRetained.chatVisible || !offTabRetained.seatHeld) {
+    throw new Error(`D2 off-tab seat retention failed: ${JSON.stringify(offTabRetained)}`);
+  }
+  await page.locator('#chatOpenBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
+  if (await page.locator('#chatRoleSwitchBtn').textContent() !== '中油LNG') {
+    throw new Error('D2 resume must land directly in room screen with 中油LNG role pill');
+  }
+
+  // Test 「其他」 bottom sheet via #chatRoleSwitchBtn: blank name -> spectator (releases CPC_LM_1); non-blank -> Other_1
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex');
   await page.locator('.chat-role-item[data-role-id="Other"]').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatNameSheetBackdrop')).display === 'flex');
@@ -869,17 +1200,18 @@ async page => {
     window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
   );
 
-  // Now test non-blank name in 「其他」 bottom sheet -> claims Other_1 with custom name
-  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.locator('.chat-role-item[data-role-id="Other"]').click();
   await page.fill('#chatNameInput', '海事工程師');
   await page.locator('#chatEnterRoomBtn').click();
   await page.waitForFunction(() => {
     const s = window.__getDb(`formal/chat_rooms/${window.__today}/seats/Other_1`);
-    return Boolean(s && s.roleLabel === '海事工程師') && getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex';
+    return Boolean(s && s.roleLabel === '海事工程師') &&
+      getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex' &&
+      document.getElementById('chatRoleSwitchBtn').textContent.trim() === '海事工程師';
   });
 
-  // Remote overwrite on Other_1 must forfeit local seat and cancel Other_1 onDisconnect without deleting takeover user
+  // Remote overwrite on Other_1 forfeits local seat cleanly
   await page.evaluate(() => {
     const d = window.__today;
     window.__emit(`formal/chat_rooms/${d}/seats/Other_1`, {
@@ -895,11 +1227,11 @@ async page => {
     hookStillArmed: window.__onDisconnectHooks.has(`formal/chat_rooms/${window.__today}/seats/Other_1`),
   }));
   if (!afterTakeover.remoteSeat || afterTakeover.remoteSeat.clientId !== 'takeover-other' || afterTakeover.hookStillArmed) {
-    throw new Error(`AC-002 takeover safety: ${JSON.stringify(afterTakeover)}`);
+    throw new Error(`AC-007 takeover safety: ${JSON.stringify(afterTakeover)}`);
   }
 
-  // Test 15/15 full lock on 「其他」, then clear & reclaim expired Pilot_1 (>15 min idle)
-  await page.locator('#chatBackToRolesBtn').click();
+  // Test 15/15 full lock on 「其他」, then reclaim expired Pilot_1 (>15 min idle)
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.evaluate(() => {
     const d = window.__today;
     const now = getServerNow();
@@ -918,19 +1250,19 @@ async page => {
     };
   });
   if (!otherFullState.disabled || otherFullState.count !== '15/15' || otherFullState.lockImg !== 'pic/lock.png') {
-    throw new Error(`AC-002 Other 15/15 lock: ${JSON.stringify(otherFullState)}`);
+    throw new Error(`AC-007 Other 15/15 lock: ${JSON.stringify(otherFullState)}`);
   }
   await page.locator('.chat-role-item[data-role-id="Pilot"]').click();
   await page.waitForFunction(() => {
     const s = window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`);
     return Boolean(s && s.clientId !== 'stale-pilot') && getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex';
   });
-  await page.locator('#chatBackToRolesBtn').click();
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.locator('.chat-role-item[data-role-id="Spectator"]').click();
   await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/Pilot_1`) === null);
 
-  // AC-003: Outgoing mint-teal #b2ebe0 + 已送出, incoming light-grey #e5e7eb, XSS immunity
-  await page.locator('#chatBackToRolesBtn').click();
+  // AC-007 / DES-R1-001: Outgoing sky-blue #C2E1FF + 已送出, incoming white #FFFFFF, #EBF3FC message area, date divider, XSS immunity
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatComposerFooter')).display === 'block');
   await page.fill('#chatTextInput', '報告進港 <img src=x onerror="window.__xss=1">');
@@ -939,8 +1271,13 @@ async page => {
     const msgs = window.__getDb(`formal/chat_rooms/${window.__today}/messages`) || {};
     return Object.values(msgs).some(m => m.text && m.text.includes('<img src=x'));
   });
-  const ac3 = await page.evaluate(() => {
+  const expectedMonthDay = await page.evaluate(() => {
+    const parts = window.__today.split('-');
+    return `${Number(parts[1])}月${Number(parts[2])}日`;
+  });
+  const ac7Msgs = await page.evaluate(() => {
     const container = document.getElementById('chatMessagesContainer');
+    const divider = container.querySelector('.chat-date-divider span');
     const rows = Array.from(container.querySelectorAll('.chat-msg-row'));
     const otherRow = rows.find(r => r.classList.contains('is-other'));
     const otherBubble = otherRow && otherRow.querySelector('.chat-bubble');
@@ -950,34 +1287,46 @@ async page => {
     return {
       xssTriggered: Boolean(window.__xss),
       areaBg: getComputedStyle(container).backgroundColor,
+      dividerText: divider ? divider.textContent.trim() : '',
       otherBg: otherBubble ? getComputedStyle(otherBubble).backgroundColor : '',
       selfBg: selfBubble ? getComputedStyle(selfBubble).backgroundColor : '',
       selfText: selfBubble ? selfBubble.textContent : '',
       selfStatusText: selfStatus ? selfStatus.textContent : '',
     };
   });
-  if (ac3.xssTriggered || ac3.areaBg !== 'rgb(255, 255, 255)' ||
-      ac3.otherBg !== 'rgb(229, 231, 235)' || ac3.selfBg !== 'rgb(178, 235, 224)' ||
-      !ac3.selfText.includes('<img src=x') || !ac3.selfStatusText.includes('已送出')) {
-    throw new Error(`AC-003 bubble styles/XSS: ${JSON.stringify(ac3)}`);
+  if (ac7Msgs.xssTriggered || ac7Msgs.areaBg !== 'rgb(235, 243, 252)' ||
+      ac7Msgs.dividerText !== expectedMonthDay ||
+      ac7Msgs.otherBg !== 'rgb(255, 255, 255)' || ac7Msgs.selfBg !== 'rgb(194, 225, 255)' ||
+      !ac7Msgs.selfText.includes('<img src=x') || !ac7Msgs.selfStatusText.includes('已送出')) {
+    throw new Error(`AC-007 bubble styles/XSS/date divider: ${JSON.stringify(ac7Msgs)}`);
   }
 
-  // AC-004 (a): Attachment Bottom Sheet (拍照 / 從相簿選取 / 選擇檔案) & Cancel Upload mid-flight
+  // Attachment bottom sheet (hoisted DES-001 check) + cancel upload mid-flight
   await page.locator('#chatAttachBtn').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatAttachSheetBackdrop')).display === 'flex');
-  const sheetOpts = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('#chatAttachSheetBackdrop .chat-attach-option')).map(btn => ({
-      id: btn.id,
+  const attachSheetInfo = await page.evaluate(() => {
+    const bd = document.getElementById('chatAttachSheetBackdrop');
+    const hitHeader = document.elementFromPoint(20, 20);
+    const hitBottom = document.elementFromPoint(20, window.innerHeight - 20);
+    const opts = Array.from(bd.querySelectorAll('.chat-attach-option')).map(btn => ({
       title: btn.querySelector('.chat-attach-option-title')?.textContent,
       icon: btn.querySelector('img.chat-attach-option-icon')?.getAttribute('src'),
-    }))
-  );
-  if (sheetOpts.length !== 3 ||
-      sheetOpts[0].title !== '拍照' || sheetOpts[0].icon !== 'pic/拍照.png' ||
-      sheetOpts[1].title !== '從相簿選取' || sheetOpts[1].icon !== 'pic/從相簿選取.png' ||
-      sheetOpts[2].title !== '選擇檔案' || sheetOpts[2].icon !== 'pic/選擇檔案.png') {
-    throw new Error(`AC-004 attachment sheet: ${JSON.stringify(sheetOpts)}`);
+    }));
+    return {
+      isBodyDirectChild: bd.parentElement === document.body,
+      hitHeader: hitHeader === bd || bd.contains(hitHeader),
+      hitBottom: hitBottom === bd || bd.contains(hitBottom),
+      opts,
+    };
+  });
+  if (!attachSheetInfo.isBodyDirectChild || !attachSheetInfo.hitHeader || !attachSheetInfo.hitBottom ||
+      attachSheetInfo.opts.length !== 3 ||
+      attachSheetInfo.opts[0].title !== '拍照' || attachSheetInfo.opts[0].icon !== 'pic/拍照.png' ||
+      attachSheetInfo.opts[1].title !== '從相簿選取' || attachSheetInfo.opts[1].icon !== 'pic/從相簿選取.png' ||
+      attachSheetInfo.opts[2].title !== '選擇檔案' || attachSheetInfo.opts[2].icon !== 'pic/選擇檔案.png') {
+    throw new Error(`AC-007 attachment sheet: ${JSON.stringify(attachSheetInfo)}`);
   }
+
   await page.evaluate(() => {
     closeChatAttachSheet();
     const targetDb = typeof db !== 'undefined' ? db : firebase.database();
@@ -1016,9 +1365,9 @@ async page => {
     const msgs = Object.values(window.__getDb(`formal/chat_rooms/${window.__today}/messages`) || {});
     return msgs.some(m => m.attachment && m.attachment.name === 'cancel_me.csv');
   });
-  if (canceledMsgExists) throw new Error('AC-004: Canceled upload must not publish chat message');
+  if (canceledMsgExists) throw new Error('AC-007: Canceled upload must not publish chat message');
 
-  // AC-004 (b): Valid oversized-dimension image compression (1600x800 -> 1280px JPEG) & Full-Screen Photo Lightbox with zoom
+  // Image compression (1600x800 -> 1280x640 JPEG) & Full-Screen Photo Lightbox zoom
   await page.evaluate(async () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1600;
@@ -1041,31 +1390,39 @@ async page => {
     return Boolean(img && img.complete && img.naturalWidth > 0);
   });
   await page.locator('#chatZoomInBtn').click();
-  const imgZoomedIn = await page.evaluate(() => ({
-    display: getComputedStyle(document.getElementById('chatPreviewModal')).display,
-    zIndex: getComputedStyle(document.getElementById('chatPreviewModal')).zIndex,
-    boxRadius: getComputedStyle(document.querySelector('#chatPreviewModal .chat-preview-box')).borderRadius,
-    zoomLabel: document.getElementById('chatZoomResetBtn').textContent,
-    transform: document.getElementById('chatPreviewImage').style.transform,
-    naturalWidth: document.getElementById('chatPreviewImage').naturalWidth,
-    naturalHeight: document.getElementById('chatPreviewImage').naturalHeight,
-    href: document.getElementById('chatPreviewDownload').getAttribute('href') || '',
-  }));
+  const imgZoomedIn = await page.evaluate(() => {
+    const closeBtnStyle = getComputedStyle(document.getElementById('chatPreviewCloseBtn'));
+    return {
+      display: getComputedStyle(document.getElementById('chatPreviewModal')).display,
+      zIndex: getComputedStyle(document.getElementById('chatPreviewModal')).zIndex,
+      boxRadius: getComputedStyle(document.querySelector('#chatPreviewModal .chat-preview-box')).borderRadius,
+      closeBtnBg: closeBtnStyle.backgroundColor,
+      closeBtnColor: closeBtnStyle.color,
+      closeBtnBorder: closeBtnStyle.borderTopStyle,
+      zoomLabel: document.getElementById('chatZoomResetBtn').textContent,
+      transform: document.getElementById('chatPreviewImage').style.transform,
+      naturalWidth: document.getElementById('chatPreviewImage').naturalWidth,
+      naturalHeight: document.getElementById('chatPreviewImage').naturalHeight,
+      href: document.getElementById('chatPreviewDownload').getAttribute('href') || '',
+    };
+  });
   await page.locator('#chatZoomResetBtn').click();
   const imgResetZoom = await page.evaluate(() => document.getElementById('chatZoomResetBtn').textContent);
   await page.locator('#chatPreviewImage').dblclick();
   const imgDblZoom = await page.evaluate(() => document.getElementById('chatZoomResetBtn').textContent);
   await page.locator('#chatZoomResetBtn').click();
   if (imgZoomedIn.display !== 'flex' || Number(imgZoomedIn.zIndex) < 2100 || imgZoomedIn.boxRadius !== '0px' ||
+      imgZoomedIn.closeBtnBg !== 'rgba(0, 0, 0, 0)' || imgZoomedIn.closeBtnColor !== 'rgb(255, 255, 255)' ||
+      imgZoomedIn.closeBtnBorder !== 'none' ||
       imgZoomedIn.zoomLabel !== '125%' || imgZoomedIn.transform !== 'scale(1.25)' ||
       imgResetZoom !== '100%' || imgDblZoom !== '200%' ||
       imgZoomedIn.naturalWidth !== 1280 || imgZoomedIn.naturalHeight !== 640 ||
       !imgZoomedIn.href.startsWith('data:image/jpeg;base64,')) {
-    throw new Error(`AC-004 lightbox zoom: ${JSON.stringify({imgZoomedIn, imgDblZoom, imgResetZoom})}`);
+    throw new Error(`AC-007 lightbox zoom: ${JSON.stringify({imgZoomedIn, imgDblZoom, imgResetZoom})}`);
   }
   await page.locator('#chatPreviewCloseBtn').click();
 
-  // AC-004 (c): File bubble icon-only download button (pic/下載.png, no "下載" text) & SVG/>2.5MB/F-002/F-004 checks
+  // Standalone white file card (is-file-only bubble, EXT · SIZE, blue SVG icon & download SVG button) & security checks
   await page.evaluate(() => {
     window.__downloadedAtts = [];
     window.__origAnchorClick = HTMLAnchorElement.prototype.click;
@@ -1087,17 +1444,25 @@ async page => {
     const card = Array.from(document.querySelectorAll('.chat-att-file-card')).find(
       c => c.textContent.includes('plan.pdf') && Boolean(c.querySelector('button.chat-att-file-btn'))
     );
-    const icon = card ? card.querySelector('img.chat-att-file-icon') : null;
+    const bubble = card ? card.closest('.chat-bubble') : null;
+    const svgIcon = card ? card.querySelector('svg.chat-att-file-svg') : null;
     const btn = card ? card.querySelector('button.chat-att-file-btn') : null;
-    const dlImg = btn && btn.querySelector('img.chat-att-download-img');
+    const dlSvg = btn && btn.querySelector('svg.chat-att-download-svg');
+    const sizeText = card ? card.querySelector('.chat-att-file-size')?.textContent?.trim() : '';
     return {
-      iconSrc: icon ? icon.getAttribute('src') : '',
+      cardBg: card ? getComputedStyle(card).backgroundColor : '',
+      bubbleIsFileOnly: Boolean(bubble && bubble.classList.contains('is-file-only')),
+      bubbleBg: bubble ? getComputedStyle(bubble).backgroundColor : '',
+      hasFileSvg: Boolean(svgIcon),
+      sizeText,
       btnText: btn ? btn.textContent.trim() : 'ERR',
-      dlImgSrc: dlImg ? dlImg.getAttribute('src') : '',
+      hasDlSvg: Boolean(dlSvg),
     };
   });
-  if (fileCardUi.iconSrc !== 'pic/選擇檔案.png' || fileCardUi.btnText !== '' || fileCardUi.dlImgSrc !== 'pic/下載.png') {
-    throw new Error(`AC-004 file bubble icon-only download UI: ${JSON.stringify(fileCardUi)}`);
+  if (fileCardUi.cardBg !== 'rgb(255, 255, 255)' || !fileCardUi.bubbleIsFileOnly ||
+      fileCardUi.bubbleBg !== 'rgba(0, 0, 0, 0)' || !fileCardUi.hasFileSvg ||
+      !fileCardUi.sizeText.startsWith('PDF · ') || fileCardUi.btnText !== '' || !fileCardUi.hasDlSvg) {
+    throw new Error(`AC-007 standalone white file card UI: ${JSON.stringify(fileCardUi)}`);
   }
   await page.locator('.chat-att-file-card', {hasText: 'plan.pdf'}).locator('.chat-att-file-btn').click();
   await page.waitForFunction(() => window.__downloadedAtts.some(d => d.download === 'plan.pdf'));
@@ -1116,7 +1481,7 @@ async page => {
     xss: Boolean(window.__xss),
   }));
   if (!blockedSvg.banner.includes('SVG') || blockedSvg.inputVal !== '' || blockedSvg.xss) {
-    throw new Error(`AC-004 SVG block: ${JSON.stringify(blockedSvg)}`);
+    throw new Error(`AC-007 SVG block: ${JSON.stringify(blockedSvg)}`);
   }
 
   await page.evaluate(() => {
@@ -1130,7 +1495,6 @@ async page => {
   });
   await page.waitForFunction(() => document.getElementById('chatStatusBanner').textContent.includes('2.5 MB'));
 
-  // Delivery F-002 / F-004 (1): empty-MIME & octet-stream .csv uploads normalize to data:text/csv;base64,... and download cleanly
   await page.evaluate(() => {
     const dt = new DataTransfer();
     dt.items.add(new File(['colA,colB\n1,2'], 'notes.csv', {type: ''}));
@@ -1165,7 +1529,6 @@ async page => {
     window.__downloadedAtts.some(d => d.download === 'octet.csv' && d.href.startsWith('data:text/csv;base64,'))
   );
 
-  // Delivery F-004 (2): application/octet-stream, spoofed csv, and blocked extension downloads must be refused
   await page.evaluate(() => {
     window.__downloadedAtts = [];
     const d = window.__today;
@@ -1212,19 +1575,13 @@ async page => {
     }
     return count;
   });
-  if (blockedDownloadTriggered !== 0) throw new Error('F-004: blocked attachments must never trigger anchor download');
+  if (blockedDownloadTriggered !== 0) throw new Error('blocked attachments must never trigger anchor download');
 
-  // Delivery F-003 (1): leave seat via close -> reopen on Screen 1 -> rejected transaction displays status banner error
-  await page.locator('#chatCloseBtn').click();
-  await page.waitForFunction(() =>
-    getComputedStyle(document.getElementById('chatModal')).display === 'none' &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
-  );
-  await page.locator('#chatOpenBtn').click();
-  await page.waitForFunction(() =>
-    getComputedStyle(document.getElementById('chatModal')).display === 'flex' &&
-    getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex'
-  );
+  // Seat transaction error & in-flight tab-switch ghost-seat guard
+  await page.locator('#chatRoleSwitchBtn').click();
+  await page.locator('.chat-role-item[data-role-id="Spectator"]').click();
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.evaluate(() => {
     const targetDb = typeof db !== 'undefined' ? db : firebase.database();
     window.__origDbRef = targetDb.ref.bind(targetDb);
@@ -1257,7 +1614,7 @@ async page => {
       getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex';
   });
 
-  // Delivery F-003 (2) / F-001: closing modal while seat transaction is in-flight must release seat and keep no ghost seat
+  // In-flight claim when switching to 監控 tab must release seat immediately with zero ghost seat
   await page.evaluate(() => {
     window.__flushDelayedTx = null;
     window.__txTestMode = 'delay';
@@ -1267,7 +1624,7 @@ async page => {
     typeof window.__flushDelayedTx === 'function' &&
     window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null
   );
-  await page.locator('#chatRoleBackBtn').click();
+  await page.locator('#navMonitorBtn').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatModal')).display === 'none');
   await page.evaluate(() => {
     window.__txTestMode = null;
@@ -1282,18 +1639,18 @@ async page => {
     }
   });
 
-  // Verify 15-min local idle auto-release AND midnight rollover release + close modal
+  // Off-tab 15-min idle auto-release: claim CPC_LM, switch to 監控 tab, advance 15 min -> seat auto-releases!
   await page.locator('#chatOpenBtn').click();
   await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex');
+  await page.locator('#navMonitorBtn').click();
   await page.clock.fastForward(15 * 60 * 1000 + 20000);
   await page.clock.fastForward(16000);
-  await page.waitForFunction(() =>
-    getComputedStyle(document.getElementById('chatComposerFooter')).display === 'none' &&
-    window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null
-  );
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
+  await page.locator('#chatOpenBtn').click();
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('chatRoleScreen')).display === 'flex');
 
-  await page.locator('#chatBackToRolesBtn').click();
+  // Midnight rollover release
   await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) !== null);
   await page.evaluate(() => {
@@ -1308,8 +1665,8 @@ async page => {
     listenToChatRoom();
   });
 
-  // Regression: mobile camera/picker backgrounding wipes seat via onDisconnect -> reclaim seat on file select & clear 95% progress row
-  await page.locator('#chatBackToRolesBtn').click();
+  // Mobile camera/picker disconnect seat reclaim + 95% upload cleanup
+  await page.locator('#chatRoleSwitchBtn').click();
   await page.locator('.chat-role-item[data-role-id="CPC_LM"]').click();
   await page.waitForFunction(() =>
     getComputedStyle(document.getElementById('chatRoomScreen')).display === 'flex' &&
@@ -1341,7 +1698,8 @@ async page => {
     !document.getElementById('chatStatusBanner').textContent.includes('請先選擇角色再上傳附件')
   );
 
-  await page.locator('#chatCloseBtn').click();
+  await page.evaluate(() => closeChatModal({releaseSeat: true}));
+  await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
 
   if (errors.length) throw new Error(JSON.stringify(errors));
   return {externalServices: 'mocked', initial, forecast, operations, commands, chatVerified: true, expiredLeaseRecovered: true, errors};

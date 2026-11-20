@@ -1,0 +1,35 @@
+﻿{
+    "schema_version":  1,
+    "feature":  "002-pwa-ui-redesign-v2",
+    "phase":  "done",
+    "status":  "done",
+    "revision":  "413047d4fd8b61561b0ade08928a3b25cb237294",
+    "writer":  "agy",
+    "gates":  {
+                  "design":  {
+                                 "repair_rounds_used":  1,
+                                 "repair_rounds_max":  2,
+                                 "verdict":  "pass",
+                                 "reviewed_revision":  "413047d4fd8b61561b0ade08928a3b25cb237294"
+                             },
+                  "delivery":  {
+                                   "repair_rounds_used":  1,
+                                   "repair_rounds_max":  2,
+                                   "verdict":  "pass",
+                                   "reviewed_revision":  "413047d4fd8b61561b0ade08928a3b25cb237294"
+                               }
+              },
+    "blocking_findings":  [
+
+                          ],
+    "required_checks":  [
+                            "python deploy/build_hosting.py",
+                            "node --test tests/test_gas_conditions.js tests/test_gas_triggers.js tests/test_gas_archive.js",
+                            "python -m pytest tests/test_build_hosting.py tests/test_hosting_deploy.py tests/test_backend_safety.py tests/test_pob_handler.py",
+                            "playwright tests/frontend-isolated.js",
+                            "playwright tests/frontend-echarts.js",
+                            "visual screenshot inspection at 390x844, 375x812, and 1280x800"
+                        ],
+    "user_acceptance":  null,
+    "next_action":  "Implement unified 4-tab UI in frontend/index.html, rebuild public/, update tests/frontend-isolated.js, and run all verification suites"
+}

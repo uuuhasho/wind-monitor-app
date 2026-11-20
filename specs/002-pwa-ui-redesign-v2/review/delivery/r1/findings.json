@@ -1,0 +1,32 @@
+{
+  "review_id": "delivery-r1",
+  "gate_id": "delivery",
+  "reviewed_revision": "413047d4fd8b61561b0ade08928a3b25cb237294 (feat/pwa-ui-redesign; working-tree modified frontend/index.html, tests/frontend-isolated.js; rebuilt public/)",
+  "sufficient_inputs": true,
+  "instruction_conflict": false,
+  "verdict": "pass",
+  "findings": [],
+  "verification_summary": {
+    "sha256_manifest_verified": true,
+    "frontend_public_parity_verified": true,
+    "non_goals_untouched": [
+      "gas/monitor.js",
+      "backend/",
+      "frontend/presentation/index.html"
+    ],
+    "previous_findings_verified": {
+      "DEL-001": "Verified .adjust-card input, .adjust-card select uses background-color: #FFFFFF (preserving .adjust-speed-select SVG chevron), rebuilt public/index.html (matching SHA256), verified computed backgroundImage in tests/frontend-isolated.js, and visually inspected 05-schedule-tab-390.png.",
+      "DEL-002": "Verified .chat-close-btn and .chat-close-btn:hover restored in frontend/index.html and public/index.html, verified computed styles in tests/frontend-isolated.js and independent Playwright probe.",
+      "DEL-003": "Verified status-waiting (seasonTime: '--:--' -> 等待進港) in condition matrix and .pob-item-row.is-no-entry (no_entry_reason: '風速超標', rgb(254, 242, 242) / rgb(185, 28, 28)) in AC-003 of tests/frontend-isolated.js.",
+      "DEL-004": "Verified specs/002-pwa-ui-redesign-v2/plan.md line 73 specifies schedule -> block matching frontend/index.html line 2709, and zero occurrences of .add-row-btn remain in frontend/index.html."
+    },
+    "checks_executed": [
+      "build_hosting.validate_resources(Path('public')): MISSING []",
+      "node --test tests/test_gas_conditions.js tests/test_gas_triggers.js tests/test_gas_archive.js: 3/3 suites (8+5+32=45 scenarios) passed",
+      "python -B -m pytest -p no:cacheprovider tests/test_build_hosting.py tests/test_hosting_deploy.py tests/test_backend_safety.py tests/test_pob_handler.py: 52 passed",
+      "Playwright tests/frontend-echarts.js: passed (errors: [], version: 5.5.0)",
+      "Playwright tests/frontend-isolated.js: passed (errors: [], chatVerified: true, expiredLeaseRecovered: true)",
+      "Visual inspection of all 4 mockups and 9 screenshots (01..09) plus desktop 1280x800 & #chatPreviewCloseBtn Playwright probe"
+    ]
+  }
+}

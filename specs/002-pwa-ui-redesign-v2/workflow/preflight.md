@@ -1,0 +1,34 @@
+# Preflight · 002-pwa-ui-redesign-v2
+
+- **Date**: 2026-11-20
+- **OS / Shell**: Windows / PowerShell
+- **Workspace**: `C:\Users\hilla\Desktop\opencode桌面\奶昔APP`
+- **Git Branch & Baseline Commit**:
+  - Active branch: `feat/pwa-ui-redesign` (tracking `origin/feat/pwa-ui-redesign`)
+  - Baseline `HEAD`: `413047d4fd8b61561b0ade08928a3b25cb237294` (`docs(plan): consolidate 2026-11-19 PWA v1.5 redesign summary report`)
+- **Pre-existing Untracked Files at Baseline**:
+  - `.codegraph/`
+  - `plan/2026-11-07/`
+  - `plan/2026-11-08/2026-11-08-formal-rtdb-migration-plan.html`
+  - `plan/2026-11-14/2026-11-14-每日空軍預測排程與重複更新解析.html`
+- **CLI & Toolchain Versions**:
+  - `agy`: `1.5.13`
+  - `node`: `v24.19.0`
+  - `python`: `Python 3.14.7`
+  - `specify.exe`: blocked by Windows Application Control policy (noted in `001` baseline; therefore Spec Kit artifacts are maintained via **compatible manual flow** per `spec-egm-flow` v1.1.0).
+  - Official `egm` / `spec-egm-flow` compatible fresh review flow via `invoke_subagent` (`research` read-only subagent, `isolation_mode: native-fresh`).
+- **Agent / Subagent Capability & Isolation**:
+  - `invoke_subagent` available; each invocation creates a fresh read-only conversation context without parent discussion history or `handoff.md`.
+  - Quota: `unknown` (not exposed in CLI).
+- **Host Instruction Inventory**:
+  - Project rules: `C:\Users\hilla\Desktop\opencode桌面\奶昔APP\.agents\AGENTS.md`
+  - Global rules: Antigravity CLI global user rules (CodeGraph, `./plan/` & `./docs/` date directories, Light-theme HTML delivery via `answer-me-with-html`, credentials hygiene, bug resolution doc rules).
+  - Neither file instructs agreeing with designs under review (no instruction conflict).
+- **Test & Build Entry Points**:
+  - `python deploy/build_hosting.py` -> builds `public/` from `frontend/` and validates local assets
+  - `node --test tests/test_gas_conditions.js tests/test_gas_triggers.js tests/test_gas_archive.js`
+  - `python -m pytest tests/test_build_hosting.py tests/test_hosting_deploy.py tests/test_backend_safety.py tests/test_pob_handler.py`
+  - Playwright MCP (`playwright-google` `browser_run_code_unsafe`) against temporary `http://127.0.0.1:4177/` serving `public/`: `tests/frontend-isolated.js`, `tests/frontend-echarts.js`
+- **Authorization & Safety Boundaries**:
+  - Isolated local build & local tests only; do NOT modify `gas/monitor.js`, `backend/`, `frontend/presentation/`, RTDB schema, or Firebase Security Rules.
+  - Do NOT connect to live `/formal` RTDB, deploy Hosting/GAS, merge to `main`, or push to GitHub without explicit post-acceptance authorization.
