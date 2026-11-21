@@ -192,7 +192,7 @@ async page => {
       initial.hasLegacyPresLink || initial.windTitle !== '北堤風速' ||
       initial.windLabelFontSize < 18 || initial.windLabelFontWeight < 800 || initial.windLabelAlign !== 'center' ||
       initial.hasWindForecastBtn || initial.scheduleTitle !== '船期表' ||
-      initial.infoHref !== 'presentation/index.html' || initial.infoText !== '操作說明' ||
+      initial.infoHref !== 'presentation/intro.html' || initial.infoText !== '操作說明' ||
       initial.headerTitleText !== '臺中 LNG 船監控' || initial.headerBarPosition !== 'fixed' ||
       initial.headerBarBg !== 'rgb(11, 41, 72)' || initial.headerBarBorderBottom !== '0px' ||
       initial.headerHasBell || !initial.scheduleHasBell ||

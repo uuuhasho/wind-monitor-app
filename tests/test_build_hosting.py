@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import os
+import stat
 import sys
 import tempfile
 import unittest
@@ -64,6 +66,52 @@ class HostingBuildTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "missing local resources"):
                 hosting.build(root)
             self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
+
+    def test_missing_asset_cleans_readonly_stage_without_masking_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_project(root)
+            icons = root / "frontend" / "presentation" / "icons"
+            icons.mkdir(parents=True)
+            (icons / "sample.png").write_bytes(b"icon")
+            os.chmod(icons, stat.S_IREAD)
+            try:
+                (root / "frontend" / "index.html").write_text('<img src="missing.png">', encoding="utf-8")
+                with self.assertRaisesRegex(RuntimeError, "missing local resources"):
+                    hosting.build(root)
+                self.assertEqual(list(root.glob("hosting-stage-*")), [])
+            finally:
+                os.chmod(icons, stat.S_IWRITE | stat.S_IREAD)
+
+    def test_permission_error_on_public_rename_falls_back_to_in_place_sync(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_project(root)
+            public = root / "public"
+            public.mkdir()
+            (public / "old.txt").write_text("old", encoding="utf-8")
+
+            orig_replace = Path.replace
+
+            def locked_public_replace(path_self, target):
+                if path_self == public:
+                    raise PermissionError(13, "directory handle held")
+                return orig_replace(path_self, target)
+
+            with patch.object(Path, "replace", autospec=True, side_effect=locked_public_replace):
+                hosting.build(root)
+
+            backups = list(root.glob(".public-previous-*"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual((backups[0] / "old.txt").read_text(encoding="utf-8"), "old")
+            self.assertFalse((public / "old.txt").exists())
+            self.assertTrue((public / "index.html").is_file())
+            self.assertTrue((public / "pwa-192x192.png").is_file())
+            self.assertEqual(
+                (public / "notification_option_C.mp3").read_bytes(),
+                (public / "presentation" / "notification_option_C.mp3").read_bytes(),
+            )
+            self.assertEqual(list(root.glob("hosting-stage-*")), [])
 
 
 class CloudRunStagingTests(unittest.TestCase):
