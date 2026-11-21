@@ -233,6 +233,10 @@
             font-variant-numeric: tabular-nums;
             transition: color 0.16s ease, transform 0.2s ease, text-shadow 0.2s ease;
         }
+        .wind-speed-num.is-tick-up { animation: wind-ticker-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1; }
+        .wind-speed-num.is-tick-down { animation: wind-ticker-down 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1; }
+        @keyframes wind-ticker-up { 0% { opacity: 0.35; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes wind-ticker-down { 0% { opacity: 0.35; transform: translateY(-8px); } 100% { opacity: 1; transform: translateY(0); } }
         .wind-detail {
             display: flex;
             flex-direction: column;
@@ -302,9 +306,12 @@
             .wind-container.is-animating .pulso-wind-2,
             .wind-container.is-animating .pulso-wind-3,
             .cpc-btn.is-animating:not(.locked-btn) .pulso-gear-group,
-            .bottom-sheet-content {
+            .bottom-sheet-content,
+            .wind-speed-num.is-tick-up, .wind-speed-num.is-tick-down,
+            .skeleton-bar {
                 animation: none !important;
             }
+            .seg-fluid-thumb { transition: none !important; }
         }
         .wind-speed-unit {
             font-size: 1.12rem;
@@ -677,11 +684,19 @@
             border: 1px solid #E2E8F0;
             border-radius: 12px;
         }
-        .segmented-control.cols-2 {
-            grid-template-columns: repeat(2, 1fr);
+        .segmented-control.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .segmented-control.has-fluid-thumb { position: relative; }
+        .seg-fluid-thumb {
+            position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 6px);
+            border-radius: 9px; background: var(--text-navy);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+            transform: translateX(calc(var(--seg-active-idx, 0) * (100% + 4px)));
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+            pointer-events: none; z-index: 0;
         }
+        #terminalSegmentGroup[data-active-terminal="W12"] .seg-fluid-thumb { background: #D97706; }
         .seg-btn {
-            border: none;
+            position: relative; z-index: 1; border: none;
             border-radius: 9px;
             background: transparent;
             color: #334155;
@@ -697,10 +712,10 @@
             color: #FFFFFF;
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
         }
-        .seg-btn[data-terminal="W12"].is-active {
-            background: #D97706;
-            color: #FFFFFF;
-        }
+        .seg-btn[data-terminal="W12"].is-active { background: #D97706; color: #FFFFFF; }
+        .segmented-control.has-fluid-thumb .seg-btn,
+        .segmented-control.has-fluid-thumb .seg-btn.is-active,
+        .segmented-control.has-fluid-thumb .seg-btn[data-terminal="W12"].is-active { background: transparent; box-shadow: none; }
         .seg-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -1604,9 +1619,19 @@
             text-align: center;
             vertical-align: middle;
         }
-        .schedule-table tbody tr:last-child td {
-            border-bottom: none;
+        .schedule-table tbody tr:last-child td { border-bottom: none; }
+        .schedule-skeleton-row td { padding: 10px 6px; }
+        .skeleton-bar {
+            display: inline-block; border-radius: 6px;
+            background: linear-gradient(90deg, #E6EEF6 25%, #F4F8FC 50%, #E6EEF6 75%);
+            background-size: 200% 100%; animation: skeleton-shimmer 1.35s ease-in-out infinite; vertical-align: middle;
         }
+        .skeleton-date { width: 40px; height: 14px; }
+        .skeleton-badge { width: 38px; height: 17px; border-radius: 999px; margin-top: 5px; }
+        .skeleton-ship { width: 68%; max-width: 150px; height: 15px; display: block; }
+        .skeleton-ship-sm { width: 52%; max-width: 118px; }
+        .skeleton-speed { width: 28px; height: 15px; }
+        @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         .schedule-table th {
             color: var(--table-head-text);
             font-size: 0.84rem;
@@ -1874,10 +1899,18 @@
         /* 船期調整分頁與卡片樣式 */
         .adjust-page-head {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 12px;
+        }
+        .adjust-page-title-row {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            column-gap: 0.5em;
+            row-gap: 2px;
+            min-width: 0;
         }
         .adjust-page-title {
             margin: 0;
@@ -1887,7 +1920,7 @@
             letter-spacing: -0.02em;
         }
         .adjust-page-sub {
-            margin: 3px 0 0 0;
+            margin: 0;
             font-size: 0.86rem;
             font-weight: 600;
             color: var(--text-muted);
@@ -2232,8 +2265,10 @@
                 <thead>
                     <tr id="scheduleHeaderRow"><th>日期</th><th>船名</th><th>速限</th></tr>
                 </thead>
-                <tbody id="scheduleBody">
-                    <tr><td colspan="3" style="text-align:center; color:#64748B;">載入中...</td></tr>
+                <tbody id="scheduleBody" aria-busy="true">
+                    <tr class="schedule-skeleton-row"><td><span class="skeleton-bar skeleton-date"></span><br><span class="skeleton-bar skeleton-badge"></span></td><td><span class="skeleton-bar skeleton-ship"></span></td><td><span class="skeleton-bar skeleton-speed"></span></td></tr>
+                    <tr class="schedule-skeleton-row"><td><span class="skeleton-bar skeleton-date"></span><br><span class="skeleton-bar skeleton-badge"></span></td><td><span class="skeleton-bar skeleton-ship skeleton-ship-sm"></span></td><td><span class="skeleton-bar skeleton-speed"></span></td></tr>
+                    <tr class="schedule-skeleton-row"><td><span class="skeleton-bar skeleton-date"></span><br><span class="skeleton-bar skeleton-badge"></span></td><td><span class="skeleton-bar skeleton-ship"></span></td><td><span class="skeleton-bar skeleton-speed"></span></td></tr>
                 </tbody>
             </table>
         </div>
@@ -2287,9 +2322,9 @@
 <!-- 船期調整分頁 -->
 <section id="scheduleAdjustModal" class="tab-view" aria-label="船期調整" style="display: none;">
     <div class="adjust-page-head">
-        <div>
+        <div class="adjust-page-title-row">
             <h2 id="scheduleAdjustTitle" class="adjust-page-title">船期調整</h2>
-            <p class="adjust-page-sub">修改後請儲存。</p>
+            <span class="adjust-page-sub">修改後請儲存</span>
         </div>
         <button id="adjustAddBtn" type="button" class="add-row-btn" onclick="addEditItem()" aria-label="新增船期" title="新增一列">＋</button>
     </div>
@@ -2469,7 +2504,8 @@
             </div>
             <div class="input-group">
                 <label>限制風速 (m/s)</label>
-                <div id="speedSegmentGroup" class="segmented-control cols-2" role="group" aria-label="限制風速">
+                <div id="speedSegmentGroup" class="segmented-control cols-2 has-fluid-thumb" style="--seg-active-idx: 1;" role="group" aria-label="限制風速">
+                    <span class="seg-fluid-thumb" aria-hidden="true"></span>
                     <button type="button" class="seg-btn" data-speed="12" onclick="selectLimitSpeedPreset('12')">12</button>
                     <button type="button" class="seg-btn is-active" data-speed="15" onclick="selectLimitSpeedPreset('15')">15</button>
                 </div>
@@ -2477,7 +2513,8 @@
             </div>
             <div class="input-group">
                 <label>停靠碼頭</label>
-                <div id="terminalSegmentGroup" class="segmented-control cols-2" role="group" aria-label="停靠碼頭">
+                <div id="terminalSegmentGroup" class="segmented-control cols-2 has-fluid-thumb" data-active-terminal="W13" style="--seg-active-idx: 1;" role="group" aria-label="停靠碼頭">
+                    <span class="seg-fluid-thumb" aria-hidden="true"></span>
                     <button type="button" class="seg-btn" data-terminal="W12" onclick="selectTerminalSegment('W12')">W12</button>
                     <button type="button" class="seg-btn is-active" data-terminal="W13" onclick="selectTerminalSegment('W13')">W13</button>
                 </div>
@@ -2659,12 +2696,7 @@
     }
 
     function setActiveNav(tab) {
-        const map = {
-            monitor: 'navMonitorBtn',
-            forecast: 'navForecastBtn',
-            schedule: 'navScheduleBtn',
-            chat: 'chatOpenBtn'
-        };
+        const map = { monitor: 'navMonitorBtn', forecast: 'navForecastBtn', schedule: 'navScheduleBtn', chat: 'chatOpenBtn' };
         Object.entries(map).forEach(([key, id]) => {
             const el = document.getElementById(id);
             if (el) el.classList.toggle('is-active', key === tab);
@@ -2741,6 +2773,7 @@
         const group = document.getElementById('speedSegmentGroup');
         const speedInput = document.getElementById('limitSpeed');
         if (group) {
+            group.style.setProperty('--seg-active-idx', normalized === '12' ? '0' : '1');
             group.querySelectorAll('.seg-btn').forEach(btn => {
                 btn.classList.toggle('is-active', btn.dataset.speed === normalized);
             });
@@ -2753,6 +2786,8 @@
         const group = document.getElementById('terminalSegmentGroup');
         const hiddenInput = document.getElementById('terminal');
         if (group) {
+            group.style.setProperty('--seg-active-idx', normalized === 'W12' ? '0' : '1');
+            group.dataset.activeTerminal = normalized;
             group.querySelectorAll('.seg-btn').forEach(btn => {
                 btn.classList.toggle('is-active', btn.dataset.terminal === normalized);
             });
@@ -3006,6 +3041,7 @@
     // 🌟 將陣列渲染為表格
     function renderScheduleTable() {
         const tbody = document.getElementById('scheduleBody');
+        if (tbody) tbody.removeAttribute('aria-busy');
         if (!scheduleDataList || scheduleDataList.length === 0) {
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#64748B;">目前無未來船期資料</td></tr>';
             return;
@@ -3040,6 +3076,7 @@
         } catch (error) {
             console.error("從 GAS 獲取船期表失敗:", error);
             const tbody = document.getElementById('scheduleBody');
+            if (tbody) tbody.removeAttribute('aria-busy');
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#B91C1C;">載入失敗，請檢查網路連線</td></tr>';
         }
     }
@@ -3433,7 +3470,7 @@
             const data = snapshot.val() || {};
             
             // 更新風速與時間
-            document.getElementById('windSpeed').innerText = data.current_wind !== undefined ? data.current_wind : "--";
+            updateWindSpeedDisplay(data.current_wind);
             document.getElementById('dataTime').innerText = "更新時間 " + formatLastUpdateTime(data.last_update);
 
             const manualModal = document.getElementById('manualModal');
@@ -3463,6 +3500,33 @@
             console.warn("Firebase schedule_list 讀取受限，嘗試從 GAS 備用接口獲取...", error);
             fetchScheduleFromGas();
         });
+    }
+
+    let lastNumericWindSpeed = null;
+    let windTickerTimer = null;
+
+    function updateWindSpeedDisplay(rawWind) {
+        const el = document.getElementById('windSpeed');
+        if (!el) return;
+        const nextText = rawWind !== undefined && rawWind !== null && rawWind !== '' ? String(rawWind) : '--';
+        el.textContent = nextText;
+        const nextNum = Number(nextText);
+        const hasPrev = lastNumericWindSpeed !== null && Number.isFinite(lastNumericWindSpeed);
+        const hasNext = nextText !== '--' && Number.isFinite(nextNum);
+        if (hasPrev && hasNext && nextNum !== lastNumericWindSpeed) {
+            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!reduced) {
+                const cls = nextNum > lastNumericWindSpeed ? 'is-tick-up' : 'is-tick-down';
+                el.classList.remove('is-tick-up', 'is-tick-down');
+                void el.offsetWidth;
+                el.classList.add(cls);
+                clearTimeout(windTickerTimer);
+                windTickerTimer = setTimeout(() => {
+                    el.classList.remove('is-tick-up', 'is-tick-down');
+                }, 320);
+            }
+        }
+        lastNumericWindSpeed = hasNext ? nextNum : null;
     }
 
     function triggerPulsoAnimation(el, durationMs) {
@@ -5792,7 +5856,7 @@
     let originalScheduleSnapshot = [];
     
     function openScheduleAdjustModal() {
-        editScheduleList = JSON.parse(JSON.stringify(scheduleDataList));
+        editScheduleList = JSON.parse(JSON.stringify(scheduleDataList)).map(item => ({ ...item, _isNew: false }));
         originalScheduleSnapshot = JSON.parse(JSON.stringify(scheduleDataList));
         if (!switchMainTab('schedule')) return false;
         renderAdjustCards();
@@ -5901,6 +5965,12 @@
             const unfinishedTag = !String(item.d || '').trim()
                 ? '<span class="adjust-unfinished-tag">未進港待排期</span>'
                 : '';
+            const shipNameInputHtml = item._isNew ? `
+                <div>
+                    <label class="adjust-field-label">船名</label>
+                    <input type="text" class="adjust-ship-input" value="${safeName}" placeholder="船名"
+                           oninput="onAdjustShipNameInput(this, ${index})">
+                </div>` : '';
             const customSpeedOpt = hasCustomSpeed
                 ? `<option value="${escapeHtml(String(speedNum))}" selected>${escapeHtml(String(speedNum))}</option>`
                 : '';
@@ -5957,11 +6027,7 @@
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label class="adjust-field-label">船名</label>
-                    <input type="text" class="adjust-ship-input" value="${safeName}" placeholder="船名"
-                           oninput="onAdjustShipNameInput(this, ${index})">
-                </div>
+                ${shipNameInputHtml}
             </div>
             `;
         });
@@ -5993,7 +6059,8 @@
             ship_name: '',
             limit_speed: 15.0,
             terminal: 'W13',
-            source: 'manual'
+            source: 'manual',
+            _isNew: true
         });
         renderAdjustCards();
         

@@ -461,7 +461,13 @@ async page => {
       firstHasUnfinishedTag: Boolean(cards[0]?.querySelector('.adjust-unfinished-tag')),
       firstTitle: cards[0]?.querySelector('.adjust-card-title')?.textContent?.trim(),
       firstDateVal: cards[0]?.querySelector('.adjust-date-input')?.value,
-      firstShipVal: cards[0]?.querySelector('.adjust-ship-input')?.value,
+      existingHasShipInput: cards.some(c => Boolean(c.querySelector('.adjust-ship-input'))),
+      subText: document.querySelector('.adjust-page-sub')?.textContent?.trim(),
+      subRightOfTitle: (() => {
+        const tEl = document.getElementById('scheduleAdjustTitle')?.getBoundingClientRect();
+        const sEl = document.querySelector('.adjust-page-sub')?.getBoundingClientRect();
+        return Boolean(tEl && sEl && sEl.left >= tEl.right + 4 && Math.abs(sEl.bottom - tEl.bottom) < 8);
+      })(),
       firstHasCalIcon: Boolean(cards[0]?.querySelector('.adjust-date-icon')),
       firstPillText: cards[0]?.querySelector('.adjust-terminal-pill')?.textContent?.trim(),
       firstPillBg: cards[0]?.querySelector('.adjust-terminal-pill') && getComputedStyle(cards[0].querySelector('.adjust-terminal-pill')).backgroundColor,
@@ -481,7 +487,8 @@ async page => {
   if (adjustCardsState.count !== 4 || !adjustCardsState.headerVisible || !adjustCardsState.navVisible ||
       !adjustCardsState.navActive || adjustCardsState.schedDisplay !== 'block' ||
       !adjustCardsState.firstHasUnfinishedTag || adjustCardsState.firstTitle !== 'UNFIN-SHIP' ||
-      adjustCardsState.firstDateVal !== '' || adjustCardsState.firstShipVal !== 'UNFIN-SHIP' ||
+      adjustCardsState.firstDateVal !== '' || adjustCardsState.existingHasShipInput ||
+      adjustCardsState.subText !== '修改後請儲存' || !adjustCardsState.subRightOfTitle ||
       !adjustCardsState.firstHasCalIcon || adjustCardsState.firstPillText !== 'W12' ||
       adjustCardsState.firstPillBg !== 'rgb(217, 119, 6)' || adjustCardsState.customSpeedPreserved !== '13.8' ||
       !String(adjustCardsState.speedSelectBgImage || '').includes('data:image/svg+xml') ||
@@ -584,6 +591,8 @@ async page => {
   await page.locator('#adjustAddBtn').click();
   await page.locator('.adjust-card').nth(0).locator('.adjust-date-input').fill('06/15');
   await page.locator('.adjust-card').nth(0).locator('.adjust-ship-input').fill('NEW-SHIP');
+  const existingCardShipInput = await page.locator('.adjust-card').nth(1).locator('.adjust-ship-input').count();
+  if (existingCardShipInput !== 0) throw new Error('Existing card must not render ship name input');
   const liveTitleUpdated = await page.evaluate(() => document.querySelectorAll('.adjust-card .adjust-card-title')[0].textContent.trim());
   if (liveTitleUpdated !== 'NEW-SHIP') throw new Error(`Live ship title oninput failed: ${liveTitleUpdated}`);
 
@@ -626,7 +635,7 @@ async page => {
   await page.locator('#navScheduleBtn').click();
   await page.fill('#modalPwdInput', 'bad-pwd');
   await page.evaluate(() => closePwdModal(true));
-  await page.locator('.adjust-card').nth(0).locator('.adjust-ship-input').fill('DIRTY-EDIT');
+  await page.locator('.adjust-card').nth(0).locator('.adjust-date-input').fill('07/01');
   await page.evaluate(async () => {
     window.__resolveVerify('error');
     await new Promise(r => setTimeout(r, 10));
@@ -1700,6 +1709,45 @@ async page => {
 
   await page.evaluate(() => closeChatModal({releaseSeat: true}));
   await page.waitForFunction(() => window.__getDb(`formal/chat_rooms/${window.__today}/seats/CPC_LM_1`) === null);
+
+  // Animata UI checks: Wind Ticker, Segmented Fluid Thumb, Schedule Skeleton, and no bottom-nav fluid track
+  await page.evaluate(() => {
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:05'});
+  });
+  const animataUi = {};
+  await page.evaluate(() => {
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 6.2, last_update: '10:06'});
+  });
+  animataUi.windUpText = await page.locator('#windSpeed').textContent();
+  animataUi.windUpClass = await page.locator('#windSpeed').evaluate(el => el.classList.contains('is-tick-up'));
+  await page.evaluate(() => {
+    window.__emit('formal/active_status', {app_mode: 'stop', current_wind: 4, last_update: '10:07'});
+  });
+  animataUi.windDownClass = await page.locator('#windSpeed').evaluate(el => el.classList.contains('is-tick-down'));
+
+  await page.locator('#navForecastBtn').click();
+  animataUi.hasNavFluidTrack = await page.evaluate(() => Boolean(document.querySelector('.bottom-nav-fluid-track')));
+
+  await page.evaluate(() => {
+    selectLimitSpeedPreset('12');
+    selectTerminalSegment('W12');
+  });
+  animataUi.segSpeedIdx = await page.evaluate(() => document.getElementById('speedSegmentGroup').style.getPropertyValue('--seg-active-idx').trim());
+  animataUi.segTermIdx = await page.evaluate(() => document.getElementById('terminalSegmentGroup').style.getPropertyValue('--seg-active-idx').trim());
+  animataUi.segTermAttr = await page.evaluate(() => document.getElementById('terminalSegmentGroup').dataset.activeTerminal);
+  await page.locator('#navMonitorBtn').click();
+  animataUi.scheduleBusy = await page.evaluate(() => document.getElementById('scheduleBody').getAttribute('aria-busy'));
+
+  const indexHtmlSource = await (await page.request.get('http://127.0.0.1:4177/index.html')).text();
+  const tbodyMatch = indexHtmlSource.match(/<tbody id="scheduleBody"[^>]*>([\s\S]*?)<\/tbody>/);
+  animataUi.hasInitialSkeleton = Boolean(tbodyMatch && tbodyMatch[0].includes('schedule-skeleton-row'));
+
+  if (animataUi.windUpText !== '6.2' || !animataUi.windUpClass || !animataUi.windDownClass ||
+      animataUi.hasNavFluidTrack ||
+      animataUi.segSpeedIdx !== '0' || animataUi.segTermIdx !== '0' || animataUi.segTermAttr !== 'W12' ||
+      animataUi.scheduleBusy !== null || !animataUi.hasInitialSkeleton) {
+    throw new Error(`Animata UI checks failed: ${JSON.stringify(animataUi)}`);
+  }
 
   if (errors.length) throw new Error(JSON.stringify(errors));
   return {externalServices: 'mocked', initial, forecast, operations, commands, chatVerified: true, expiredLeaseRecovered: true, errors};

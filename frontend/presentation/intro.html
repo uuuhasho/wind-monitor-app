@@ -2188,96 +2188,17 @@
         }
 
         /* =========================================================
-           SLIDE 4: WORKFLOW (TITLE-ONLY CARDS) & PWA INSTALL
+           SLIDE 4: MOBILE PWA INSTALL
         ========================================================= */
-        .flow-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 22px;
-        }
-
-        .flow-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--hairline);
-            border-top: 2px solid var(--accent-indigo);
-            padding: 20px 18px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 16px;
-            position: relative;
-            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, background-color 0.25s ease;
-        }
-
-        .flow-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent-seal);
-            background: var(--bg-elevated);
-        }
-
-        .flow-card:hover .flow-icon-wrap {
-            border-color: var(--accent-seal);
-            color: var(--accent-seal);
-        }
-
-        .flow-card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .flow-step-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.76rem;
-            font-weight: 700;
-            color: var(--accent-seal);
-        }
-
-        .flow-icon-wrap {
-            width: 38px;
-            height: 38px;
-            border: 1px solid var(--hairline);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-indigo);
-        }
-
-        .flow-icon-wrap svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .flow-card:hover .flow-icon-wrap svg,
-        .slide.active .flow-icon-wrap svg {
-            animation: maIconFloat 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        @keyframes maIconFloat {
-            0% { transform: translateY(4px) scale(0.92); opacity: 0.6; }
-            60% { transform: translateY(-2px) scale(1.06); opacity: 1; }
-            100% { transform: translateY(0) scale(1); }
-        }
-
-        .flow-card h3 {
-            margin: 0;
-            font-family: 'Shippori Mincho', 'Noto Serif TC', serif;
-            font-size: 1.08rem;
-            font-weight: 700;
-            color: var(--ink);
-            line-height: 1.4;
-        }
-
         .install-panel {
             background: var(--bg-surface);
             border: 1px solid var(--hairline);
             border-left: 3px solid var(--accent-safe);
-            padding: 20px 24px;
+            padding: 26px 28px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 22px;
         }
 
         .install-info {
@@ -2321,14 +2242,16 @@
 
         .qr-frame {
             background: #FFFFFF;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid var(--hairline-strong);
             flex-shrink: 0;
+            align-self: center;
+            margin: 4px auto 0;
         }
 
         .qr-frame img {
-            width: 88px;
-            height: 88px;
+            width: 132px;
+            height: 132px;
             display: block;
         }
 
@@ -2568,7 +2491,6 @@
             }
 
             .purpose-grid,
-            .flow-grid,
             .install-steps {
                 grid-template-columns: minmax(0, 1fr);
                 gap: 12px;
@@ -2612,8 +2534,14 @@
 
             .install-panel {
                 flex-direction: column;
-                align-items: flex-start;
-                padding: 16px 18px;
+                align-items: stretch;
+                padding: 18px 18px;
+                gap: 18px;
+            }
+
+            .qr-frame img {
+                width: 124px;
+                height: 124px;
             }
         }
     </style>
@@ -3139,53 +3067,11 @@
                 </div>
             </section>
 
-            <!-- SLIDE 4: AUTOMATION WORKFLOW & MOBILE PWA INSTALL -->
-            <section class="slide" id="slide-4" aria-label="後台自動化作業與手機安裝">
+            <!-- SLIDE 4: MOBILE PWA INSTALL -->
+            <section class="slide" id="slide-4" aria-label="手機安裝與快速開啟">
                 <div class="slide-head-row">
-                    <h2>後台自動化與手機安裝</h2>
-                    <span class="slide-head-kicker">AUTOMATION // MOBILE PWA</span>
-                </div>
-
-                <div class="flow-grid">
-                    <article class="flow-card">
-                        <div class="flow-card-top">
-                            <span class="flow-step-num">STEP 01</span>
-                            <div class="flow-icon-wrap" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-                            </div>
-                        </div>
-                        <h3>配合船期自動監控</h3>
-                    </article>
-
-                    <article class="flow-card">
-                        <div class="flow-card-top">
-                            <span class="flow-step-num">STEP 02</span>
-                            <div class="flow-icon-wrap" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 20 9 4 6 12 2 12"/></svg>
-                            </div>
-                        </div>
-                        <h3>氣象預報自動同步</h3>
-                    </article>
-
-                    <article class="flow-card">
-                        <div class="flow-card-top">
-                            <span class="flow-step-num">STEP 03</span>
-                            <div class="flow-icon-wrap" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                            </div>
-                        </div>
-                        <h3>POB 時間解析與接力</h3>
-                    </article>
-
-                    <article class="flow-card">
-                        <div class="flow-card-top">
-                            <span class="flow-step-num">STEP 04</span>
-                            <div class="flow-icon-wrap" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-                            </div>
-                        </div>
-                        <h3>每日夜間自動歸檔</h3>
-                    </article>
+                    <h2>手機安裝與快速開啟</h2>
+                    <span class="slide-head-kicker">MOBILE PWA // INSTALL</span>
                 </div>
 
                 <div class="install-panel">
@@ -3523,7 +3409,7 @@
                 pobCard.classList.add('visible');
                 pobStack.innerHTML = simState.pobRecords.map(rec => {
                     if (rec.reason) {
-                        return '<div class="app-pob-row is-no-entry"><span>' + escHtml(rec.ship + ' (' + rec.reason + ')') + '</span></div>';
+                        return '<div class="app-pob-row is-no-entry"><span>' + escHtml(rec.ship + '無法進港，原因:' + rec.reason) + '</span></div>';
                     }
                     return '<div class="app-pob-row"><span>' + escHtml(rec.ship) + '</span><span>' + escHtml(rec.time) + '</span></div>';
                 }).join('');
