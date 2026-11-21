@@ -238,17 +238,14 @@
         .theme-switch-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            min-height: 36px;
-            padding: 6px 13px;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
             background: var(--bg-surface);
             color: var(--ink);
             border: 1px solid var(--hairline-strong);
             border-radius: 4px;
-            font-family: 'Shippori Mincho', 'Noto Serif TC', serif;
-            font-size: 0.86rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
             cursor: pointer;
             transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
         }
@@ -263,8 +260,8 @@
         }
 
         .theme-switch-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             color: var(--accent-seal);
             transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
             flex-shrink: 0;
@@ -2418,8 +2415,9 @@
             }
 
             .theme-switch-btn {
-                padding: 5px 10px;
-                font-size: 0.78rem;
+                width: 34px;
+                height: 34px;
+                padding: 0;
             }
 
             .header-key-hint {
@@ -2574,11 +2572,10 @@
                     <span>換頁</span>
                 </span>
 
-                <button type="button" class="theme-switch-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="切換和紙晝與墨漆夜主題">
+                <button type="button" class="theme-switch-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="切換淺色模式" title="切換淺色模式">
                     <svg id="themeIconSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
                     </svg>
-                    <span id="themeToggleLabel">墨漆夜</span>
                 </button>
             </div>
         </header>
@@ -3115,9 +3112,13 @@
             document.documentElement.setAttribute('data-theme', nextTheme);
             const meta = document.getElementById('metaThemeColor');
             if (meta) meta.setAttribute('content', nextTheme === 'light' ? '#F3F0EA' : '#141618');
-            const lbl = document.getElementById('themeToggleLabel');
+            const btn = document.getElementById('themeToggleBtn');
             const icon = document.getElementById('themeIconSvg');
-            if (lbl) lbl.textContent = nextTheme === 'light' ? '和紙晝' : '墨漆夜';
+            const label = nextTheme === 'light' ? '切換深色模式' : '切換淺色模式';
+            if (btn) {
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('title', label);
+            }
             if (icon) icon.innerHTML = nextTheme === 'light' ? SVG_ICON_SUN : SVG_ICON_MOON;
             if (persist) {
                 try { localStorage.setItem('lng_guide_theme', nextTheme); } catch (_) {}
